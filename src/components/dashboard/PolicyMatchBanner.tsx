@@ -1,18 +1,26 @@
 import { motion } from 'framer-motion';
 import { Heart, Brain, Sparkles, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface PolicyMatchBannerProps {
   onPress?: () => void;
 }
 
 export function PolicyMatchBanner({ onPress }: PolicyMatchBannerProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onPress) onPress();
+    navigate('/policy-match');
+  };
+
   return (
     <motion.button
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.5 }}
       whileTap={{ scale: 0.98 }}
-      onClick={onPress}
+      onClick={handleClick}
       className="w-full relative overflow-hidden rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-left touch-target"
       style={{
         background: 'linear-gradient(135deg, hsl(260, 80%, 55%) 0%, hsl(280, 70%, 50%) 50%, hsl(320, 75%, 55%) 100%)',
