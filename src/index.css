@@ -155,26 +155,19 @@
     }
   }
 
-  /* Desktop: Full layout with sidebar */
+  /* Desktop: Full website layout */
   @media (min-width: 1024px) {
     .desktop-wrapper {
-      @apply flex items-stretch;
-      background: linear-gradient(135deg, hsl(220 30% 96%) 0%, hsl(230 25% 94%) 50%, hsl(210 30% 98%) 100%);
+      @apply flex flex-col items-stretch;
+      background: hsl(var(--background));
     }
 
     .app-container {
-      @apply flex-1 border-x border-border;
+      @apply flex-1;
       max-width: none;
-      min-height: 100vh;
+      min-height: auto;
       border-radius: 0;
       box-shadow: none;
-    }
-  }
-
-  /* Extra large desktop: With info panel */
-  @media (min-width: 1280px) {
-    .app-container {
-      max-width: 800px;
     }
   }
 
