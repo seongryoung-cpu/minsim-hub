@@ -10,6 +10,7 @@ import { Home } from '@/pages/Home';
 import { Election } from '@/pages/Election';
 import { Discussion } from '@/pages/Discussion';
 import { MyPage } from '@/pages/MyPage';
+import { AppInfoPage } from '@/pages/AppInfoPage';
 import { useRegion } from '@/hooks/useRegion';
 import type { Region } from '@/types/region';
 
@@ -84,6 +85,7 @@ function Index() {
               <MyPage region={region} onRegionChange={() => setIsRegionSheetOpen(true)} />
             }
           />
+          <Route path="/app-info" element={<AppInfoPage />} />
         </Routes>
       </AnimatePresence>
       <BottomTabBar />
