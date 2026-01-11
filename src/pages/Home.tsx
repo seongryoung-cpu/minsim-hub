@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -15,7 +16,9 @@ interface HomeProps {
 }
 
 export function Home({ region, onRegionChange }: HomeProps) {
+  const navigate = useNavigate();
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
+  const [showAllCandidates, setShowAllCandidates] = useState(false);
 
   // 광역단체 선거 상태 데이터 로드 (sido 기준)
   const electionStatus = useMemo(() => {
@@ -26,6 +29,32 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const metropolitanTitle = useMemo(() => {
     return getMetropolitanTitle(region.sido);
   }, [region.sido]);
+
+  // 후보자 공정 표시를 위해 셔플 (매 세션마다 랜덤)
+  const shuffledCandidates = useMemo(() => {
+    const candidates = [...electionStatus.candidates];
+    // Fisher-Yates 셔플 알고리즘
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+    }
+    return candidates;
+  }, [electionStatus.candidates]);
+
+  // 표시할 후보자 수
+  const displayedCandidates = showAllCandidates 
+    ? shuffledCandidates 
+    : shuffledCandidates.slice(0, 3);
+  
+  const remainingCount = shuffledCandidates.length - 3;
+
+  const handleViewAllCandidates = useCallback(() => {
+    setShowAllCandidates(true);
+  }, []);
+
+  const handleNavigateToElection = useCallback(() => {
+    navigate('/election');
+  }, [navigate]);
 
   const pageVariants = {
     initial: { opacity: 0, x: 50 },
@@ -93,7 +122,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
         {/* Desktop: Two column layout */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-5 lg:space-y-0">
           {/* Policy Match Banner */}
-          <PolicyMatchBanner onPress={() => console.log('Policy match game')} />
+          <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
 
           {/* Candidates Section */}
           <DashboardSection
@@ -101,28 +130,38 @@ export function Home({ region, onRegionChange }: HomeProps) {
             icon="👥"
             action={{
               label: '전체 보기',
-              onPress: () => console.log('View all candidates'),
+              onPress: handleNavigateToElection,
             }}
             delay={0.2}
           >
             <div className="space-y-3">
-              {electionStatus.candidates.slice(0, 3).map((candidate, index) => (
+              {displayedCandidates.map((candidate, index) => (
                 <CandidateCard
                   key={candidate.id}
                   candidate={candidate}
                   index={index}
-                  onPress={() => console.log('Candidate:', candidate.id)}
+                  onPress={() => navigate(`/candidate/${candidate.id}`)}
                 />
               ))}
-              {electionStatus.candidates.length > 3 && (
+              {!showAllCandidates && remainingCount > 0 && (
                 <motion.button
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="w-full py-3 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors"
+                  onClick={handleViewAllCandidates}
+                  className="w-full py-3 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors border border-dashed border-primary/30"
                 >
-                  +{electionStatus.candidates.length - 3}명 더 보기
+                  +{remainingCount}명 더 보기
                 </motion.button>
+              )}
+              {showAllCandidates && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center text-xs text-muted-foreground py-2"
+                >
+                  ※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다
+                </motion.p>
               )}
             </div>
           </DashboardSection>
