@@ -12,6 +12,20 @@ export interface ElectionMilestone {
   isLocked?: boolean;
 }
 
+export interface CandidatePledge {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+}
+
+export interface CandidateCareer {
+  id: string;
+  period: string;
+  title: string;
+  organization: string;
+}
+
 export interface Candidate {
   id: string;
   name: string;
@@ -20,6 +34,12 @@ export interface Candidate {
   image?: string;
   summary: string;
   position: string;
+  // 상세 정보
+  age?: number;
+  education?: string;
+  slogan?: string;
+  pledges?: CandidatePledge[];
+  careers?: CandidateCareer[];
 }
 
 export interface ElectionStatus {
