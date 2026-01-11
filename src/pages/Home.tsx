@@ -35,7 +35,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
       animate="animate"
       exit="exit"
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="min-h-screen bg-background pb-20"
+      className="min-h-screen bg-background pb-20 lg:pb-0"
     >
       <DashboardHeader
         region={region}
@@ -43,27 +43,34 @@ export function Home({ region, onRegionChange }: HomeProps) {
         onRegionClick={() => setIsRegionSheetOpen(true)}
       />
 
-      <main className="p-4 sm:p-5 lg:p-6 space-y-5 sm:space-y-6">
+      <main className="p-4 sm:p-5 lg:p-8 space-y-5 sm:space-y-6 lg:space-y-8">
         {/* Welcome Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white relative overflow-hidden"
+          className="rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 text-white relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
         >
-          <div className="relative z-10">
-            <p className="text-white/80 text-sm mb-1">환영합니다</p>
-            <h1 className="text-xl font-bold mb-2">
-              {region.sigungu} 주민 여러분
-            </h1>
-            <p className="text-sm text-white/90">
-              {electionStatus.electionType} 정보를 확인하세요
-            </p>
+          <div className="relative z-10 lg:flex lg:items-center lg:justify-between">
+            <div>
+              <p className="text-white/80 text-sm mb-1">환영합니다</p>
+              <h1 className="text-xl lg:text-2xl font-bold mb-2">
+                {region.sigungu} 주민 여러분
+              </h1>
+              <p className="text-sm lg:text-base text-white/90">
+                {electionStatus.electionType} 정보를 확인하세요
+              </p>
+            </div>
+            <div className="hidden lg:block">
+              <button className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-colors">
+                자세히 알아보기 →
+              </button>
+            </div>
           </div>
           {/* Decorative circles */}
-          <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full" />
-          <div className="absolute -right-4 top-16 w-20 h-20 bg-white/10 rounded-full" />
+          <div className="absolute -right-8 -top-8 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full" />
+          <div className="absolute -right-4 top-16 w-20 h-20 lg:w-32 lg:h-32 bg-white/10 rounded-full" />
         </motion.div>
 
         {/* Election Timeline */}
@@ -78,30 +85,33 @@ export function Home({ region, onRegionChange }: HomeProps) {
           />
         </DashboardSection>
 
-        {/* Policy Match Banner */}
-        <PolicyMatchBanner onPress={() => console.log('Policy match game')} />
+        {/* Desktop: Two column layout */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-5 lg:space-y-0">
+          {/* Policy Match Banner */}
+          <PolicyMatchBanner onPress={() => console.log('Policy match game')} />
 
-        {/* Candidates Section */}
-        <DashboardSection
-          title="후보자 정보"
-          icon="👥"
-          action={{
-            label: '전체 보기',
-            onPress: () => console.log('View all candidates'),
-          }}
-          delay={0.2}
-        >
-          <div className="space-y-3">
-            {electionStatus.candidates.map((candidate, index) => (
-              <CandidateCard
-                key={candidate.id}
-                candidate={candidate}
-                index={index}
-                onPress={() => console.log('Candidate:', candidate.id)}
-              />
-            ))}
-          </div>
-        </DashboardSection>
+          {/* Candidates Section */}
+          <DashboardSection
+            title="후보자 정보"
+            icon="👥"
+            action={{
+              label: '전체 보기',
+              onPress: () => console.log('View all candidates'),
+            }}
+            delay={0.2}
+          >
+            <div className="space-y-3">
+              {electionStatus.candidates.map((candidate, index) => (
+                <CandidateCard
+                  key={candidate.id}
+                  candidate={candidate}
+                  index={index}
+                  onPress={() => console.log('Candidate:', candidate.id)}
+                />
+              ))}
+            </div>
+          </DashboardSection>
+        </div>
 
         {/* Expandable Future Slots */}
         <DashboardSection
@@ -109,7 +119,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
           icon="✨"
           delay={0.3}
         >
-          <div className="space-y-3">
+          <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0">
             <ExpandableSlot
               title="오늘의 담론"
               description="지역 주민들과 함께 토론해보세요"
