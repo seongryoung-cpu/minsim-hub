@@ -2,95 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* 민심잇다 Design System - Premium Civic Tech App */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core civic palette - trustworthy blue with warm accents */
+    --background: 210 20% 98%;
+    --foreground: 220 25% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 25% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 25% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Civic Blue */
+    --primary: 220 70% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Soft gray-blue */
+    --secondary: 210 15% 93%;
+    --secondary-foreground: 220 25% 25%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 15% 96%;
+    --muted-foreground: 220 10% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Accent - Warm coral for engagement */
+    --accent: 15 85% 57%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 220 70% 50%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Status colors for timeline */
+    --status-preparing: 45 93% 47%;
+    --status-active: 220 70% 50%;
+    --status-complete: 142 71% 45%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* App-specific tokens */
+    --app-header-height: 56px;
+    --app-tab-height: 64px;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Shadows for depth */
+    --shadow-sm: 0 1px 2px 0 hsl(220 25% 10% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(220 25% 10% / 0.08), 0 2px 4px -2px hsl(220 25% 10% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(220 25% 10% / 0.1), 0 4px 6px -4px hsl(220 25% 10% / 0.1);
+    --shadow-sheet: 0 -4px 25px -5px hsl(220 25% 10% / 0.15);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(15 85% 57%), hsl(25 90% 55%));
+    --gradient-background: linear-gradient(180deg, hsl(210 30% 96%) 0%, hsl(220 25% 92%) 100%);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 220 25% 8%;
+    --foreground: 210 20% 98%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 25% 12%;
+    --card-foreground: 210 20% 98%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 25% 12%;
+    --popover-foreground: 210 20% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 215 80% 60%;
+    --primary-foreground: 220 25% 8%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 220 20% 15%;
+    --muted-foreground: 210 15% 55%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 15 85% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 215 80% 60%;
+
+    --status-preparing: 45 90% 50%;
+    --status-active: 215 80% 60%;
+    --status-complete: 142 70% 50%;
+
+    --gradient-background: linear-gradient(180deg, hsl(220 25% 6%) 0%, hsl(225 30% 10%) 100%);
   }
 }
 
@@ -99,7 +105,97 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+    overscroll-behavior: none;
+  }
+}
+
+@layer components {
+  /* App container for desktop */
+  .app-container {
+    @apply mx-auto w-full min-h-screen relative;
+    max-width: 448px;
+  }
+
+  /* Desktop wrapper with gradient background */
+  .desktop-wrapper {
+    @apply min-h-screen;
+    background: var(--gradient-background);
+  }
+
+  @media (min-width: 449px) {
+    .desktop-wrapper {
+      @apply flex items-center justify-center py-8 px-4;
+      background: linear-gradient(135deg, hsl(220 30% 92%) 0%, hsl(230 25% 88%) 50%, hsl(210 30% 94%) 100%);
+    }
+
+    .app-container {
+      @apply rounded-[2.5rem] overflow-hidden;
+      box-shadow: 
+        0 25px 50px -12px hsl(220 25% 10% / 0.25),
+        0 0 0 1px hsl(220 20% 90% / 0.5);
+      min-height: calc(100vh - 4rem);
+      max-height: 900px;
+    }
+  }
+
+  /* Touch-friendly button base */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Card styles */
+  .app-card {
+    @apply bg-card rounded-2xl p-4;
+    box-shadow: var(--shadow-md);
+  }
+
+  /* Bottom sheet overlay */
+  .sheet-overlay {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm z-40;
+  }
+
+  /* Status badges */
+  .status-preparing {
+    @apply bg-[hsl(var(--status-preparing))] text-white;
+  }
+
+  .status-active {
+    @apply bg-[hsl(var(--status-active))] text-white;
+  }
+
+  .status-complete {
+    @apply bg-[hsl(var(--status-complete))] text-white;
+  }
+}
+
+@layer utilities {
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl;
+  }
+
+  /* Gradient text */
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-primary);
+  }
+
+  /* Safe area utilities */
+  .pb-safe {
+    padding-bottom: max(1rem, var(--safe-area-bottom));
+  }
+
+  .pt-safe {
+    padding-top: var(--safe-area-top);
   }
 }
