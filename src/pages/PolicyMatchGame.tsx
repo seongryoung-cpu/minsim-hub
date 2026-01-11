@@ -1,15 +1,17 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Brain, Heart } from 'lucide-react';
+import { ArrowLeft, Brain, Heart, X } from 'lucide-react';
 import { SwipeCard, SwipeControls } from '@/components/policy-match/SwipeCard';
 import { PreRevealScreen } from '@/components/policy-match/PreRevealScreen';
 import { RadarResultScreen } from '@/components/policy-match/RadarResultScreen';
 import { SentimentShiftScreen } from '@/components/policy-match/SentimentShiftScreen';
+import { GameIntroScreen } from '@/components/policy-match/GameIntroScreen';
+import { JourneyProgress } from '@/components/policy-match/JourneyProgress';
+import { CategoryInsights } from '@/components/policy-match/CategoryInsights';
 import { 
   POLICY_CARDS, 
   POLICY_CATEGORIES,
-  type PolicyCard, 
   type MatchResult, 
   type UserChoice,
   type PreferredCandidate,
@@ -18,14 +20,14 @@ import {
 import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES } from '@/types/election';
 import { useRegion } from '@/hooks/useRegion';
 
-type GameStep = 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
+export type GameStep = 'intro' | 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
 
 export function PolicyMatchGame() {
   const navigate = useNavigate();
   const { region } = useRegion();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [choices, setChoices] = useState<UserChoice[]>([]);
-  const [currentStep, setCurrentStep] = useState<GameStep>('swipe');
+  const [currentStep, setCurrentStep] = useState<GameStep>('intro');
   const [userPreference, setUserPreference] = useState<PreferredCandidate>(null);
 
   // 지역에 따른 후보자 필터링
@@ -166,6 +168,10 @@ export function PolicyMatchGame() {
     setUserPreference(null);
   }, []);
 
+  const handleStart = useCallback(() => {
+    setCurrentStep('swipe');
+  }, []);
+
   const handlePreferenceSelect = useCallback((preference: PreferredCandidate) => {
     setUserPreference(preference);
     setCurrentStep('result');
@@ -176,7 +182,7 @@ export function PolicyMatchGame() {
   }, []);
 
   const results = useMemo(() => {
-    if (currentStep !== 'swipe') {
+    if (currentStep !== 'swipe' && currentStep !== 'intro') {
       return calculateResults();
     }
     return [];
@@ -189,6 +195,11 @@ export function PolicyMatchGame() {
     });
     return scoresMap;
   }, [candidates, calculateCategoryScores]);
+
+  // Step 0: 인트로 화면
+  if (currentStep === 'intro') {
+    return <GameIntroScreen onStart={handleStart} />;
+  }
 
   // Step 2: Pre-reveal 화면
   if (currentStep === 'pre-reveal') {
@@ -228,58 +239,66 @@ export function PolicyMatchGame() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="min-h-screen bg-background flex flex-col"
+      className="min-h-screen bg-gradient-to-b from-background to-background flex flex-col"
     >
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-xl border-b border-border/50">
+      <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/30">
         <div className="h-14 flex items-center justify-between px-4">
           <button
             onClick={() => navigate(-1)}
             className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
           >
-            <ArrowLeft size={20} />
+            <X size={20} className="text-muted-foreground" />
           </button>
-          <div className="flex items-center gap-2">
-            <Brain size={18} className="text-primary" />
-            <span className="font-semibold">정책 밸런스 게임</span>
-            <Heart size={18} className="text-red-500" />
-          </div>
+          
+          {/* Journey Progress */}
+          <JourneyProgress currentStep={currentStep} />
+          
           <div className="w-10" />
         </div>
 
         {/* Progress Bar */}
-        <div className="h-1.5 bg-secondary">
+        <div className="h-1 bg-secondary/50">
           <motion.div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
+            className="h-full bg-gradient-to-r from-primary via-primary to-accent"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           />
         </div>
       </header>
 
       {/* Card Counter */}
       <div className="px-4 py-3 flex justify-between items-center">
-        <span className="text-sm font-medium">
-          <span className="text-primary">{currentIndex + 1}</span>
-          <span className="text-muted-foreground"> / {POLICY_CARDS.length}</span>
-        </span>
-        <span className="text-xs text-muted-foreground px-3 py-1 bg-secondary rounded-full">
+        <div className="flex items-center gap-2">
+          <Brain size={16} className="text-primary" />
+          <span className="text-sm font-semibold">
+            <span className="text-primary text-lg">{currentIndex + 1}</span>
+            <span className="text-muted-foreground"> / {POLICY_CARDS.length}</span>
+          </span>
+        </div>
+        <motion.span 
+          key={currentIndex}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs text-muted-foreground px-3 py-1.5 bg-secondary/70 rounded-full flex items-center gap-1"
+        >
+          <Heart size={10} className="text-red-400" />
           좌우로 스와이프
-        </span>
+        </motion.span>
       </div>
 
       {/* Card Stack */}
-      <div className="flex-1 px-4 pb-4 relative">
-        <div className="relative h-[420px] sm:h-[480px] max-w-md mx-auto">
+      <div className="flex-1 px-4 pb-2 relative">
+        <div className="relative h-[400px] sm:h-[450px] max-w-md mx-auto">
           <AnimatePresence mode="popLayout">
             {/* Background cards */}
             {POLICY_CARDS.slice(currentIndex + 1, currentIndex + 3).map((card, i) => (
               <motion.div
                 key={card.id}
-                className="absolute inset-0 bg-card rounded-3xl shadow-md"
-                initial={{ scale: 0.9 - i * 0.05, y: 20 + i * 10 }}
-                animate={{ scale: 0.9 - i * 0.05, y: 20 + i * 10 }}
+                className="absolute inset-0 bg-card rounded-3xl shadow-lg border border-border/30"
+                initial={{ scale: 0.92 - i * 0.04, y: 16 + i * 8 }}
+                animate={{ scale: 0.92 - i * 0.04, y: 16 + i * 8 }}
                 style={{ zIndex: -i - 1 }}
               />
             ))}
@@ -291,11 +310,20 @@ export function PolicyMatchGame() {
                 card={currentCard}
                 isTop={true}
                 onSwipe={handleSwipe}
+                cardNumber={currentIndex + 1}
+                totalCards={POLICY_CARDS.length}
               />
             )}
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Category Insights (shows after 3 choices) */}
+      {choices.length >= 3 && (
+        <div className="px-4 pb-2">
+          <CategoryInsights choices={choices} cards={POLICY_CARDS} />
+        </div>
+      )}
 
       {/* Controls */}
       <div className="p-4 pb-24 lg:pb-8">
