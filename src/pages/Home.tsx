@@ -43,13 +43,13 @@ export function Home({ region, onRegionChange }: HomeProps) {
         onRegionClick={() => setIsRegionSheetOpen(true)}
       />
 
-      <main className="p-4 space-y-5">
+      <main className="p-4 sm:p-5 lg:p-6 space-y-5 sm:space-y-6">
         {/* Welcome Banner */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="rounded-2xl p-5 text-white relative overflow-hidden"
+          className="rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-white relative overflow-hidden"
           style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
         >
           <div className="relative z-10">
