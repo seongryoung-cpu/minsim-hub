@@ -3,20 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Brain, Heart } from 'lucide-react';
 import { SwipeCard, SwipeControls } from '@/components/policy-match/SwipeCard';
-import { MatchResultScreen } from '@/components/policy-match/MatchResultScreen';
-import { POLICY_CARDS, type PolicyCard, type MatchResult } from '@/types/policy';
+import { PreRevealScreen } from '@/components/policy-match/PreRevealScreen';
+import { RadarResultScreen } from '@/components/policy-match/RadarResultScreen';
+import { SentimentShiftScreen } from '@/components/policy-match/SentimentShiftScreen';
+import { 
+  POLICY_CARDS, 
+  POLICY_CATEGORIES,
+  type PolicyCard, 
+  type MatchResult, 
+  type UserChoice,
+  type PreferredCandidate,
+  type CategoryScore,
+} from '@/types/policy';
 import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES } from '@/types/election';
 import { useRegion } from '@/hooks/useRegion';
 
-type SwipeDirection = 'left' | 'right';
-type UserChoice = { cardId: string; direction: SwipeDirection };
+type GameStep = 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
 
 export function PolicyMatchGame() {
   const navigate = useNavigate();
   const { region } = useRegion();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [choices, setChoices] = useState<UserChoice[]>([]);
-  const [isComplete, setIsComplete] = useState(false);
+  const [currentStep, setCurrentStep] = useState<GameStep>('swipe');
+  const [userPreference, setUserPreference] = useState<PreferredCandidate>(null);
 
   // 지역에 따른 후보자 필터링
   const candidates = useMemo(() => {
@@ -31,16 +41,54 @@ export function PolicyMatchGame() {
   const currentCard = POLICY_CARDS[currentIndex];
   const progress = ((currentIndex) / POLICY_CARDS.length) * 100;
 
+  // 카테고리별 점수 계산
+  const calculateCategoryScores = useCallback((candidateId: string): CategoryScore[] => {
+    const categoryData: Record<string, { userTotal: number; candidateTotal: number; count: number }> = {};
+
+    POLICY_CATEGORIES.forEach(cat => {
+      categoryData[cat] = { userTotal: 0, candidateTotal: 0, count: 0 };
+    });
+
+    choices.forEach(choice => {
+      const card = POLICY_CARDS.find(p => p.id === choice.cardId);
+      if (!card) return;
+
+      const alignment = card.candidateAlignment.find(a => a.candidateId === candidateId);
+      if (!alignment) return;
+
+      const userScore = choice.direction === 'right' ? 100 : 0;
+      const candidateScore = alignment.stance === 'agree' 
+        ? alignment.intensity * 20 
+        : alignment.stance === 'disagree' 
+          ? 100 - (alignment.intensity * 20)
+          : 50;
+
+      categoryData[card.category].userTotal += userScore;
+      categoryData[card.category].candidateTotal += candidateScore;
+      categoryData[card.category].count += 1;
+    });
+
+    return POLICY_CATEGORIES.map(category => ({
+      category,
+      userScore: categoryData[category].count > 0 
+        ? Math.round(categoryData[category].userTotal / categoryData[category].count)
+        : 50,
+      candidateScore: categoryData[category].count > 0
+        ? Math.round(categoryData[category].candidateTotal / categoryData[category].count)
+        : 50,
+    }));
+  }, [choices]);
+
   // 결과 계산
   const calculateResults = useCallback((): MatchResult[] => {
-    const scores: Record<string, { agree: number; disagree: number; total: number }> = {};
+    const scores: Record<string, { agree: number; total: number }> = {};
 
     // 각 후보자별 점수 초기화
     candidates.forEach(c => {
-      scores[c.id] = { agree: 0, disagree: 0, total: 0 };
+      scores[c.id] = { agree: 0, total: 0 };
     });
 
-    // 사용자 선택에 따른 점수 계산
+    // 사용자 선택에 따른 점수 계산 (intensity 반영)
     choices.forEach(choice => {
       const card = POLICY_CARDS.find(p => p.id === choice.cardId);
       if (!card) return;
@@ -50,21 +98,19 @@ export function PolicyMatchGame() {
       card.candidateAlignment.forEach(alignment => {
         if (!scores[alignment.candidateId]) return;
 
+        const weight = alignment.intensity;
+        
         if (alignment.stance === 'agree' && userAgrees) {
-          scores[alignment.candidateId].agree += 2;
-          scores[alignment.candidateId].total += 2;
+          scores[alignment.candidateId].agree += weight;
+          scores[alignment.candidateId].total += weight;
         } else if (alignment.stance === 'disagree' && !userAgrees) {
-          scores[alignment.candidateId].agree += 2;
-          scores[alignment.candidateId].total += 2;
+          scores[alignment.candidateId].agree += weight;
+          scores[alignment.candidateId].total += weight;
         } else if (alignment.stance === 'neutral') {
-          scores[alignment.candidateId].agree += 1;
-          scores[alignment.candidateId].total += 2;
-        } else if (
-          (alignment.stance === 'agree' && !userAgrees) ||
-          (alignment.stance === 'disagree' && userAgrees)
-        ) {
-          scores[alignment.candidateId].disagree += 1;
-          scores[alignment.candidateId].total += 2;
+          scores[alignment.candidateId].agree += weight * 0.5;
+          scores[alignment.candidateId].total += weight;
+        } else {
+          scores[alignment.candidateId].total += weight;
         }
       });
     });
@@ -84,13 +130,14 @@ export function PolicyMatchGame() {
         matchScore,
         agreedPolicies: [],
         disagreedPolicies: [],
+        categoryScores: calculateCategoryScores(candidate.id),
       };
     });
 
     return results.sort((a, b) => b.matchScore - a.matchScore);
-  }, [choices, candidates]);
+  }, [choices, candidates, calculateCategoryScores]);
 
-  const handleSwipe = useCallback((direction: SwipeDirection) => {
+  const handleSwipe = useCallback((direction: 'left' | 'right') => {
     const newChoice: UserChoice = {
       cardId: currentCard.id,
       direction,
@@ -100,7 +147,8 @@ export function PolicyMatchGame() {
     if (currentIndex < POLICY_CARDS.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      setIsComplete(true);
+      // 스와이프 완료 → Pre-reveal 단계로
+      setCurrentStep('pre-reveal');
     }
   }, [currentCard?.id, currentIndex]);
 
@@ -114,21 +162,68 @@ export function PolicyMatchGame() {
   const handleRestart = useCallback(() => {
     setCurrentIndex(0);
     setChoices([]);
-    setIsComplete(false);
+    setCurrentStep('swipe');
+    setUserPreference(null);
+  }, []);
+
+  const handlePreferenceSelect = useCallback((preference: PreferredCandidate) => {
+    setUserPreference(preference);
+    setCurrentStep('result');
+  }, []);
+
+  const handleContinueToSentiment = useCallback(() => {
+    setCurrentStep('sentiment');
   }, []);
 
   const results = useMemo(() => {
-    if (isComplete) {
+    if (currentStep !== 'swipe') {
       return calculateResults();
     }
     return [];
-  }, [isComplete, calculateResults]);
+  }, [currentStep, calculateResults]);
 
-  // 결과 화면
-  if (isComplete) {
-    return <MatchResultScreen results={results} onRestart={handleRestart} />;
+  const categoryScores = useMemo(() => {
+    const scoresMap: Record<string, CategoryScore[]> = {};
+    candidates.forEach(c => {
+      scoresMap[c.id] = calculateCategoryScores(c.id);
+    });
+    return scoresMap;
+  }, [candidates, calculateCategoryScores]);
+
+  // Step 2: Pre-reveal 화면
+  if (currentStep === 'pre-reveal') {
+    return (
+      <PreRevealScreen 
+        candidates={candidates} 
+        onSelect={handlePreferenceSelect} 
+      />
+    );
   }
 
+  // Step 3: Radar 결과 화면
+  if (currentStep === 'result') {
+    return (
+      <RadarResultScreen 
+        results={results}
+        userPreference={userPreference}
+        categoryScores={categoryScores}
+        onContinue={handleContinueToSentiment}
+      />
+    );
+  }
+
+  // Step 4: Sentiment Shift 화면
+  if (currentStep === 'sentiment') {
+    return (
+      <SentimentShiftScreen 
+        results={results}
+        userPreference={userPreference}
+        onRestart={handleRestart}
+      />
+    );
+  }
+
+  // Step 1: 스와이프 게임
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -146,16 +241,16 @@ export function PolicyMatchGame() {
           </button>
           <div className="flex items-center gap-2">
             <Brain size={18} className="text-primary" />
-            <span className="font-semibold">정책 매칭</span>
+            <span className="font-semibold">정책 밸런스 게임</span>
             <Heart size={18} className="text-red-500" />
           </div>
           <div className="w-10" />
         </div>
 
         {/* Progress Bar */}
-        <div className="h-1 bg-secondary">
+        <div className="h-1.5 bg-secondary">
           <motion.div
-            className="h-full bg-primary"
+            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3 }}
@@ -165,17 +260,18 @@ export function PolicyMatchGame() {
 
       {/* Card Counter */}
       <div className="px-4 py-3 flex justify-between items-center">
-        <span className="text-sm text-muted-foreground">
-          {currentIndex + 1} / {POLICY_CARDS.length}
+        <span className="text-sm font-medium">
+          <span className="text-primary">{currentIndex + 1}</span>
+          <span className="text-muted-foreground"> / {POLICY_CARDS.length}</span>
         </span>
-        <span className="text-xs text-muted-foreground">
-          좌우로 스와이프하세요
+        <span className="text-xs text-muted-foreground px-3 py-1 bg-secondary rounded-full">
+          좌우로 스와이프
         </span>
       </div>
 
       {/* Card Stack */}
       <div className="flex-1 px-4 pb-4 relative">
-        <div className="relative h-[400px] sm:h-[450px] max-w-md mx-auto">
+        <div className="relative h-[420px] sm:h-[480px] max-w-md mx-auto">
           <AnimatePresence mode="popLayout">
             {/* Background cards */}
             {POLICY_CARDS.slice(currentIndex + 1, currentIndex + 3).map((card, i) => (
