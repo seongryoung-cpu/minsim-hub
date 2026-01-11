@@ -6,7 +6,7 @@ import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { DashboardSection, ExpandableSlot } from '@/components/dashboard/DashboardSection';
 import { CandidateCard } from '@/components/dashboard/CandidateCard';
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
-import { getElectionStatus } from '@/types/election';
+import { getElectionStatus, getMetropolitanTitle } from '@/types/election';
 import type { Region } from '@/types/region';
 
 interface HomeProps {
@@ -17,10 +17,15 @@ interface HomeProps {
 export function Home({ region, onRegionChange }: HomeProps) {
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
 
-  // 지역별 선거 상태 데이터 로드
+  // 광역단체 선거 상태 데이터 로드 (sido 기준)
   const electionStatus = useMemo(() => {
     return getElectionStatus(region.sido, region.sigungu);
   }, [region.sido, region.sigungu]);
+
+  // 광역단체장 타이틀
+  const metropolitanTitle = useMemo(() => {
+    return getMetropolitanTitle(region.sido);
+  }, [region.sido]);
 
   const pageVariants = {
     initial: { opacity: 0, x: 50 },
@@ -59,7 +64,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 {region.sigungu} 주민 여러분
               </h1>
               <p className="text-sm lg:text-base text-white/90">
-                {electionStatus.electionType} 정보를 확인하세요
+                2026 {metropolitanTitle} 선거 정보를 확인하세요
               </p>
             </div>
             <div className="hidden lg:block">
@@ -75,7 +80,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
 
         {/* Election Timeline */}
         <DashboardSection
-          title="선거 진행 현황"
+          title={`${metropolitanTitle} 선거 진행 현황`}
           icon="🗳️"
           delay={0.1}
         >
@@ -92,7 +97,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
 
           {/* Candidates Section */}
           <DashboardSection
-            title="후보자 정보"
+            title={`${metropolitanTitle} 예비후보`}
             icon="👥"
             action={{
               label: '전체 보기',
@@ -101,7 +106,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             delay={0.2}
           >
             <div className="space-y-3">
-              {electionStatus.candidates.map((candidate, index) => (
+              {electionStatus.candidates.slice(0, 3).map((candidate, index) => (
                 <CandidateCard
                   key={candidate.id}
                   candidate={candidate}
@@ -109,6 +114,16 @@ export function Home({ region, onRegionChange }: HomeProps) {
                   onPress={() => console.log('Candidate:', candidate.id)}
                 />
               ))}
+              {electionStatus.candidates.length > 3 && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="w-full py-3 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors"
+                >
+                  +{electionStatus.candidates.length - 3}명 더 보기
+                </motion.button>
+              )}
             </div>
           </DashboardSection>
         </div>
