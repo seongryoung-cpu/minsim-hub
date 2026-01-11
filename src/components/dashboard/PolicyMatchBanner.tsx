@@ -13,7 +13,7 @@ export function PolicyMatchBanner({ onPress }: PolicyMatchBannerProps) {
       transition={{ delay: 0.3, duration: 0.5 }}
       whileTap={{ scale: 0.98 }}
       onClick={onPress}
-      className="w-full relative overflow-hidden rounded-2xl p-5 text-left touch-target"
+      className="w-full relative overflow-hidden rounded-2xl sm:rounded-3xl p-5 sm:p-6 text-left touch-target"
       style={{
         background: 'linear-gradient(135deg, hsl(260, 80%, 55%) 0%, hsl(280, 70%, 50%) 50%, hsl(320, 75%, 55%) 100%)',
       }}

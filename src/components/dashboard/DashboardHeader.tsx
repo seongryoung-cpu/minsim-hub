@@ -21,7 +21,7 @@ export function DashboardHeader({
       animate={{ opacity: 1, y: 0 }}
       className="sticky top-0 z-20 bg-background/90 backdrop-blur-xl border-b border-border/50"
     >
-      <div className="h-14 flex items-center justify-between px-4">
+      <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6">
         {/* Region selector */}
         <motion.button
           whileTap={{ scale: 0.97 }}

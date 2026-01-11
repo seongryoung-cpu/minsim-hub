@@ -9,10 +9,10 @@ interface ElectionTimelineProps {
 
 export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineProps) {
   return (
-    <div className="bg-card rounded-2xl p-4 shadow-[var(--shadow-md)]">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-foreground">선거 진행 단계</h3>
-        <span className="text-xs text-muted-foreground">2026 지방선거</span>
+    <div className="bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[var(--shadow-md)]">
+      <div className="flex items-center justify-between mb-4 sm:mb-5">
+        <h3 className="text-sm sm:text-base font-semibold text-foreground">선거 진행 단계</h3>
+        <span className="text-xs sm:text-sm text-muted-foreground">2026 지방선거</span>
       </div>
 
       <div className="relative">

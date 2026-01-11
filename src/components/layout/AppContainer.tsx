@@ -7,7 +7,7 @@ interface AppContainerProps {
 export function AppContainer({ children }: AppContainerProps) {
   return (
     <div className="desktop-wrapper">
-      <div className="app-container bg-background overflow-hidden relative">
+      <div className="app-container bg-background overflow-hidden overflow-y-auto relative">
         {children}
       </div>
     </div>
