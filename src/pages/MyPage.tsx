@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { User, Settings, Bell, HelpCircle, LogOut, ChevronRight, MapPin } from 'lucide-react';
+import { User, Settings, Bell, HelpCircle, ChevronRight, MapPin, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Region } from '@/types/region';
 
 interface MyPageProps {
@@ -8,12 +9,15 @@ interface MyPageProps {
 }
 
 const menuItems = [
-  { icon: Bell, label: '알림 설정', description: '푸시 알림 관리' },
-  { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문' },
-  { icon: Settings, label: '앱 설정', description: '테마, 언어 설정' },
+  { icon: Bell, label: '알림 설정', description: '푸시 알림 관리', path: null },
+  { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문', path: null },
+  { icon: Settings, label: '앱 설정', description: '테마, 언어 설정', path: null },
+  { icon: FileText, label: '기획서', description: '앱 기능 명세 확인', path: '/app-info' },
 ];
 
 export function MyPage({ region, onRegionChange }: MyPageProps) {
+  const navigate = useNavigate();
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -81,6 +85,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
             return (
               <button
                 key={item.label}
+                onClick={() => item.path && navigate(item.path)}
                 className={`w-full p-4 flex items-center justify-between active:bg-secondary/50 transition-colors ${
                   index !== menuItems.length - 1 ? 'border-b border-border' : ''
                 }`}
