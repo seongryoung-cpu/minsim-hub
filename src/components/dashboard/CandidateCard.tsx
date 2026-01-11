@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { User, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { Candidate } from '@/types/election';
 
 interface CandidateCardProps {
@@ -9,13 +10,22 @@ interface CandidateCardProps {
 }
 
 export function CandidateCard({ candidate, index, onPress }: CandidateCardProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (onPress) {
+      onPress();
+    }
+    navigate(`/candidate/${candidate.id}`);
+  };
+
   return (
     <motion.button
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 * index, duration: 0.4 }}
       whileTap={{ scale: 0.97 }}
-      onClick={onPress}
+      onClick={handleClick}
       className="w-full bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[var(--shadow-md)] flex items-center gap-4 touch-target text-left active:bg-secondary/50 transition-all hover:shadow-[var(--shadow-lg)]"
     >
       {/* Candidate Image Placeholder */}

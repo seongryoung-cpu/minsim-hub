@@ -11,6 +11,7 @@ import { Election } from '@/pages/Election';
 import { Discussion } from '@/pages/Discussion';
 import { MyPage } from '@/pages/MyPage';
 import { AppInfoPage } from '@/pages/AppInfoPage';
+import { CandidateDetail } from '@/pages/CandidateDetail';
 import { useRegion } from '@/hooks/useRegion';
 import type { Region } from '@/types/region';
 
@@ -86,6 +87,7 @@ function Index() {
             }
           />
           <Route path="/app-info" element={<AppInfoPage />} />
+          <Route path="/candidate/:id" element={<CandidateDetail />} />
         </Routes>
       </AnimatePresence>
       <BottomTabBar />
