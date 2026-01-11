@@ -26,7 +26,7 @@ export function BottomTabBar() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-30 bg-card/95 backdrop-blur-xl border-t border-border pb-safe w-full max-w-full sm:max-w-[540px] lg:max-w-[420px] sm:rounded-t-2xl lg:rounded-t-3xl sm:border-x">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-30 bg-card/95 backdrop-blur-xl border-t border-border pb-safe w-full max-w-full sm:max-w-[540px] lg:hidden sm:rounded-t-2xl sm:border-x">
       <div className="flex items-center justify-around h-16 sm:h-[72px]">
         {tabs.map((tab) => {
           const active = isActive(tab.path);
