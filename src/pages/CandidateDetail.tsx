@@ -1,9 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Share2, Heart, Briefcase, FileText, GraduationCap, Calendar, Building2 } from 'lucide-react';
+import { ArrowLeft, User, Share2, Briefcase, FileText, GraduationCap, Calendar, Building2, Newspaper } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES, PARTY_COLORS } from '@/types/election';
+import { FollowButton } from '@/components/candidate/FollowButton';
+import { NewsCard } from '@/components/news/NewsCard';
+import { getNewsForCandidate } from '@/data/mockNews';
 import type { Candidate } from '@/types/election';
 
 // 확장된 후보자 데이터 (MVP용 상세 정보 포함)
@@ -129,7 +132,6 @@ export function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
-  const [isLiked, setIsLiked] = useState(false);
 
   const candidate = useMemo(() => {
     return ALL_CANDIDATES.find(c => c.id === id);
@@ -176,15 +178,12 @@ export function CandidateDetail() {
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-semibold">후보자 정보</h1>
-          <button
-            onClick={() => setIsLiked(!isLiked)}
-            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
-          >
-            <Heart
-              size={20}
-              className={isLiked ? 'fill-red-500 text-red-500' : ''}
-            />
-          </button>
+          <FollowButton
+            candidateId={candidate.id}
+            candidateName={candidate.name}
+            partyColor={candidate.partyColor}
+            variant="icon"
+          />
         </div>
       </header>
 
@@ -257,18 +256,22 @@ export function CandidateDetail() {
       {/* Tabs Section */}
       <section className="px-4 lg:px-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full grid grid-cols-3 mb-4">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User size={16} />
+          <TabsList className="w-full grid grid-cols-4 mb-4">
+            <TabsTrigger value="profile" className="flex items-center gap-1 text-xs sm:text-sm">
+              <User size={14} />
               <span className="hidden sm:inline">프로필</span>
             </TabsTrigger>
-            <TabsTrigger value="pledges" className="flex items-center gap-2">
-              <FileText size={16} />
+            <TabsTrigger value="pledges" className="flex items-center gap-1 text-xs sm:text-sm">
+              <FileText size={14} />
               <span className="hidden sm:inline">공약</span>
             </TabsTrigger>
-            <TabsTrigger value="career" className="flex items-center gap-2">
-              <Briefcase size={16} />
+            <TabsTrigger value="career" className="flex items-center gap-1 text-xs sm:text-sm">
+              <Briefcase size={14} />
               <span className="hidden sm:inline">경력</span>
+            </TabsTrigger>
+            <TabsTrigger value="news" className="flex items-center gap-1 text-xs sm:text-sm">
+              <Newspaper size={14} />
+              <span className="hidden sm:inline">뉴스</span>
             </TabsTrigger>
           </TabsList>
 
@@ -410,6 +413,36 @@ export function CandidateDetail() {
                     <p>등록된 경력이 없습니다</p>
                   </div>
                 )}
+              </motion.div>
+            </TabsContent>
+
+            {/* News Tab */}
+            <TabsContent value="news" className="mt-0">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                {(() => {
+                  const news = getNewsForCandidate(candidate.id);
+                  if (news.length === 0) {
+                    return (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Newspaper size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>관련 뉴스가 없습니다</p>
+                      </div>
+                    );
+                  }
+                  return news.map((article, index) => (
+                    <NewsCard 
+                      key={article.id} 
+                      article={article} 
+                      index={index}
+                      showCandidate={false}
+                    />
+                  ));
+                })()}
               </motion.div>
             </TabsContent>
           </AnimatePresence>
