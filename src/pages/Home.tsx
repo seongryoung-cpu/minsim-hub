@@ -175,15 +175,15 @@ export function Home({ region, onRegionChange }: HomeProps) {
         >
           <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0">
             <ExpandableSlot
+              title="뉴스 피드"
+              description="관심 후보자의 최신 뉴스를 확인하세요"
+              icon="📰"
+              onPress={() => navigate('/news')}
+            />
+            <ExpandableSlot
               title="오늘의 담론"
               description="지역 주민들과 함께 토론해보세요"
               icon="💬"
-              comingSoon
-            />
-            <ExpandableSlot
-              title="지역 핫 이슈"
-              description="우리 동네 실시간 이슈를 확인하세요"
-              icon="🔥"
               comingSoon
             />
           </div>

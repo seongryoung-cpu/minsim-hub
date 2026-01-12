@@ -13,6 +13,7 @@ import { MyPage } from '@/pages/MyPage';
 import { AppInfoPage } from '@/pages/AppInfoPage';
 import { CandidateDetail } from '@/pages/CandidateDetail';
 import { PolicyMatchGame } from '@/pages/PolicyMatchGame';
+import { NewsFeed } from '@/pages/NewsFeed';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -97,6 +98,7 @@ function Index() {
           <Route path="/app-info" element={<AppInfoPage />} />
           <Route path="/candidate/:id" element={<CandidateDetail />} />
           <Route path="/policy-match" element={<PolicyMatchGame />} />
+          <Route path="/news" element={<NewsFeed />} />
         </Routes>
       </AnimatePresence>
       <BottomTabBar />
