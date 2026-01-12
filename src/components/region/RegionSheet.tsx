@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, MapPin, Search, Building2, Home, X } from 'lucide-react';
+import { ChevronLeft, Check, MapPin, Search, Building2, Home, X, Map, List } from 'lucide-react';
 import { SIDO_LIST, SIGUNGU_MAP, type Region, type SidoType } from '@/types/region';
+import { KoreaMap } from './KoreaMap';
 
 interface RegionSheetProps {
   isOpen: boolean;
@@ -21,20 +22,23 @@ const SIDO_ICONS: Record<string, string> = {
   '울산광역시': '🏭',
   '세종특별자치시': '🏢',
   '경기도': '🏙️',
-  '강원특별자치도': '🏔️',
+  '강원도': '🏔️',
   '충청북도': '🌾',
   '충청남도': '🌻',
-  '전북특별자치도': '🎋',
+  '전라북도': '🎋',
   '전라남도': '🌿',
   '경상북도': '🏯',
   '경상남도': '🌸',
   '제주특별자치도': '🍊',
 };
 
+type ViewMode = 'map' | 'list';
+
 export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: RegionSheetProps) {
   const [step, setStep] = useState<'sido' | 'sigungu'>('sido');
   const [selectedSido, setSelectedSido] = useState<SidoType | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('map');
 
   useEffect(() => {
     if (isOpen) {
@@ -92,7 +96,7 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
             onClick={onClose}
           />
           <motion.div
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-sheet max-h-[90vh] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl shadow-sheet max-h-[92vh] overflow-hidden"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -129,42 +133,71 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                           {step === 'sido' ? '지역 선택' : selectedSido}
                         </h2>
                         <p className="text-xs text-muted-foreground">
-                          {step === 'sido' ? '시/도를 선택해주세요' : '시/군/구를 선택해주세요'}
+                          {step === 'sido' ? '지도에서 시/도를 선택하세요' : '시/군/구를 선택해주세요'}
                         </p>
                       </div>
                     </div>
                   </div>
-                  <motion.button
-                    onClick={onClose}
-                    className="w-9 h-9 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <X size={18} className="text-muted-foreground" />
-                  </motion.button>
+                  <div className="flex items-center gap-2">
+                    {/* View Toggle - only show in sido step */}
+                    {step === 'sido' && (
+                      <div className="flex bg-secondary/50 rounded-lg p-1">
+                        <button
+                          onClick={() => setViewMode('map')}
+                          className={`p-2 rounded-md transition-all ${
+                            viewMode === 'map' 
+                              ? 'bg-primary text-primary-foreground shadow-sm' 
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <Map size={16} />
+                        </button>
+                        <button
+                          onClick={() => setViewMode('list')}
+                          className={`p-2 rounded-md transition-all ${
+                            viewMode === 'list' 
+                              ? 'bg-primary text-primary-foreground shadow-sm' 
+                              : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          <List size={16} />
+                        </button>
+                      </div>
+                    )}
+                    <motion.button
+                      onClick={onClose}
+                      className="w-9 h-9 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <X size={18} className="text-muted-foreground" />
+                    </motion.button>
+                  </div>
                 </div>
               </div>
 
-              {/* Search Bar */}
-              <div className="px-4 pb-3">
-                <div className="relative">
-                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={step === 'sido' ? '시/도 검색...' : '시/군/구 검색...'}
-                    className="w-full pl-10 pr-4 py-3 bg-secondary/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+              {/* Search Bar - only show in list mode or sigungu step */}
+              {(viewMode === 'list' || step === 'sigungu') && (
+                <div className="px-4 pb-3">
+                  <div className="relative">
+                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={step === 'sido' ? '시/도 검색...' : '시/군/구 검색...'}
+                      className="w-full pl-10 pr-4 py-3 bg-secondary/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Current Selection Badge */}
               {currentRegion && (
@@ -179,63 +212,85 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
               )}
 
               {/* Content */}
-              <div className="overflow-y-auto max-h-[55vh] px-4 pb-4">
+              <div className="overflow-y-auto max-h-[60vh] px-4 pb-4">
                 <AnimatePresence mode="wait">
                   {step === 'sido' ? (
-                    <motion.div
-                      key="sido"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-2"
-                    >
-                      {filteredSidoList.length > 0 ? (
-                        filteredSidoList.map((sido, index) => {
-                          const isSelected = currentRegion?.sido === sido;
-                          const icon = SIDO_ICONS[sido] || '📍';
-                          return (
-                            <motion.button
-                              key={sido}
-                              onClick={() => handleSidoSelect(sido)}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: index * 0.03 }}
-                              className={`w-full p-4 rounded-2xl text-left transition-all relative group ${
-                                isSelected
-                                  ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg'
-                                  : 'bg-secondary/50 hover:bg-secondary hover:shadow-md'
-                              }`}
-                              whileTap={{ scale: 0.98 }}
-                            >
-                              <div className="flex items-center gap-3">
-                                <span className="text-xl">{icon}</span>
-                                <div className="flex-1">
-                                  <span className={`font-medium ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
-                                    {sido}
-                                  </span>
-                                  <p className={`text-xs mt-0.5 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                    {SIGUNGU_MAP[sido]?.length || 0}개 지역
-                                  </p>
-                                </div>
-                                {isSelected ? (
-                                  <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                                    <Check size={14} className="text-primary-foreground" />
+                    viewMode === 'map' ? (
+                      /* Map View */
+                      <motion.div
+                        key="map"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="flex flex-col items-center"
+                      >
+                        <KoreaMap
+                          selectedSido={selectedSido}
+                          currentSido={currentRegion?.sido as SidoType}
+                          onSelect={handleSidoSelect}
+                        />
+                        <p className="text-xs text-muted-foreground mt-2 text-center">
+                          지도를 터치하여 지역을 선택하세요
+                        </p>
+                      </motion.div>
+                    ) : (
+                      /* List View */
+                      <motion.div
+                        key="list"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        className="space-y-2"
+                      >
+                        {filteredSidoList.length > 0 ? (
+                          filteredSidoList.map((sido, index) => {
+                            const isSelected = currentRegion?.sido === sido;
+                            const icon = SIDO_ICONS[sido] || '📍';
+                            return (
+                              <motion.button
+                                key={sido}
+                                onClick={() => handleSidoSelect(sido)}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.03 }}
+                                className={`w-full p-4 rounded-2xl text-left transition-all relative group ${
+                                  isSelected
+                                    ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg'
+                                    : 'bg-secondary/50 hover:bg-secondary hover:shadow-md'
+                                }`}
+                                whileTap={{ scale: 0.98 }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xl">{icon}</span>
+                                  <div className="flex-1">
+                                    <span className={`font-medium ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
+                                      {sido}
+                                    </span>
+                                    <p className={`text-xs mt-0.5 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                      {SIGUNGU_MAP[sido]?.length || 0}개 지역
+                                    </p>
                                   </div>
-                                ) : (
-                                  <ChevronLeft size={18} className="rotate-180 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                                )}
-                              </div>
-                            </motion.button>
-                          );
-                        })
-                      ) : (
-                        <div className="text-center py-12">
-                          <Search size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                          <p className="text-muted-foreground text-sm">검색 결과가 없습니다</p>
-                        </div>
-                      )}
-                    </motion.div>
+                                  {isSelected ? (
+                                    <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                                      <Check size={14} className="text-primary-foreground" />
+                                    </div>
+                                  ) : (
+                                    <ChevronLeft size={18} className="rotate-180 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                                  )}
+                                </div>
+                              </motion.button>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-12">
+                            <Search size={40} className="mx-auto text-muted-foreground/30 mb-3" />
+                            <p className="text-muted-foreground text-sm">검색 결과가 없습니다</p>
+                          </div>
+                        )}
+                      </motion.div>
+                    )
                   ) : (
+                    /* Sigungu Selection */
                     <motion.div
                       key="sigungu"
                       initial={{ opacity: 0, x: 20 }}
