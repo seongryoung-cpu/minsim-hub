@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Check, MapPin } from 'lucide-react';
 import { SIDO_LIST, SIGUNGU_MAP, type Region, type SidoType } from '@/types/region';
@@ -10,7 +10,8 @@ interface RegionSheetProps {
   currentRegion?: Region | null;
 }
 
-export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: RegionSheetProps) {
+export const RegionSheet = forwardRef<HTMLDivElement, RegionSheetProps>(
+  function RegionSheet({ isOpen, onClose, onSelect, currentRegion }, ref) {
   const [step, setStep] = useState<'sido' | 'sigungu'>('sido');
   const [selectedSido, setSelectedSido] = useState<SidoType | null>(null);
 
@@ -158,5 +159,6 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
         </>
       )}
     </AnimatePresence>
-  );
-}
+    );
+  }
+);
