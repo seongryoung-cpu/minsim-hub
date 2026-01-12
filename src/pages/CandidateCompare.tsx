@@ -134,7 +134,7 @@ export function CandidateCompare() {
       if (prev.includes(id)) {
         return prev.filter(i => i !== id);
       }
-      if (prev.length >= 3) {
+      if (prev.length >= 4) {
         return prev;
       }
       return [...prev, id];
@@ -204,7 +204,7 @@ export function CandidateCompare() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-semibold">비교할 후보자 선택</h2>
             <span className="text-sm text-muted-foreground">
-              {selectedIds.length}/3명 선택됨
+              {selectedIds.length}/4명 선택됨
             </span>
           </div>
 
@@ -214,7 +214,7 @@ export function CandidateCompare() {
             <div className="flex flex-wrap gap-2">
               {SEOUL_CANDIDATES.map(candidate => {
                 const isSelected = selectedIds.includes(candidate.id);
-                const isDisabled = !isSelected && selectedIds.length >= 3;
+                const isDisabled = !isSelected && selectedIds.length >= 4;
                 return (
                   <motion.button
                     key={candidate.id}
@@ -261,7 +261,7 @@ export function CandidateCompare() {
             <div className="flex flex-wrap gap-2">
               {GYEONGGI_CANDIDATES.map(candidate => {
                 const isSelected = selectedIds.includes(candidate.id);
-                const isDisabled = !isSelected && selectedIds.length >= 3;
+                const isDisabled = !isSelected && selectedIds.length >= 4;
                 return (
                   <motion.button
                     key={candidate.id}
