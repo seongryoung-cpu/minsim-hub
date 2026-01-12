@@ -103,10 +103,6 @@ export function Home({ region, onRegionChange }: HomeProps) {
           <DashboardSection
             title={`${metropolitanTitle} 예비후보`}
             icon="👥"
-            action={{
-              label: '비교하기',
-              onPress: () => navigate('/compare'),
-            }}
             delay={0.2}
           >
             <div className="space-y-3">
@@ -138,6 +134,19 @@ export function Home({ region, onRegionChange }: HomeProps) {
                   ※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다
                 </motion.p>
               )}
+              
+              {/* Compare Button - More Prominent */}
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => navigate('/compare')}
+                className="w-full py-4 mt-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              >
+                <span className="text-lg">⚖️</span>
+                <span>후보자 공약 비교하기</span>
+              </motion.button>
             </div>
           </DashboardSection>
         </div>
