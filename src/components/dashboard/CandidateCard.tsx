@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ChevronRight, Heart } from 'lucide-react';
+import { User, ChevronRight, Heart, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
 import { useToast } from '@/hooks/use-toast';
-import type { Candidate } from '@/types/election';
+import type { Candidate, CandidatePledge } from '@/types/election';
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -88,7 +88,21 @@ export function CandidateCard({ candidate, index, onPress, showFollowButton = tr
             </span>
           </div>
           <p className="text-[11px] sm:text-xs text-muted-foreground">{candidate.position}</p>
-          <p className="text-xs sm:text-sm text-secondary-foreground mt-0.5 truncate">{candidate.summary}</p>
+          
+          {/* Pledge Tags Preview */}
+          {candidate.pledges && candidate.pledges.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {candidate.pledges.slice(0, 3).map((pledge) => (
+                <span
+                  key={pledge.id}
+                  className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-secondary text-secondary-foreground"
+                >
+                  <FileText size={10} className="flex-shrink-0" />
+                  <span className="truncate max-w-[80px] sm:max-w-[100px]">{pledge.title}</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </button>
 
