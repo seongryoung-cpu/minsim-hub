@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion';
-import { User, Settings, Bell, HelpCircle, ChevronRight, MapPin, FileText } from 'lucide-react';
+import { User, Settings, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
+import { ShareSheet } from '@/components/share/ShareSheet';
+import { Switch } from '@/components/ui/switch';
 import type { Region } from '@/types/region';
 
 interface MyPageProps {
@@ -12,13 +15,28 @@ interface MyPageProps {
 const menuItems = [
   { icon: Bell, label: '알림 설정', description: '푸시 알림 관리', path: null },
   { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문', path: null },
-  { icon: Settings, label: '앱 설정', description: '테마, 언어 설정', path: null },
   { icon: FileText, label: '기획서', description: '앱 기능 명세 확인', path: '/app-info' },
 ];
 
 export function MyPage({ region, onRegionChange }: MyPageProps) {
   const navigate = useNavigate();
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
 
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -109,17 +127,64 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           })}
         </motion.div>
 
+        {/* Dark Mode Toggle */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="bg-card rounded-2xl p-4 shadow-app-md flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
+              {isDarkMode ? (
+                <Moon size={20} className="text-primary" />
+              ) : (
+                <Sun size={20} className="text-amber-500" />
+              )}
+            </div>
+            <div>
+              <p className="font-medium text-foreground">다크 모드</p>
+              <p className="text-xs text-muted-foreground">
+                {isDarkMode ? '어두운 테마 사용 중' : '밝은 테마 사용 중'}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={isDarkMode}
+            onCheckedChange={setIsDarkMode}
+          />
+        </motion.div>
+
+        {/* Share Button */}
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => setIsShareOpen(true)}
+          className="w-full bg-gradient-to-r from-primary to-primary/80 text-primary-foreground rounded-2xl p-4 shadow-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+        >
+          <Share2 size={20} />
+          <span className="font-medium">앱 공유하기</span>
+        </motion.button>
+
         {/* App Info */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.35 }}
           className="text-center py-4"
         >
           <p className="text-xs text-muted-foreground">민심잇다 v1.0.0</p>
           <p className="text-xs text-muted-foreground mt-1">나의 목소리가 정치가 되는 곳</p>
         </motion.div>
       </main>
+
+      <ShareSheet
+        open={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        title="민심잇다"
+        description="나의 목소리가 정치가 되는 곳 - 2026 지방선거 정보 플랫폼"
+      />
     </motion.div>
   );
 }

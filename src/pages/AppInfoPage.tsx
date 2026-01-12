@@ -367,9 +367,9 @@ export function AppInfoPage() {
               <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
               <span className="text-sm text-foreground">Phase 5: 뉴스피드 후보자별 필터링</span>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-orange-500/10 rounded-xl">
-              <span className="text-xs font-medium text-orange-500 px-2 py-0.5 bg-orange-500/20 rounded-full">Phase 6</span>
-              <span className="text-sm text-foreground">SNS 공유 기능 + 다크모드</span>
+            <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+              <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
+              <span className="text-sm text-foreground">Phase 6: SNS 공유 기능 + 다크모드</span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
               <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 7</span>
