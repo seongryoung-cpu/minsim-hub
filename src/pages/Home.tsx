@@ -79,39 +79,11 @@ export function Home({ region, onRegionChange }: HomeProps) {
       />
 
       <main className="p-4 sm:p-5 lg:p-8 space-y-5 sm:space-y-6 lg:space-y-8">
-        {/* Welcome Banner */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="rounded-2xl sm:rounded-3xl p-5 sm:p-6 lg:p-8 text-white relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
-        >
-          <div className="relative z-10 lg:flex lg:items-center lg:justify-between">
-            <div>
-              <p className="text-white/80 text-sm mb-1">환영합니다</p>
-              <h1 className="text-xl lg:text-2xl font-bold mb-2">
-                {region.sigungu} 주민 여러분
-              </h1>
-              <p className="text-sm lg:text-base text-white/90">
-                2026 {metropolitanTitle} 선거 정보를 확인하세요
-              </p>
-            </div>
-            <div className="hidden lg:block">
-              <button className="px-6 py-3 bg-white/20 hover:bg-white/30 rounded-xl font-medium transition-colors">
-                자세히 알아보기 →
-              </button>
-            </div>
-          </div>
-          {/* Decorative circles */}
-          <div className="absolute -right-8 -top-8 w-32 h-32 lg:w-48 lg:h-48 bg-white/10 rounded-full" />
-          <div className="absolute -right-4 top-16 w-20 h-20 lg:w-32 lg:h-32 bg-white/10 rounded-full" />
-        </motion.div>
-
-        {/* Election Timeline */}
+        {/* Election Status with D-Day + Timeline */}
         <DashboardSection
           title={`${metropolitanTitle} 선거 진행 현황`}
           icon="🗳️"
+          badge={`D-${electionStatus.dDay}`}
           delay={0.1}
         >
           <ElectionTimeline

@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react';
 interface DashboardSectionProps {
   title: string;
   icon?: ReactNode;
+  badge?: string;
   action?: {
     label: string;
     onPress: () => void;
@@ -16,6 +17,7 @@ interface DashboardSectionProps {
 export function DashboardSection({
   title,
   icon,
+  badge,
   action,
   children,
   delay = 0,
@@ -30,6 +32,16 @@ export function DashboardSection({
         <div className="flex items-center gap-2">
           {icon && <span className="text-lg">{icon}</span>}
           <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          {badge && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: delay + 0.2, type: 'spring' }}
+              className="px-2.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-bold"
+            >
+              {badge}
+            </motion.span>
+          )}
         </div>
         {action && (
           <motion.button
