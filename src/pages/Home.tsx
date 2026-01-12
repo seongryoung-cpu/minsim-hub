@@ -8,6 +8,7 @@ import { DashboardSection, ExpandableSlot } from '@/components/dashboard/Dashboa
 import { CandidateCard } from '@/components/dashboard/CandidateCard';
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
+import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { getElectionStatus, getMetropolitanTitle } from '@/types/election';
 import type { Region } from '@/types/region';
 
@@ -19,6 +20,7 @@ interface HomeProps {
 export function Home({ region, onRegionChange }: HomeProps) {
   const navigate = useNavigate();
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
 
   // 광역단체 선거 상태 데이터 로드 (sido 기준)
@@ -75,6 +77,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
       <DashboardHeader
         region={region}
         onRegionClick={() => setIsRegionSheetOpen(true)}
+        onNotificationClick={() => setIsNotificationOpen(true)}
       />
 
       <main className="p-4 sm:p-5 lg:p-8 space-y-5 sm:space-y-6 lg:space-y-8">
@@ -179,6 +182,11 @@ export function Home({ region, onRegionChange }: HomeProps) {
         onClose={() => setIsRegionSheetOpen(false)}
         onSelect={onRegionChange}
         currentRegion={region}
+      />
+
+      <NotificationSheet
+        open={isNotificationOpen}
+        onOpenChange={setIsNotificationOpen}
       />
     </motion.div>
   );
