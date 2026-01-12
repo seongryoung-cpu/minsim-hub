@@ -93,13 +93,17 @@ export function CandidateCard({ candidate, index, onPress, showFollowButton = tr
           {candidate.pledges && candidate.pledges.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-1.5">
               {candidate.pledges.slice(0, 3).map((pledge) => (
-                <span
+                <button
                   key={pledge.id}
-                  className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-secondary text-secondary-foreground"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/candidate/${candidate.id}?tab=pledges`);
+                  }}
+                  className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] px-1.5 py-0.5 rounded-md bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary transition-colors"
                 >
                   <FileText size={10} className="flex-shrink-0" />
                   <span className="truncate max-w-[80px] sm:max-w-[100px]">{pledge.title}</span>
-                </span>
+                </button>
               ))}
             </div>
           )}
