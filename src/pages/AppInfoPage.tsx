@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, FileText, Smartphone, MapPin, Vote, MessageSquare, User, Sparkles, ChevronRight, Brain, Heart, BarChart3, Users, Bell, Share2 } from 'lucide-react';
+import { ArrowLeft, FileText, Smartphone, MapPin, Vote, MessageSquare, User, Sparkles, ChevronRight, Brain, Heart, BarChart3, Users, Bell, Share2, Newspaper, GitCompare, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const features = [
@@ -30,6 +30,7 @@ const features = [
       '정책 매칭 배너: "머리 vs 가슴" 게임 진입 배너',
       '이벤트 타임라인: 정치 이슈 카드 (준비/진행/완료 상태)',
       '퀵 액션: 주요 기능 바로가기',
+      '후보자 비교 바로가기: 후보자 현황에서 비교 페이지 진입',
     ],
   },
   {
@@ -52,6 +53,20 @@ const features = [
     ],
   },
   {
+    category: '후보자 비교',
+    icon: GitCompare,
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-500/10',
+    items: [
+      '후보자 선택: 2~3명의 후보자를 선택하여 비교',
+      '서울/경기 후보자 통합 목록: 시장/도지사 후보자 선택 UI',
+      '기본 정보 비교: 이름, 정당, 나이, 학력 나란히 표시',
+      '공약 비교: 카테고리별 공약 접기/펼치기 (Accordion)',
+      '경력 비교: 주요 경력 타임라인 나란히 표시',
+      '정당 색상 시각화: 후보별 정당 컬러로 구분',
+    ],
+  },
+  {
     category: '후보자 상세 페이지',
     icon: Users,
     color: 'text-purple-500',
@@ -63,6 +78,22 @@ const features = [
       '공약 탭: 카테고리별 공약 리스트 (제목, 설명)',
       '경력 탭: 타임라인 형식 이력 (기간, 직함, 기관)',
       '공유 버튼: 정당 색상 스타일링',
+      '팔로우 버튼: 관심 후보자 등록/해제',
+    ],
+  },
+  {
+    category: '뉴스피드',
+    icon: Newspaper,
+    color: 'text-rose-500',
+    bgColor: 'bg-rose-500/10',
+    items: [
+      '뉴스 카드: 후보자별 관련 뉴스 표시 (이미지, 제목, 요약)',
+      '팔로우 기반 개인화: 팔로우한 후보자 뉴스 우선 표시',
+      '후보자별 필터링: 특정 후보자 뉴스만 선택적으로 보기',
+      '↳ 다중 필터 지원: 여러 후보자 동시 필터링',
+      '↳ 필터 초기화: 한 번에 모든 필터 해제',
+      '필터 상태 표시: 현재 적용된 필터 개수 표시',
+      '일반 뉴스: 팔로우 안 한 후보자 뉴스도 별도 섹션으로 표시',
     ],
   },
   {
@@ -74,6 +105,7 @@ const features = [
       '선거 일정 타임라인: 단계별 선거 진행 현황',
       '후보자 목록: 지역구 후보자 상세 정보',
       '정책 매칭 게임 배너: 성향 분석 게임 진입점',
+      '후보자 비교 바로가기: 비교 페이지 진입 버튼',
     ],
   },
   {
@@ -130,6 +162,8 @@ const dataModels = [
   { name: 'PolicyCard', description: '정책 질문 및 후보 성향 매핑' },
   { name: 'MatchResult', description: '정책 매칭 결과 및 카테고리별 점수' },
   { name: 'ElectionStatus', description: '선거 진행 상태 및 마일스톤' },
+  { name: 'NewsItem', description: '뉴스 기사 정보 (제목, 요약, 후보자)' },
+  { name: 'FollowedCandidate', description: '팔로우한 후보자 목록 (localStorage)' },
 ];
 
 export function AppInfoPage() {
@@ -188,7 +222,7 @@ export function AppInfoPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-3 gap-3"
+          className="grid grid-cols-4 gap-2"
         >
           <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
             <p className="text-2xl font-bold text-primary">15</p>
@@ -201,6 +235,10 @@ export function AppInfoPage() {
           <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
             <p className="text-2xl font-bold text-green-500">8</p>
             <p className="text-xs text-muted-foreground">정책 카테고리</p>
+          </div>
+          <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
+            <p className="text-2xl font-bold text-cyan-500">10</p>
+            <p className="text-xs text-muted-foreground">주요 기능</p>
           </div>
         </motion.div>
 
@@ -323,24 +361,28 @@ export function AppInfoPage() {
               <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
               <span className="text-sm text-foreground">Phase 3: 정책 매칭 게임 (4단계 플로우)</span>
             </div>
+            <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+              <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
+              <span className="text-sm text-foreground">Phase 4: 후보자 비교 기능</span>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+              <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
+              <span className="text-sm text-foreground">Phase 5: 뉴스피드 후보자별 필터링</span>
+            </div>
             <div className="flex items-center gap-3 p-3 bg-orange-500/10 rounded-xl">
-              <span className="text-xs font-medium text-orange-500 px-2 py-0.5 bg-orange-500/20 rounded-full">Phase 4</span>
+              <span className="text-xs font-medium text-orange-500 px-2 py-0.5 bg-orange-500/20 rounded-full">Phase 6</span>
               <span className="text-sm text-foreground">SNS 공유 기능 + 다크모드</span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 5</span>
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 7</span>
               <span className="text-sm text-muted-foreground">사용자 인증 및 프로필</span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 6</span>
-              <span className="text-sm text-muted-foreground">후보자 비교 기능</span>
-            </div>
-            <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 7</span>
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 8</span>
               <span className="text-sm text-muted-foreground">실시간 토론 및 투표</span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 8</span>
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">Phase 9</span>
               <span className="text-sm text-muted-foreground">PWA 및 네이티브 앱 전환</span>
             </div>
           </motion.div>
@@ -354,7 +396,7 @@ export function AppInfoPage() {
           className="text-center pt-4"
         >
           <p className="text-xs text-muted-foreground">
-            마지막 업데이트: 2026년 1월 11일
+            마지막 업데이트: 2026년 1월 12일
           </p>
         </motion.div>
       </main>
