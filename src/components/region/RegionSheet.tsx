@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Check, MapPin, Search, Building2, Home, X, Map, List } from 'lucide-react';
+import { ChevronLeft, Check, MapPin, Building2, Home, X, Map, List } from 'lucide-react';
 import { SIDO_LIST, SIGUNGU_MAP, type Region, type SidoType } from '@/types/region';
 import { KoreaMap } from './KoreaMap';
 
@@ -37,21 +37,18 @@ type ViewMode = 'map' | 'list';
 export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: RegionSheetProps) {
   const [step, setStep] = useState<'sido' | 'sigungu'>('sido');
   const [selectedSido, setSelectedSido] = useState<SidoType | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('map');
 
   useEffect(() => {
     if (isOpen) {
       setStep('sido');
       setSelectedSido(null);
-      setSearchQuery('');
     }
   }, [isOpen]);
 
   const handleSidoSelect = (sido: SidoType) => {
     setSelectedSido(sido);
     setStep('sigungu');
-    setSearchQuery('');
   };
 
   const handleSigunguSelect = (sigungu: string) => {
@@ -64,21 +61,9 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
   const handleBack = () => {
     setStep('sido');
     setSelectedSido(null);
-    setSearchQuery('');
   };
 
-  // 필터링된 목록
-  const filteredSidoList = useMemo(() => {
-    if (!searchQuery.trim()) return SIDO_LIST;
-    return SIDO_LIST.filter(sido => 
-      sido.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
-
-  const filteredSigunguList = useMemo(() => {
-    if (!selectedSido) return [];
-    return SIGUNGU_MAP[selectedSido] || [];
-  }, [selectedSido]);
+  const sigunguList = selectedSido ? (SIGUNGU_MAP[selectedSido] || []) : [];
 
   return (
     <AnimatePresence>
@@ -171,30 +156,6 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                 </div>
               </div>
 
-              {/* Search Bar - only show in list mode */}
-              {step === 'sido' && viewMode === 'list' && (
-                <div className="px-4 pb-3">
-                  <div className="relative">
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="시/도 검색..."
-                      className="w-full pl-10 pr-4 py-3 bg-secondary/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
-                    />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {/* Current Selection Badge */}
               {currentRegion && (
                 <div className="px-4 pb-3">
@@ -238,51 +199,44 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                         exit={{ opacity: 0, x: -20 }}
                         className="space-y-2"
                       >
-                        {filteredSidoList.length > 0 ? (
-                          filteredSidoList.map((sido, index) => {
-                            const isSelected = currentRegion?.sido === sido;
-                            const icon = SIDO_ICONS[sido] || '📍';
-                            return (
-                              <motion.button
-                                key={sido}
-                                onClick={() => handleSidoSelect(sido)}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.03 }}
-                                className={`w-full p-4 rounded-2xl text-left transition-all relative group ${
-                                  isSelected
-                                    ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg'
-                                    : 'bg-secondary/50 hover:bg-secondary hover:shadow-md'
-                                }`}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span className="text-xl">{icon}</span>
-                                  <div className="flex-1">
-                                    <span className={`font-medium ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
-                                      {sido}
-                                    </span>
-                                    <p className={`text-xs mt-0.5 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                      {SIGUNGU_MAP[sido]?.length || 0}개 지역
-                                    </p>
-                                  </div>
-                                  {isSelected ? (
-                                    <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                                      <Check size={14} className="text-primary-foreground" />
-                                    </div>
-                                  ) : (
-                                    <ChevronLeft size={18} className="rotate-180 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-                                  )}
+                        {SIDO_LIST.map((sido, index) => {
+                          const isSelected = currentRegion?.sido === sido;
+                          const icon = SIDO_ICONS[sido] || '📍';
+                          return (
+                            <motion.button
+                              key={sido}
+                              onClick={() => handleSidoSelect(sido)}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ delay: index * 0.03 }}
+                              className={`w-full p-4 rounded-2xl text-left transition-all relative group ${
+                                isSelected
+                                  ? 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg'
+                                  : 'bg-secondary/50 hover:bg-secondary hover:shadow-md'
+                              }`}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl">{icon}</span>
+                                <div className="flex-1">
+                                  <span className={`font-medium ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
+                                    {sido}
+                                  </span>
+                                  <p className={`text-xs mt-0.5 ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                                    {SIGUNGU_MAP[sido]?.length || 0}개 지역
+                                  </p>
                                 </div>
-                              </motion.button>
-                            );
-                          })
-                        ) : (
-                          <div className="text-center py-12">
-                            <Search size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                            <p className="text-muted-foreground text-sm">검색 결과가 없습니다</p>
-                          </div>
-                        )}
+                                {isSelected ? (
+                                  <div className="w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                                    <Check size={14} className="text-primary-foreground" />
+                                  </div>
+                                ) : (
+                                  <ChevronLeft size={18} className="rotate-180 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                                )}
+                              </div>
+                            </motion.button>
+                          );
+                        })}
                       </motion.div>
                     )
                   ) : (
@@ -294,11 +248,10 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                       exit={{ opacity: 0, x: 20 }}
                       className="grid grid-cols-3 gap-1.5"
                     >
-                      {filteredSigunguList.length > 0 ? (
-                        filteredSigunguList.map((sigungu, index) => {
-                          const isSelected =
-                            currentRegion?.sido === selectedSido &&
-                            currentRegion?.sigungu === sigungu;
+                      {sigunguList.map((sigungu, index) => {
+                        const isSelected =
+                          currentRegion?.sido === selectedSido &&
+                          currentRegion?.sigungu === sigungu;
                           return (
                             <motion.button
                               key={sigungu}
@@ -327,13 +280,7 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                               )}
                             </motion.button>
                           );
-                        })
-                      ) : (
-                        <div className="col-span-3 text-center py-12">
-                          <Building2 size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                          <p className="text-muted-foreground text-sm">지역 정보가 없습니다</p>
-                        </div>
-                      )}
+                        })}
                     </motion.div>
                   )}
                 </AnimatePresence>
