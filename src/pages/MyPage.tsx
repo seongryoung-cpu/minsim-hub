@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { User, Settings, Bell, HelpCircle, ChevronRight, MapPin, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PQStatsCard } from '@/components/quiz/PQStatsCard';
 import type { Region } from '@/types/region';
 
 interface MyPageProps {
@@ -52,6 +53,9 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
             로그인 / 회원가입
           </button>
         </motion.div>
+
+        {/* PQ Stats Card */}
+        <PQStatsCard />
 
         {/* Region Setting */}
         <motion.button
