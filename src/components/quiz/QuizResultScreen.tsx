@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Trophy, Flame, Target, TrendingUp, RotateCcw, Home } from 'lucide-react';
+import { Trophy, Flame, Target, TrendingUp, RotateCcw, Home, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import type { UserQuizStats, QuizCategory } from '@/types/quiz';
@@ -180,6 +180,16 @@ export function QuizResultScreen({
         transition={{ delay: 1 }}
         className="space-y-3"
       >
+        {/* Leaderboard Button */}
+        <Button
+          onClick={() => navigate('/leaderboard')}
+          variant="outline"
+          className="w-full h-12 rounded-xl text-base font-semibold border-primary/30 hover:bg-primary/5"
+        >
+          <Crown size={18} className="mr-2 text-primary" />
+          랭킹 확인하기
+        </Button>
+
         {onPlayAgain && (
           <Button
             onClick={onPlayAgain}
@@ -190,7 +200,7 @@ export function QuizResultScreen({
           </Button>
         )}
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={() => navigate('/')}
           className="w-full h-12 rounded-xl text-base font-semibold"
         >
