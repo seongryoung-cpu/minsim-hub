@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Vote, Calendar, Users, TrendingUp, MapPin, Scale } from 'lucide-react';
+import { Vote, Calendar, Users, TrendingUp, MapPin, Navigation, ExternalLink } from 'lucide-react';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
@@ -126,11 +126,73 @@ export function Election() {
           </div>
         </DashboardSection>
 
-        {/* Checklist */}
+        {/* Polling Station Finder */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
+          className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Navigation size={20} className="text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">🗳️ 투표소 찾기</h3>
+              <p className="text-xs text-muted-foreground">내 투표소 위치를 확인하세요</p>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <motion.a
+              href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
+              target="_blank"
+              rel="noopener noreferrer"
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <MapPin size={16} className="text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground text-sm">사전투표소 찾기</p>
+                  <p className="text-xs text-muted-foreground">2026.05.29 ~ 05.30</p>
+                </div>
+              </div>
+              <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            </motion.a>
+
+            <motion.a
+              href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
+              target="_blank"
+              rel="noopener noreferrer"
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <Vote size={16} className="text-accent" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground text-sm">선거일 투표소 찾기</p>
+                  <p className="text-xs text-muted-foreground">2026.06.03</p>
+                </div>
+              </div>
+              <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            </motion.a>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            중앙선거관리위원회 공식 사이트로 연결됩니다
+          </p>
+        </motion.div>
+
+        {/* Checklist */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
           className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
         >
           <h3 className="font-semibold text-foreground mb-3">📋 선거 준비 체크리스트</h3>
@@ -140,7 +202,7 @@ export function Election() {
                 key={i}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + i * 0.1 }}
+                transition={{ delay: 0.5 + i * 0.1 }}
                 whileTap={{ scale: 0.98 }}
                 className="flex items-center gap-3 text-sm text-muted-foreground p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
               >
