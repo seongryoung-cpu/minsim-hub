@@ -222,23 +222,19 @@ export function AppInfoPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-4 gap-2"
+          className="grid grid-cols-3 gap-3"
         >
           <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
-            <p className="text-2xl font-bold text-primary">15</p>
-            <p className="text-xs text-muted-foreground">정책 질문</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
-            <p className="text-2xl font-bold text-accent">7</p>
-            <p className="text-xs text-muted-foreground">예비후보</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
-            <p className="text-2xl font-bold text-green-500">8</p>
-            <p className="text-xs text-muted-foreground">정책 카테고리</p>
-          </div>
-          <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
-            <p className="text-2xl font-bold text-cyan-500">10</p>
+            <p className="text-2xl font-bold text-primary">10</p>
             <p className="text-xs text-muted-foreground">주요 기능</p>
+          </div>
+          <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
+            <p className="text-2xl font-bold text-accent">5</p>
+            <p className="text-xs text-muted-foreground">메인 탭</p>
+          </div>
+          <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
+            <p className="text-2xl font-bold text-green-500">7</p>
+            <p className="text-xs text-muted-foreground">데이터 모델</p>
           </div>
         </motion.div>
 
