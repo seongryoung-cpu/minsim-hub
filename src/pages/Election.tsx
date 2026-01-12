@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Vote, Calendar, Users, TrendingUp, MapPin } from 'lucide-react';
+import { Vote, Calendar, Users, TrendingUp, MapPin, Scale } from 'lucide-react';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
@@ -8,6 +9,7 @@ import { useRegion } from '@/hooks/useRegion';
 import { getElectionStatus } from '@/types/election';
 
 export function Election() {
+  const navigate = useNavigate();
   const { region } = useRegion();
 
   const electionStatus = useMemo(() => {
@@ -101,7 +103,7 @@ export function Election() {
           icon="👥"
           action={{
             label: '비교하기',
-            onPress: () => console.log('Compare candidates'),
+            onPress: () => navigate('/compare'),
           }}
           delay={0.2}
         >

@@ -129,8 +129,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
             title={`${metropolitanTitle} 예비후보`}
             icon="👥"
             action={{
-              label: '전체 보기',
-              onPress: handleNavigateToElection,
+              label: '비교하기',
+              onPress: () => navigate('/compare'),
             }}
             delay={0.2}
           >
