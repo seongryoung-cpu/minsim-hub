@@ -7,6 +7,7 @@ import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { DashboardSection, ExpandableSlot } from '@/components/dashboard/DashboardSection';
 import { CandidateCard } from '@/components/dashboard/CandidateCard';
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
+import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { getElectionStatus, getMetropolitanTitle } from '@/types/election';
 import type { Region } from '@/types/region';
 
@@ -118,6 +119,9 @@ export function Home({ region, onRegionChange }: HomeProps) {
             currentPhase={electionStatus.currentPhase}
           />
         </DashboardSection>
+
+        {/* Quiz Banner */}
+        <QuizBanner />
 
         {/* Desktop: Two column layout */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-5 lg:space-y-0">

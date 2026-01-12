@@ -15,6 +15,7 @@ import { CandidateDetail } from '@/pages/CandidateDetail';
 import { PolicyMatchGame } from '@/pages/PolicyMatchGame';
 import { NewsFeed } from '@/pages/NewsFeed';
 import { CandidateCompare } from '@/pages/CandidateCompare';
+import { QuizPage } from '@/pages/QuizPage';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -101,6 +102,7 @@ function Index() {
           <Route path="/policy-match" element={<PolicyMatchGame />} />
           <Route path="/news" element={<NewsFeed />} />
           <Route path="/compare" element={<CandidateCompare />} />
+          <Route path="/quiz" element={<QuizPage />} />
         </Routes>
       </AnimatePresence>
       <BottomTabBar />
