@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Check, X, Scale, FileText, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, User, Check, X, Scale, FileText, Briefcase, ChevronDown, ChevronUp, Calendar, Building2 } from 'lucide-react';
 import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES, PARTY_COLORS } from '@/types/election';
 import type { Candidate, CandidatePledge, CandidateCareer } from '@/types/election';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -497,43 +497,108 @@ export function CandidateCompare() {
                   )}
                 </TabsContent>
 
-                {/* Careers Comparison */}
+                {/* Careers Comparison - Timeline Style */}
                 <TabsContent value="careers" className="space-y-3">
                   <div className="bg-card rounded-2xl p-4 shadow-[var(--shadow-sm)]">
                     <div 
                       className="grid gap-4"
                       style={{ gridTemplateColumns: `repeat(${selectedCandidates.length}, 1fr)` }}
                     >
-                      {selectedCandidates.map(candidate => (
-                        <div key={candidate.id}>
+                      {selectedCandidates.map((candidate, candidateIdx) => (
+                        <div key={candidate.id} className="relative">
+                          {/* Candidate Header */}
                           <div 
-                            className="text-center py-2 rounded-xl mb-3"
+                            className="text-center py-3 rounded-xl mb-4 relative overflow-hidden"
                             style={{ backgroundColor: `${candidate.partyColor}15` }}
                           >
-                            <p className="text-sm font-semibold" style={{ color: candidate.partyColor }}>
-                              {candidate.name}
-                            </p>
-                          </div>
-                          <div className="space-y-3">
-                            {candidate.careers?.map((career, idx) => (
-                              <motion.div
-                                key={career.id}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: idx * 0.1 }}
-                                className="relative pl-4 border-l-2"
-                                style={{ borderColor: candidate.partyColor }}
+                            <div 
+                              className="absolute inset-0 opacity-10"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${candidate.partyColor} 0%, transparent 60%)` 
+                              }}
+                            />
+                            <div className="relative">
+                              <div
+                                className="w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2"
+                                style={{
+                                  background: `linear-gradient(135deg, ${candidate.partyColor}40, ${candidate.partyColor}20)`,
+                                  border: `2px solid ${candidate.partyColor}`,
+                                }}
                               >
-                                <p className="text-[10px] text-muted-foreground">{career.period}</p>
-                                <p className="text-sm font-medium">{career.title}</p>
-                                <p className="text-xs text-muted-foreground">{career.organization}</p>
-                              </motion.div>
-                            ))}
-                            {(!candidate.careers || candidate.careers.length === 0) && (
-                              <p className="text-xs text-muted-foreground text-center py-4">
-                                경력 정보 없음
+                                <User size={18} style={{ color: candidate.partyColor }} />
+                              </div>
+                              <p className="text-sm font-bold" style={{ color: candidate.partyColor }}>
+                                {candidate.name}
                               </p>
-                            )}
+                              <p className="text-[10px] text-muted-foreground">{candidate.party}</p>
+                            </div>
+                          </div>
+
+                          {/* Timeline */}
+                          <div className="relative">
+                            {/* Vertical Timeline Line */}
+                            <div 
+                              className="absolute left-3 top-2 bottom-2 w-0.5 rounded-full"
+                              style={{ backgroundColor: `${candidate.partyColor}30` }}
+                            />
+                            
+                            <div className="space-y-4">
+                              {candidate.careers?.map((career, idx) => (
+                                <motion.div
+                                  key={career.id}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: candidateIdx * 0.1 + idx * 0.15 }}
+                                  className="relative pl-8"
+                                >
+                                  {/* Timeline Dot */}
+                                  <div 
+                                    className="absolute left-1 top-1 w-4 h-4 rounded-full flex items-center justify-center"
+                                    style={{ 
+                                      backgroundColor: candidate.partyColor,
+                                      boxShadow: `0 0 0 3px ${candidate.partyColor}20`
+                                    }}
+                                  >
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                  </div>
+
+                                  {/* Career Card */}
+                                  <div 
+                                    className="bg-secondary/50 rounded-xl p-3 hover:bg-secondary/80 transition-colors"
+                                  >
+                                    {/* Period Badge */}
+                                    <div 
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mb-2"
+                                      style={{ 
+                                        backgroundColor: `${candidate.partyColor}20`,
+                                        color: candidate.partyColor 
+                                      }}
+                                    >
+                                      <Calendar size={10} />
+                                      {career.period}
+                                    </div>
+
+                                    {/* Title */}
+                                    <p className="text-sm font-semibold text-foreground leading-tight mb-1">
+                                      {career.title}
+                                    </p>
+
+                                    {/* Organization */}
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      <Building2 size={12} className="flex-shrink-0" />
+                                      <span>{career.organization}</span>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              ))}
+
+                              {(!candidate.careers || candidate.careers.length === 0) && (
+                                <div className="text-center py-8 text-muted-foreground">
+                                  <Briefcase size={24} className="mx-auto mb-2 opacity-30" />
+                                  <p className="text-xs">경력 정보 없음</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}

@@ -92,6 +92,11 @@ export const SEOUL_MAYOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['더불어민주당'],
     summary: '전 중소벤처기업부 장관, 4선 국회의원 출신',
     position: '서울시장 예비후보',
+    pledges: [
+      { id: 'p1', title: '청년 주거 안정화', description: '청년 전용 공공임대 10만 호 공급', category: '주거' },
+      { id: 'p2', title: '디지털 경제 허브', description: 'AI·블록체인 특구 조성', category: '경제' },
+      { id: 'p3', title: '탄소중립 도시', description: '2030년까지 탄소배출 50% 감축', category: '환경' },
+    ],
   },
   {
     id: 'seoul-2',
@@ -100,6 +105,11 @@ export const SEOUL_MAYOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['국민의힘'],
     summary: '전 국민의힘 당대표, 5선 국회의원',
     position: '서울시장 예비후보',
+    pledges: [
+      { id: 'p1', title: '지하철 현대화', description: '1-4호선 전동차 전면 교체', category: '교통' },
+      { id: 'p2', title: '재건축 규제 완화', description: '안전진단 간소화 및 인허가 단축', category: '주거' },
+      { id: 'p3', title: '소상공인 지원', description: '전통시장 현대화', category: '경제' },
+    ],
   },
   {
     id: 'seoul-3',
@@ -108,6 +118,11 @@ export const SEOUL_MAYOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['조국혁신당'],
     summary: '시대전환 대표, 전 국회의원',
     position: '서울시장 예비후보',
+    pledges: [
+      { id: 'p1', title: '기본소득 시범사업', description: '청년·시니어 월 30만원 지급', category: '복지' },
+      { id: 'p2', title: '디지털 민주주의', description: '시민참여 플랫폼 구축', category: '행정' },
+      { id: 'p3', title: '공유경제 활성화', description: '공유 오피스·주차장 확대', category: '경제' },
+    ],
   },
   {
     id: 'seoul-4',
@@ -116,6 +131,11 @@ export const SEOUL_MAYOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['무소속'],
     summary: '도시건축 전문가, 전 열린우리당 국회의원',
     position: '서울시장 예비후보',
+    pledges: [
+      { id: 'p1', title: '보행친화 도시', description: '차 없는 거리 확대', category: '도시' },
+      { id: 'p2', title: '공공건축 혁신', description: '시민 참여형 설계', category: '건축' },
+      { id: 'p3', title: '젠트리피케이션 방지', description: '상가 임대료 상한제', category: '경제' },
+    ],
   },
 ];
 
@@ -128,6 +148,11 @@ export const GYEONGGI_GOVERNOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['더불어민주당'],
     summary: '현 경기도지사, 전 경제부총리',
     position: '경기도지사 예비후보',
+    pledges: [
+      { id: 'p1', title: 'GTX 조기 완공', description: 'GTX-A/B/C 노선 조기 개통', category: '교통' },
+      { id: 'p2', title: '반도체 클러스터', description: '용인·평택 반도체 벨트 조성', category: '경제' },
+      { id: 'p3', title: '경기북부 균형발전', description: '북부 인프라 투자 확대', category: '균형발전' },
+    ],
   },
   {
     id: 'gyeonggi-2',
@@ -136,6 +161,11 @@ export const GYEONGGI_GOVERNOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['국민의힘'],
     summary: '현 국회의원, 전 대통령실 홍보수석',
     position: '경기도지사 예비후보',
+    pledges: [
+      { id: 'p1', title: '교통혁명', description: '광역버스 노선 확충', category: '교통' },
+      { id: 'p2', title: '청년 일자리 10만', description: '청년창업 지원 확대', category: '경제' },
+      { id: 'p3', title: '안심 돌봄 체계', description: '아이돌봄 시간 연장', category: '복지' },
+    ],
   },
   {
     id: 'gyeonggi-3',
@@ -144,6 +174,11 @@ export const GYEONGGI_GOVERNOR_CANDIDATES: Candidate[] = [
     partyColor: PARTY_COLORS['개혁신당'],
     summary: '변호사, 전 국회의원',
     position: '경기도지사 예비후보',
+    pledges: [
+      { id: 'p1', title: '행정 효율화', description: '불필요한 규제 철폐', category: '행정' },
+      { id: 'p2', title: '주민 직접 참여', description: '주요 정책 주민투표 의무화', category: '민주주의' },
+      { id: 'p3', title: '범죄와의 전쟁', description: '조폭 척결 및 불법 도박 근절', category: '안전' },
+    ],
   },
 ];
 
