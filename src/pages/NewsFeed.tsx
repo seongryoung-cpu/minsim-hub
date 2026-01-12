@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Newspaper, Bell, UserPlus, Sparkles, Filter } from 'lucide-react';
+import { ArrowLeft, Newspaper, Bell, UserPlus, Sparkles, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
@@ -12,19 +12,36 @@ const ALL_CANDIDATES = [...SEOUL_MAYOR_CANDIDATES, ...GYEONGGI_GOVERNOR_CANDIDAT
 
 export function NewsFeed() {
   const navigate = useNavigate();
-  const { followedIds, isFollowing, toggleFollow, isLoaded } = useFollowedCandidates();
+  const { followedIds, isLoaded } = useFollowedCandidates();
   const [activeTab, setActiveTab] = useState<'personalized' | 'all'>('personalized');
-
-  const personalizedNews = useMemo(() => {
-    if (!isLoaded) return [];
-    return getNewsForCandidates(followedIds);
-  }, [followedIds, isLoaded]);
-
-  const allNews = useMemo(() => getAllNews(), []);
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]); // Empty means all followed
 
   const followedCandidates = useMemo(() => {
     return ALL_CANDIDATES.filter(c => followedIds.includes(c.id));
   }, [followedIds]);
+
+  const personalizedNews = useMemo(() => {
+    if (!isLoaded) return [];
+    // If no filter selected, show all followed candidates' news
+    const targetIds = selectedFilters.length > 0 ? selectedFilters : followedIds;
+    return getNewsForCandidates(targetIds);
+  }, [followedIds, isLoaded, selectedFilters]);
+
+  const allNews = useMemo(() => getAllNews(), []);
+
+  const toggleFilter = (candidateId: string) => {
+    setSelectedFilters(prev => {
+      if (prev.includes(candidateId)) {
+        return prev.filter(id => id !== candidateId);
+      } else {
+        return [...prev, candidateId];
+      }
+    });
+  };
+
+  const clearFilters = () => {
+    setSelectedFilters([]);
+  };
 
   return (
     <motion.div
@@ -54,7 +71,7 @@ export function NewsFeed() {
       </header>
 
       <main className="p-4 space-y-4">
-        {/* Followed Candidates Strip */}
+        {/* Followed Candidates Filter Strip */}
         {followedIds.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -64,35 +81,64 @@ export function NewsFeed() {
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Sparkles size={14} className="text-primary" />
-                팔로우 중인 후보자
+                후보자별 필터
               </h2>
-              <button
-                onClick={() => navigate('/election')}
-                className="text-xs text-primary font-medium"
-              >
-                관리
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedFilters.length > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    초기화
+                  </button>
+                )}
+                <button
+                  onClick={() => navigate('/election')}
+                  className="text-xs text-primary font-medium"
+                >
+                  관리
+                </button>
+              </div>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {followedCandidates.map(candidate => (
-                <button
-                  key={candidate.id}
-                  onClick={() => navigate(`/candidate/${candidate.id}`)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-secondary transition-colors flex-shrink-0"
-                >
-                  <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                    style={{
-                      backgroundColor: `${candidate.partyColor}20`,
-                      color: candidate.partyColor,
-                    }}
+              {followedCandidates.map(candidate => {
+                const isSelected = selectedFilters.includes(candidate.id);
+                const isActive = selectedFilters.length === 0 || isSelected;
+                return (
+                  <button
+                    key={candidate.id}
+                    onClick={() => toggleFilter(candidate.id)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all flex-shrink-0 border ${
+                      isSelected
+                        ? 'border-primary bg-primary/10'
+                        : isActive
+                        ? 'border-transparent bg-secondary/50 hover:bg-secondary'
+                        : 'border-transparent bg-secondary/30 opacity-50 hover:opacity-75'
+                    }`}
                   >
-                    {candidate.name[0]}
-                  </div>
-                  <span className="text-sm font-medium">{candidate.name}</span>
-                </button>
-              ))}
+                    <div
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold relative"
+                      style={{
+                        backgroundColor: `${candidate.partyColor}20`,
+                        color: candidate.partyColor,
+                      }}
+                    >
+                      {isSelected ? (
+                        <Check size={14} className="text-primary" />
+                      ) : (
+                        candidate.name[0]
+                      )}
+                    </div>
+                    <span className="text-sm font-medium">{candidate.name}</span>
+                  </button>
+                );
+              })}
             </div>
+            {selectedFilters.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {selectedFilters.length}명의 후보자 뉴스만 표시 중
+              </p>
+            )}
           </motion.div>
         )}
 
