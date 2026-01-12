@@ -4,14 +4,12 @@ import type { Region } from '@/types/region';
 
 interface DashboardHeaderProps {
   region: Region;
-  dDay: number;
   onRegionClick: () => void;
   onNotificationClick?: () => void;
 }
 
 export function DashboardHeader({
   region,
-  dDay,
   onRegionClick,
   onNotificationClick,
 }: DashboardHeaderProps) {
@@ -44,17 +42,8 @@ export function DashboardHeader({
           </div>
         </motion.button>
 
-        {/* D-Day badge & Notification */}
+        {/* Notification */}
         <div className="flex items-center gap-3">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-            className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs font-bold"
-          >
-            D-{dDay}
-          </motion.div>
-
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={onNotificationClick}

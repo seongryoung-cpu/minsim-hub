@@ -74,7 +74,6 @@ export function Home({ region, onRegionChange }: HomeProps) {
     >
       <DashboardHeader
         region={region}
-        dDay={electionStatus.dDay}
         onRegionClick={() => setIsRegionSheetOpen(true)}
       />
 
