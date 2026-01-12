@@ -393,76 +393,106 @@ export function CandidateCompare() {
                   </TabsTrigger>
                 </TabsList>
 
-                {/* Pledges Comparison */}
-                <TabsContent value="pledges" className="space-y-3">
-                  {allCategories.map(category => (
+                {/* Pledges Comparison - Table Style */}
+                <TabsContent value="pledges" className="space-y-4">
+                  {/* Category Pills for Quick Nav */}
+                  {allCategories.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {allCategories.map(category => (
+                        <button
+                          key={category}
+                          onClick={() => {
+                            document.getElementById(`category-${category}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }}
+                          className="px-3 py-1.5 text-xs font-medium rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors"
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Category Comparison Cards */}
+                  {allCategories.map((category, catIndex) => (
                     <motion.div
                       key={category}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="bg-card rounded-2xl shadow-[var(--shadow-sm)] overflow-hidden"
+                      id={`category-${category}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: catIndex * 0.05 }}
+                      className="bg-card rounded-2xl shadow-[var(--shadow-md)] overflow-hidden"
                     >
-                      <button
-                        onClick={() => toggleCategory(category)}
-                        className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors"
-                      >
-                        <span className="font-semibold flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-primary" />
-                          {category}
-                        </span>
-                        {expandedCategories.includes(category) ? (
-                          <ChevronUp size={18} className="text-muted-foreground" />
-                        ) : (
-                          <ChevronDown size={18} className="text-muted-foreground" />
-                        )}
-                      </button>
-                      
-                      <AnimatePresence>
-                        {expandedCategories.includes(category) && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-t border-border"
-                          >
-                            <div 
-                              className="grid gap-3 p-4"
-                              style={{ gridTemplateColumns: `repeat(${selectedCandidates.length}, 1fr)` }}
-                            >
-                              {selectedCandidates.map(candidate => {
-                                const pledge = candidate.pledges?.find(p => p.category === category);
-                                return (
+                      {/* Category Header */}
+                      <div className="bg-gradient-to-r from-primary/10 to-transparent p-4 border-b border-border/50">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full bg-primary" />
+                          <h4 className="font-bold text-base">{category}</h4>
+                        </div>
+                      </div>
+
+                      {/* Comparison Table */}
+                      <div className="overflow-x-auto">
+                        <div 
+                          className="grid min-w-[600px]"
+                          style={{ gridTemplateColumns: `repeat(${selectedCandidates.length}, 1fr)` }}
+                        >
+                          {selectedCandidates.map((candidate, idx) => {
+                            const pledge = candidate.pledges?.find(p => p.category === category);
+                            return (
+                              <div 
+                                key={candidate.id}
+                                className={`p-4 ${idx !== selectedCandidates.length - 1 ? 'border-r border-border/50' : ''}`}
+                              >
+                                {/* Candidate Name Header */}
+                                <div 
+                                  className="flex items-center gap-2 mb-3 pb-2 border-b"
+                                  style={{ borderColor: `${candidate.partyColor}30` }}
+                                >
                                   <div 
-                                    key={candidate.id}
-                                    className="p-3 rounded-xl"
-                                    style={{ backgroundColor: `${candidate.partyColor}08` }}
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                                    style={{ 
+                                      backgroundColor: `${candidate.partyColor}20`,
+                                      color: candidate.partyColor 
+                                    }}
                                   >
-                                    {pledge ? (
-                                      <>
-                                        <p className="font-medium text-sm mb-1">{pledge.title}</p>
-                                        <p className="text-xs text-muted-foreground line-clamp-3">
-                                          {pledge.description}
-                                        </p>
-                                      </>
-                                    ) : (
-                                      <p className="text-xs text-muted-foreground text-center py-4">
-                                        관련 공약 없음
-                                      </p>
-                                    )}
+                                    {candidate.name[0]}
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                                  <span className="font-semibold text-sm">{candidate.name}</span>
+                                </div>
+
+                                {pledge ? (
+                                  <div className="space-y-2">
+                                    <h5 
+                                      className="font-bold text-sm"
+                                      style={{ color: candidate.partyColor }}
+                                    >
+                                      {pledge.title}
+                                    </h5>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                      {pledge.description}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-center py-6 text-muted-foreground">
+                                    <div className="text-center">
+                                      <X size={20} className="mx-auto mb-1 opacity-40" />
+                                      <p className="text-xs">공약 없음</p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
 
                   {allCategories.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                      <p>공약 정보가 없습니다</p>
+                    <div className="text-center py-12 text-muted-foreground bg-card rounded-2xl">
+                      <FileText size={48} className="mx-auto mb-4 opacity-30" />
+                      <p className="font-medium">공약 정보가 없습니다</p>
+                      <p className="text-sm mt-1">후보자의 상세 페이지에서 확인해주세요</p>
                     </div>
                   )}
                 </TabsContent>
