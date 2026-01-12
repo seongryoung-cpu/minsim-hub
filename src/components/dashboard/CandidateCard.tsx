@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ChevronRight, Bell, BellOff } from 'lucide-react';
+import { User, ChevronRight, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
+import { useToast } from '@/hooks/use-toast';
 import type { Candidate } from '@/types/election';
 
 interface CandidateCardProps {
@@ -14,6 +15,7 @@ interface CandidateCardProps {
 export function CandidateCard({ candidate, index, onPress, showFollowButton = true }: CandidateCardProps) {
   const navigate = useNavigate();
   const { isFollowing, toggleFollow } = useFollowedCandidates();
+  const { toast } = useToast();
   const following = isFollowing(candidate.id);
 
   const handleClick = () => {
@@ -26,6 +28,18 @@ export function CandidateCard({ candidate, index, onPress, showFollowButton = tr
   const handleFollowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleFollow(candidate.id);
+    
+    if (!following) {
+      toast({
+        title: `${candidate.name} 후보를 팔로우합니다`,
+        description: "새로운 공약과 뉴스를 받아보세요",
+      });
+    } else {
+      toast({
+        title: `${candidate.name} 후보 팔로우를 취소했습니다`,
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -33,16 +47,16 @@ export function CandidateCard({ candidate, index, onPress, showFollowButton = tr
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 * index, duration: 0.4 }}
-      className="w-full bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[var(--shadow-md)] flex items-center gap-3 sm:gap-4 hover:shadow-[var(--shadow-lg)] transition-all"
+      className="w-full bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[var(--shadow-md)] flex items-center gap-3 sm:gap-4 hover:shadow-[var(--shadow-lg)] transition-all group"
     >
       {/* Clickable Area for Navigation */}
       <button
         onClick={handleClick}
         className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 text-left touch-target active:opacity-80 transition-opacity"
       >
-        {/* Candidate Image Placeholder */}
+        {/* Candidate Image */}
         <div
-          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center flex-shrink-0 relative"
           style={{
             background: `linear-gradient(135deg, ${candidate.partyColor}40, ${candidate.partyColor}20)`,
             border: `2px solid ${candidate.partyColor}`,
@@ -79,39 +93,51 @@ export function CandidateCard({ candidate, index, onPress, showFollowButton = tr
       </button>
 
       {/* Follow Button & Arrow */}
-      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+      <div className="flex items-center gap-1 flex-shrink-0">
         {showFollowButton && (
           <motion.button
-            whileTap={{ scale: 0.9 }}
+            whileTap={{ scale: 0.85 }}
+            whileHover={{ scale: 1.1 }}
             onClick={handleFollowClick}
-            className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full transition-all ${
-              following 
-                ? 'bg-primary/15 text-primary' 
-                : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
-            }`}
+            className="relative w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all"
             aria-label={following ? '팔로우 취소' : '팔로우'}
           >
             <AnimatePresence mode="wait">
               {following ? (
                 <motion.div
                   key="following"
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: 180 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 15 }}
                 >
-                  <Bell size={18} className="fill-current" />
+                  <Heart 
+                    size={22} 
+                    className="text-rose-500 fill-rose-500 drop-shadow-sm" 
+                  />
                 </motion.div>
               ) : (
                 <motion.div
                   key="not-following"
-                  initial={{ scale: 0, rotate: 180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: -180 }}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="text-muted-foreground group-hover:text-rose-400 transition-colors"
                 >
-                  <BellOff size={18} />
+                  <Heart size={22} />
                 </motion.div>
               )}
             </AnimatePresence>
+            
+            {/* Ripple effect on follow */}
+            {following && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0.8 }}
+                animate={{ scale: 2, opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 rounded-full bg-rose-400"
+              />
+            )}
           </motion.button>
         )}
         <button
