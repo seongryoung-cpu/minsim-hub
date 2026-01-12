@@ -77,12 +77,8 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
 
   const filteredSigunguList = useMemo(() => {
     if (!selectedSido) return [];
-    const list = SIGUNGU_MAP[selectedSido] || [];
-    if (!searchQuery.trim()) return list;
-    return list.filter(sigungu => 
-      sigungu.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [selectedSido, searchQuery]);
+    return SIGUNGU_MAP[selectedSido] || [];
+  }, [selectedSido]);
 
   return (
     <AnimatePresence>
@@ -175,8 +171,8 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                 </div>
               </div>
 
-              {/* Search Bar - only show in list mode or sigungu step */}
-              {(viewMode === 'list' || step === 'sigungu') && (
+              {/* Search Bar - only show in list mode */}
+              {step === 'sido' && viewMode === 'list' && (
                 <div className="px-4 pb-3">
                   <div className="relative">
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -184,7 +180,7 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={step === 'sido' ? '시/도 검색...' : '시/군/구 검색...'}
+                      placeholder="시/도 검색..."
                       className="w-full pl-10 pr-4 py-3 bg-secondary/50 rounded-xl text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
                     />
                     {searchQuery && (
