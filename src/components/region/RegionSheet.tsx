@@ -286,13 +286,13 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                       </motion.div>
                     )
                   ) : (
-                    /* Sigungu Selection */
+                    /* Sigungu Selection - 3 columns, compact */
                     <motion.div
                       key="sigungu"
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20 }}
-                      className="grid grid-cols-2 gap-2"
+                      className="grid grid-cols-3 gap-1.5"
                     >
                       {filteredSigunguList.length > 0 ? (
                         filteredSigunguList.map((sigungu, index) => {
@@ -303,40 +303,35 @@ export function RegionSheet({ isOpen, onClose, onSelect, currentRegion }: Region
                             <motion.button
                               key={sigungu}
                               onClick={() => handleSigunguSelect(sigungu)}
-                              initial={{ opacity: 0, scale: 0.9 }}
+                              initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: index * 0.02 }}
-                              className={`relative p-4 rounded-2xl text-left transition-all overflow-hidden ${
+                              transition={{ delay: index * 0.015 }}
+                              className={`relative px-2 py-2.5 rounded-xl text-center transition-all overflow-hidden ${
                                 isSelected
-                                  ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg'
-                                  : 'bg-secondary/50 hover:bg-secondary hover:shadow-md'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-secondary/50 hover:bg-secondary'
                               }`}
-                              whileTap={{ scale: 0.96 }}
+                              whileTap={{ scale: 0.95 }}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <Building2 size={14} className={isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'} />
-                                  <span className={`text-sm font-medium ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
-                                    {sigungu}
-                                  </span>
-                                </div>
-                                {isSelected && (
-                                  <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="w-5 h-5 rounded-full bg-primary-foreground/20 flex items-center justify-center"
-                                  >
-                                    <Check size={12} className="text-primary-foreground" />
-                                  </motion.div>
-                                )}
-                              </div>
+                              <span className={`text-xs font-medium truncate block ${isSelected ? 'text-primary-foreground' : 'text-foreground'}`}>
+                                {sigungu}
+                              </span>
+                              {isSelected && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-primary-foreground/20 flex items-center justify-center"
+                                >
+                                  <Check size={8} className="text-primary-foreground" />
+                                </motion.div>
+                              )}
                             </motion.button>
                           );
                         })
                       ) : (
-                        <div className="col-span-2 text-center py-12">
-                          <Search size={40} className="mx-auto text-muted-foreground/30 mb-3" />
-                          <p className="text-muted-foreground text-sm">검색 결과가 없습니다</p>
+                        <div className="col-span-3 text-center py-12">
+                          <Building2 size={40} className="mx-auto text-muted-foreground/30 mb-3" />
+                          <p className="text-muted-foreground text-sm">지역 정보가 없습니다</p>
                         </div>
                       )}
                     </motion.div>
