@@ -14,23 +14,27 @@ import { AppInfoPage } from '@/pages/AppInfoPage';
 import { CandidateDetail } from '@/pages/CandidateDetail';
 import { PolicyMatchGame } from '@/pages/PolicyMatchGame';
 import { useRegion } from '@/hooks/useRegion';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
 
 type AppPhase = 'splash' | 'onboarding' | 'main';
 
 function Index() {
   const { region, setRegion, isLoaded, hasRegion } = useRegion();
+  const isMobile = useIsMobile();
   const [phase, setPhase] = useState<AppPhase>('splash');
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
   const location = useLocation();
 
+  // Desktop: Skip splash and go directly to main (with region sheet if needed)
   useEffect(() => {
-    if (isLoaded) {
-      if (phase === 'splash') {
-        // Splash will handle its own timing
+    if (isLoaded && !isMobile) {
+      setPhase('main');
+      if (!hasRegion) {
+        setIsRegionSheetOpen(true);
       }
     }
-  }, [isLoaded, phase]);
+  }, [isLoaded, isMobile, hasRegion]);
 
   const handleSplashComplete = useCallback(() => {
     if (hasRegion) {
@@ -50,8 +54,8 @@ function Index() {
     setIsRegionSheetOpen(false);
   }, [setRegion]);
 
-  // Show splash
-  if (phase === 'splash') {
+  // Mobile: Show splash
+  if (phase === 'splash' && isMobile) {
     return (
       <AppContainer>
         <SplashScreen onComplete={handleSplashComplete} />
@@ -59,14 +63,17 @@ function Index() {
     );
   }
 
-  // Show onboarding
-  if (phase === 'onboarding' || !region) {
+  // Mobile: Show onboarding (desktop uses RegionSheet instead)
+  if (phase === 'onboarding' && isMobile && !region) {
     return (
       <AppContainer>
         <OnboardingScreen onComplete={handleOnboardingComplete} />
       </AppContainer>
     );
   }
+
+  // Default region for desktop if not set yet
+  const currentRegion: Region = region || { sido: '서울특별시', sigungu: '전체' };
 
   // Main app
   return (
@@ -76,7 +83,7 @@ function Index() {
           <Route
             path="/"
             element={
-              <Home region={region} onRegionChange={handleRegionChange} />
+              <Home region={currentRegion} onRegionChange={handleRegionChange} />
             }
           />
           <Route path="/election" element={<Election />} />
@@ -84,7 +91,7 @@ function Index() {
           <Route
             path="/my"
             element={
-              <MyPage region={region} onRegionChange={() => setIsRegionSheetOpen(true)} />
+              <MyPage region={currentRegion} onRegionChange={() => setIsRegionSheetOpen(true)} />
             }
           />
           <Route path="/app-info" element={<AppInfoPage />} />
