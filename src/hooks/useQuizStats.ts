@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import type { UserQuizStats, QuizCategory, QuizResult } from '@/types/quiz';
 import { QUIZ_CATEGORIES } from '@/types/quiz';
 
@@ -25,7 +26,9 @@ const getInitialStats = (): UserQuizStats => {
 export function useQuizStats() {
   const [stats, setStats] = useState<UserQuizStats>(getInitialStats);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
+  // Load stats from localStorage initially
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
@@ -39,11 +42,90 @@ export function useQuizStats() {
     setIsLoaded(true);
   }, []);
 
+  // Check for authenticated user and sync with DB
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        // Fetch user's stats from DB
+        const { data: dbStats } = await supabase
+          .from('quiz_stats')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (dbStats) {
+          // Merge with local stats, preferring higher values
+          setStats(prev => ({
+            ...prev,
+            totalPoints: Math.max(prev.totalPoints, dbStats.total_points),
+            totalQuizzes: Math.max(prev.totalQuizzes, dbStats.total_quizzes),
+            correctAnswers: Math.max(prev.correctAnswers, dbStats.correct_answers),
+            currentStreak: Math.max(prev.currentStreak, dbStats.current_streak),
+            longestStreak: Math.max(prev.longestStreak, dbStats.longest_streak),
+            lastPlayedDate: dbStats.last_played_date || prev.lastPlayedDate,
+          }));
+        }
+      }
+    };
+
+    checkUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUserId(session.user.id);
+      } else {
+        setUserId(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Save to localStorage when stats change
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
     }
   }, [stats, isLoaded]);
+
+  // Sync to DB when stats change and user is authenticated
+  const syncToDatabase = useCallback(async (newStats: UserQuizStats) => {
+    if (!userId) return;
+
+    const { data: existing } = await supabase
+      .from('quiz_stats')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('quiz_stats')
+        .update({
+          total_points: newStats.totalPoints,
+          total_quizzes: newStats.totalQuizzes,
+          correct_answers: newStats.correctAnswers,
+          current_streak: newStats.currentStreak,
+          longest_streak: newStats.longestStreak,
+          last_played_date: newStats.lastPlayedDate,
+        })
+        .eq('user_id', userId);
+    } else {
+      await supabase
+        .from('quiz_stats')
+        .insert({
+          user_id: userId,
+          total_points: newStats.totalPoints,
+          total_quizzes: newStats.totalQuizzes,
+          correct_answers: newStats.correctAnswers,
+          current_streak: newStats.currentStreak,
+          longest_streak: newStats.longestStreak,
+          last_played_date: newStats.lastPlayedDate,
+        });
+    }
+  }, [userId]);
 
   const checkStreak = useCallback(() => {
     const today = new Date().toDateString();
@@ -93,10 +175,9 @@ export function useQuizStats() {
       }
 
       const newTotalPoints = prev.totalPoints + earnedPoints;
-      // 간단한 백분위 계산 (실제로는 서버에서 계산해야 함)
       const estimatedPercentile = Math.min(99, Math.floor(50 + (newTotalPoints / 100)));
 
-      return {
+      const newStats: UserQuizStats = {
         ...prev,
         totalPoints: newTotalPoints,
         totalQuizzes: prev.totalQuizzes + 1,
@@ -107,8 +188,13 @@ export function useQuizStats() {
         categoryScores: newCategoryScores,
         percentile: estimatedPercentile,
       };
+
+      // Sync to database
+      syncToDatabase(newStats);
+
+      return newStats;
     });
-  }, [checkStreak]);
+  }, [checkStreak, syncToDatabase]);
 
   const canPlayToday = useCallback(() => {
     const today = new Date().toDateString();
@@ -122,6 +208,7 @@ export function useQuizStats() {
   return {
     stats,
     isLoaded,
+    isAuthenticated: !!userId,
     updateStats,
     canPlayToday,
     checkStreak,
