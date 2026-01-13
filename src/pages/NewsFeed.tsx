@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Newspaper, Bell, UserPlus, Sparkles, Check } from 'lucide-react';
+import { ArrowLeft, Newspaper, Bell, UserPlus, Sparkles, Check, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
-import { getNewsForCandidates, getAllNews } from '@/data/mockNews';
+import { useNews } from '@/hooks/useNews';
 import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES } from '@/types/election';
 import { NewsCard, NewsCardSkeleton } from '@/components/news/NewsCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,20 +14,23 @@ export function NewsFeed() {
   const navigate = useNavigate();
   const { followedIds, isLoaded } = useFollowedCandidates();
   const [activeTab, setActiveTab] = useState<'personalized' | 'all'>('personalized');
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]); // Empty means all followed
+  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+
+  // Fetch all news from DB
+  const { data: allNews, isLoading: isAllNewsLoading } = useNews();
+  
+  // Fetch personalized news based on followed candidates
+  const targetIds = useMemo(() => {
+    return selectedFilters.length > 0 ? selectedFilters : followedIds;
+  }, [selectedFilters, followedIds]);
+  
+  const { data: personalizedNews, isLoading: isPersonalizedLoading } = useNews(
+    targetIds.length > 0 ? targetIds : undefined
+  );
 
   const followedCandidates = useMemo(() => {
     return ALL_CANDIDATES.filter(c => followedIds.includes(c.id));
   }, [followedIds]);
-
-  const personalizedNews = useMemo(() => {
-    if (!isLoaded) return [];
-    // If no filter selected, show all followed candidates' news
-    const targetIds = selectedFilters.length > 0 ? selectedFilters : followedIds;
-    return getNewsForCandidates(targetIds);
-  }, [followedIds, isLoaded, selectedFilters]);
-
-  const allNews = useMemo(() => getAllNews(), []);
 
   const toggleFilter = (candidateId: string) => {
     setSelectedFilters(prev => {
@@ -42,6 +45,12 @@ export function NewsFeed() {
   const clearFilters = () => {
     setSelectedFilters([]);
   };
+
+  const displayedPersonalizedNews = useMemo(() => {
+    if (!personalizedNews) return [];
+    if (targetIds.length === 0) return [];
+    return personalizedNews.filter(news => targetIds.includes(news.candidateId));
+  }, [personalizedNews, targetIds]);
 
   return (
     <motion.div
@@ -158,7 +167,7 @@ export function NewsFeed() {
           <AnimatePresence mode="wait">
             {/* Personalized Feed */}
             <TabsContent value="personalized" className="mt-4">
-              {!isLoaded ? (
+              {!isLoaded || isPersonalizedLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <NewsCardSkeleton key={i} />
@@ -185,7 +194,7 @@ export function NewsFeed() {
                     후보자 둘러보기
                   </button>
                 </motion.div>
-              ) : personalizedNews.length === 0 ? (
+              ) : displayedPersonalizedNews.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -200,7 +209,7 @@ export function NewsFeed() {
                   animate={{ opacity: 1 }}
                   className="space-y-3"
                 >
-                  {personalizedNews.map((article, index) => (
+                  {displayedPersonalizedNews.map((article, index) => (
                     <NewsCard key={article.id} article={article} index={index} />
                   ))}
                 </motion.div>
@@ -209,15 +218,21 @@ export function NewsFeed() {
 
             {/* All News Feed */}
             <TabsContent value="all" className="mt-4">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-3"
-              >
-                {allNews.map((article, index) => (
-                  <NewsCard key={article.id} article={article} index={index} />
-                ))}
-              </motion.div>
+              {isAllNewsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="animate-spin text-muted-foreground" size={24} />
+                </div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="space-y-3"
+                >
+                  {(allNews || []).map((article, index) => (
+                    <NewsCard key={article.id} article={article} index={index} />
+                  ))}
+                </motion.div>
+              )}
             </TabsContent>
           </AnimatePresence>
         </Tabs>
