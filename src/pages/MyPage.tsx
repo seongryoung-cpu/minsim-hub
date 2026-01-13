@@ -7,6 +7,7 @@ import { ShareSheet } from '@/components/share/ShareSheet';
 import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
+import { IdentityVerificationModal } from '@/components/auth/IdentityVerificationModal';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { Region } from '@/types/region';
@@ -26,7 +27,8 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   const navigate = useNavigate();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const { isAuthenticated, isLoading, profile, signOut } = useAuthContext();
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const { isAuthenticated, isLoading, profile, signOut, refreshProfile } = useAuthContext();
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -52,6 +54,11 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
     } else {
       toast.success('로그아웃되었습니다');
     }
+  };
+
+  const handleVerificationSuccess = async () => {
+    toast.success('본인 인증이 완료되었습니다!');
+    await refreshProfile();
   };
 
   return (
@@ -115,7 +122,10 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                         : '본인 인증을 완료하면 투표 참여가 가능해요'}
                     </span>
                   </div>
-                  <button className="w-full mt-2 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium">
+                  <button 
+                    onClick={() => setIsVerificationModalOpen(true)}
+                    className="w-full mt-2 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium"
+                  >
                     본인 인증하기
                   </button>
                 </div>
@@ -267,6 +277,12 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      <IdentityVerificationModal
+        isOpen={isVerificationModalOpen}
+        onClose={() => setIsVerificationModalOpen(false)}
+        onSuccess={handleVerificationSuccess}
       />
     </motion.div>
   );
