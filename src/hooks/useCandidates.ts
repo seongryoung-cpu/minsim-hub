@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Candidate, CandidatePledge } from '@/types/election';
+import type { Candidate } from '@/types/election';
 
 export interface DBCandidate {
   id: string;
@@ -29,7 +29,20 @@ export interface DBCandidatePledge {
   sort_order: number;
 }
 
-function transformToCandidate(db: DBCandidate, pledges: DBCandidatePledge[] = []): Candidate {
+export interface DBCandidateCareer {
+  id: string;
+  candidate_id: string;
+  period: string;
+  title: string;
+  organization: string;
+  sort_order: number;
+}
+
+function transformToCandidate(
+  db: DBCandidate, 
+  pledges: DBCandidatePledge[] = [],
+  careers: DBCandidateCareer[] = []
+): Candidate {
   return {
     id: db.slug,
     name: db.name,
@@ -46,6 +59,12 @@ function transformToCandidate(db: DBCandidate, pledges: DBCandidatePledge[] = []
       title: p.title,
       description: p.description,
       category: p.category,
+    })),
+    careers: careers.map(c => ({
+      id: c.id,
+      period: c.period,
+      title: c.title,
+      organization: c.organization,
     })),
   };
 }
@@ -67,21 +86,39 @@ export function useCandidates(regionName?: string) {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Fetch pledges for all candidates
+      // Fetch pledges and careers for all candidates
       const candidateIds = (data || []).map(c => c.id);
-      const { data: pledges } = await supabase
-        .from('candidate_pledges')
-        .select('*')
-        .in('candidate_id', candidateIds)
-        .order('sort_order', { ascending: true });
+      
+      const [pledgesResult, careersResult] = await Promise.all([
+        supabase
+          .from('candidate_pledges')
+          .select('*')
+          .in('candidate_id', candidateIds)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('candidate_careers')
+          .select('*')
+          .in('candidate_id', candidateIds)
+          .order('sort_order', { ascending: true }),
+      ]);
 
-      const pledgesByCandidate = (pledges || []).reduce((acc, p) => {
+      const pledgesByCandidate = (pledgesResult.data || []).reduce((acc, p) => {
         if (!acc[p.candidate_id]) acc[p.candidate_id] = [];
         acc[p.candidate_id].push(p);
         return acc;
       }, {} as Record<string, DBCandidatePledge[]>);
 
-      return (data || []).map(c => transformToCandidate(c, pledgesByCandidate[c.id] || []));
+      const careersByCandidate = (careersResult.data || []).reduce((acc, c) => {
+        if (!acc[c.candidate_id]) acc[c.candidate_id] = [];
+        acc[c.candidate_id].push(c);
+        return acc;
+      }, {} as Record<string, DBCandidateCareer[]>);
+
+      return (data || []).map(c => transformToCandidate(
+        c, 
+        pledgesByCandidate[c.id] || [],
+        careersByCandidate[c.id] || []
+      ));
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
@@ -101,13 +138,25 @@ export function useCandidateBySlug(slug: string) {
       if (error) throw error;
       if (!data) return null;
 
-      const { data: pledges } = await supabase
-        .from('candidate_pledges')
-        .select('*')
-        .eq('candidate_id', data.id)
-        .order('sort_order', { ascending: true });
+      // Fetch pledges and careers in parallel
+      const [pledgesResult, careersResult] = await Promise.all([
+        supabase
+          .from('candidate_pledges')
+          .select('*')
+          .eq('candidate_id', data.id)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('candidate_careers')
+          .select('*')
+          .eq('candidate_id', data.id)
+          .order('sort_order', { ascending: true }),
+      ]);
 
-      return transformToCandidate(data, pledges || []);
+      return transformToCandidate(
+        data, 
+        pledgesResult.data || [],
+        careersResult.data || []
+      );
     },
     enabled: !!slug,
   });
