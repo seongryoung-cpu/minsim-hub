@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings } from 'lucide-react';
@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PledgeCareerManager } from '@/components/admin/PledgeCareerManager';
+import { CandidateImageUpload } from '@/components/admin/CandidateImageUpload';
 
 type ContentTab = 'candidates' | 'news' | 'quiz';
 
@@ -159,12 +160,20 @@ function CandidatesManager() {
 
       {candidates?.map(candidate => (
         <div key={candidate.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-          <div 
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-            style={{ backgroundColor: candidate.party_color }}
-          >
-            {candidate.name[0]}
-          </div>
+          {candidate.image_url ? (
+            <img 
+              src={candidate.image_url} 
+              alt={candidate.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+              style={{ backgroundColor: candidate.party_color }}
+            >
+              {candidate.name[0]}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">{candidate.name}</p>
             <p className="text-xs text-muted-foreground truncate">{candidate.party} · {candidate.region_name}</p>
@@ -238,9 +247,10 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
     position: '',
     region_name: '서울특별시',
     sort_order: 0,
+    image_url: null as string | null,
   });
 
-  useState(() => {
+  useEffect(() => {
     if (candidate) {
       setForm({
         slug: candidate.slug,
@@ -251,17 +261,37 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
         position: candidate.position,
         region_name: candidate.region_name,
         sort_order: candidate.sort_order,
+        image_url: candidate.image_url,
+      });
+    } else {
+      setForm({
+        slug: '',
+        name: '',
+        party: '',
+        party_color: '#808080',
+        summary: '',
+        position: '',
+        region_name: '서울특별시',
+        sort_order: 0,
+        image_url: null,
       });
     }
-  });
+  }, [candidate, isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{candidate ? '후보자 수정' : '후보자 추가'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          {candidate && (
+            <CandidateImageUpload
+              candidateId={candidate.id}
+              currentImageUrl={form.image_url}
+              onImageUploaded={(url) => setForm(f => ({ ...f, image_url: url || null }))}
+            />
+          )}
           <Input placeholder="슬러그 (예: seoul-1)" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} />
           <Input placeholder="이름" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
           <Input placeholder="정당" value={form.party} onChange={e => setForm(f => ({ ...f, party: e.target.value }))} />
