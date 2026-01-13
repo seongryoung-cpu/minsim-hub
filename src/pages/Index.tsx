@@ -17,6 +17,10 @@ import { NewsFeed } from '@/pages/NewsFeed';
 import { CandidateCompare } from '@/pages/CandidateCompare';
 import { QuizPage } from '@/pages/QuizPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
+import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { AdminUsers } from '@/pages/admin/AdminUsers';
+import { AdminContent } from '@/pages/admin/AdminContent';
+import { AdminReports } from '@/pages/admin/AdminReports';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -29,6 +33,9 @@ function Index() {
   const [phase, setPhase] = useState<AppPhase>('splash');
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
   const location = useLocation();
+
+  // Check if current route is admin
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   // Desktop: Skip splash and go directly to main (with region sheet if needed)
   useEffect(() => {
@@ -105,9 +112,15 @@ function Index() {
           <Route path="/compare" element={<CandidateCompare />} />
           <Route path="/quiz" element={<QuizPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/content" element={<AdminContent />} />
+          <Route path="/admin/reports" element={<AdminReports />} />
         </Routes>
       </AnimatePresence>
-      <BottomTabBar />
+      {!isAdminRoute && <BottomTabBar />}
 
       <RegionSheet
         isOpen={isRegionSheetOpen}
