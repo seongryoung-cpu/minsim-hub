@@ -172,7 +172,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_view: {
+        Row: {
+          avatar_url: string | null
+          correct_answers: number | null
+          current_streak: number | null
+          display_name: string | null
+          id: string | null
+          longest_streak: number | null
+          region_sido: string | null
+          total_points: number | null
+          total_quizzes: number | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
