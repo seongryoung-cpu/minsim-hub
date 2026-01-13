@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface LeaderboardEntry {
   id: string;
-  user_id: string;
   total_points: number;
   current_streak: number;
   total_quizzes: number;
@@ -17,43 +16,24 @@ export function useLeaderboard(type: 'all' | 'weekly' = 'all') {
   return useQuery({
     queryKey: ['leaderboard', type],
     queryFn: async () => {
-      // For weekly, we'd filter by updated_at in the last 7 days
-      // For now, we'll use the same query but could add date filtering
-      const query = supabase
-        .from('quiz_stats')
-        .select(`
-          id,
-          user_id,
-          total_points,
-          current_streak,
-          total_quizzes,
-          correct_answers,
-          profiles!inner(display_name, avatar_url, region_sido)
-        `)
+      // Use the secure leaderboard_view instead of direct table access
+      let query = supabase
+        .from('leaderboard_view')
+        .select('*')
         .order('total_points', { ascending: false })
         .limit(50);
 
       if (type === 'weekly') {
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
-        query.gte('updated_at', weekAgo.toISOString());
+        query = query.gte('updated_at', weekAgo.toISOString());
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      return (data || []).map((entry: any) => ({
-        id: entry.id,
-        user_id: entry.user_id,
-        total_points: entry.total_points,
-        current_streak: entry.current_streak,
-        total_quizzes: entry.total_quizzes,
-        correct_answers: entry.correct_answers,
-        display_name: entry.profiles?.display_name,
-        avatar_url: entry.profiles?.avatar_url,
-        region_sido: entry.profiles?.region_sido,
-      })) as LeaderboardEntry[];
+      return (data || []) as LeaderboardEntry[];
     },
     staleTime: 1000 * 60, // 1 minute
   });
@@ -76,9 +56,9 @@ export function useMyRank() {
       if (myStatsError) throw myStatsError;
       if (!myStats) return null;
 
-      // Count users with more points
+      // Count users with more points using the view (doesn't expose user_id)
       const { count, error: countError } = await supabase
-        .from('quiz_stats')
+        .from('leaderboard_view')
         .select('*', { count: 'exact', head: true })
         .gt('total_points', myStats.total_points);
 
@@ -86,7 +66,7 @@ export function useMyRank() {
 
       // Get total users count
       const { count: totalCount, error: totalError } = await supabase
-        .from('quiz_stats')
+        .from('leaderboard_view')
         .select('*', { count: 'exact', head: true });
 
       if (totalError) throw totalError;
