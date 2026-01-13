@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield } from 'lucide-react';
+import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -9,6 +9,7 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
 import { IdentityVerificationModal } from '@/components/auth/IdentityVerificationModal';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useAdmin } from '@/hooks/useAdmin';
 import { toast } from 'sonner';
 import type { Region } from '@/types/region';
 
@@ -29,6 +30,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const { isAuthenticated, isLoading, profile, signOut, refreshProfile } = useAuthContext();
+  const { isAdmin } = useAdmin();
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -129,6 +131,17 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                     본인 인증하기
                   </button>
                 </div>
+              )}
+              
+              {/* Admin Link */}
+              {isAdmin && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="w-full mt-4 py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-2"
+                >
+                  <Settings size={18} />
+                  관리자 페이지
+                </button>
               )}
               
               <button
