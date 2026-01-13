@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import { useAllCandidatesAdmin, useCreateCandidate, useUpdateCandidate, useDelet
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { PledgeCareerManager } from '@/components/admin/PledgeCareerManager';
 
 type ContentTab = 'candidates' | 'news' | 'quiz';
 
@@ -134,6 +135,7 @@ function CandidatesManager() {
   const deleteCandidate = useDeleteCandidate();
   const [editingCandidate, setEditingCandidate] = useState<DBCandidate | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [managingPledgesFor, setManagingPledgesFor] = useState<DBCandidate | null>(null);
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`"${name}" 후보자를 삭제하시겠습니까?`)) return;
@@ -168,6 +170,14 @@ function CandidatesManager() {
             <p className="text-xs text-muted-foreground truncate">{candidate.party} · {candidate.region_name}</p>
           </div>
           <div className="flex gap-1">
+            <Button 
+              size="icon" 
+              variant="ghost" 
+              onClick={() => setManagingPledgesFor(candidate)}
+              title="공약/경력 관리"
+            >
+              <Settings size={16} className="text-primary" />
+            </Button>
             <Button size="icon" variant="ghost" onClick={() => setEditingCandidate(candidate)}>
               <Edit size={16} />
             </Button>
@@ -198,6 +208,15 @@ function CandidatesManager() {
           }
         }}
       />
+
+      {managingPledgesFor && (
+        <PledgeCareerManager
+          candidateId={managingPledgesFor.id}
+          candidateName={managingPledgesFor.name}
+          isOpen={!!managingPledgesFor}
+          onClose={() => setManagingPledgesFor(null)}
+        />
+      )}
     </div>
   );
 }
