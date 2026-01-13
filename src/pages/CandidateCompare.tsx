@@ -1,133 +1,33 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Check, X, Scale, FileText, Briefcase, ChevronDown, ChevronUp, Calendar, Building2 } from 'lucide-react';
-import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES, PARTY_COLORS } from '@/types/election';
-import type { Candidate, CandidatePledge, CandidateCareer } from '@/types/election';
+import { ArrowLeft, User, Check, X, Scale, FileText, Briefcase, Calendar, Building2, Loader2 } from 'lucide-react';
+import type { Candidate } from '@/types/election';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-// Extended candidate data
-const CANDIDATE_DETAILS: Record<string, Partial<Candidate>> = {
-  'seoul-1': {
-    age: 64,
-    education: '서울대학교 법학과 졸업',
-    slogan: '시민과 함께 만드는 새로운 서울',
-    pledges: [
-      { id: 'p1', title: '청년 주거 안정화', description: '청년 전용 공공임대 10만 호 공급 및 전세사기 근절 대책 강화', category: '주거' },
-      { id: 'p2', title: '디지털 경제 허브', description: 'AI·블록체인 특구 조성 및 글로벌 스타트업 육성', category: '경제' },
-      { id: 'p3', title: '탄소중립 도시', description: '2030년까지 탄소배출 50% 감축, 친환경 교통체계 구축', category: '환경' },
-      { id: 'p4', title: '돌봄 공공성 강화', description: '국공립 어린이집 확대 및 아이돌봄 서비스 24시간 운영', category: '복지' },
-    ],
-    careers: [
-      { id: 'c1', period: '2021-2022', title: '중소벤처기업부 장관', organization: '대한민국 정부' },
-      { id: 'c2', period: '2004-2020', title: '국회의원 (4선)', organization: '더불어민주당' },
-    ],
-  },
-  'seoul-2': {
-    age: 62,
-    education: '서울대학교 법학과 졸업, 미국 조지워싱턴대 법학석사',
-    slogan: '실력으로 증명하는 서울',
-    pledges: [
-      { id: 'p1', title: '지하철 노후시설 현대화', description: '1-4호선 전동차 전면 교체 및 냉난방 시스템 개선', category: '교통' },
-      { id: 'p2', title: '재개발·재건축 규제 완화', description: '안전진단 간소화 및 인허가 기간 단축으로 주거환경 개선', category: '주거' },
-      { id: 'p3', title: '소상공인 지원 강화', description: '전통시장 현대화 및 온라인 판로 지원', category: '경제' },
-      { id: 'p4', title: '치안 강화', description: 'AI CCTV 확대 및 심야 안전귀가 서비스 전 지역 확대', category: '안전' },
-    ],
-    careers: [
-      { id: 'c1', period: '2023-2024', title: '국민의힘 당대표', organization: '국민의힘' },
-      { id: 'c2', period: '2004-2024', title: '국회의원 (5선)', organization: '국민의힘' },
-    ],
-  },
-  'seoul-3': {
-    age: 52,
-    education: '연세대학교 정치외교학과 졸업, 미국 하버드대 행정학석사',
-    slogan: '혁신의 바람, 서울을 바꾸다',
-    pledges: [
-      { id: 'p1', title: '기본소득 시범사업', description: '청년·시니어 대상 기본소득 월 30만원 시범 지급', category: '복지' },
-      { id: 'p2', title: '디지털 민주주의', description: '시민참여 플랫폼 구축 및 온라인 주민투표 활성화', category: '행정' },
-      { id: 'p3', title: '공유경제 활성화', description: '공유 오피스·주차장 확대 및 모빌리티 혁신', category: '경제' },
-    ],
-    careers: [
-      { id: 'c1', period: '2020-2024', title: '시대전환 대표', organization: '시대전환' },
-      { id: 'c2', period: '2020-2024', title: '국회의원', organization: '시대전환' },
-    ],
-  },
-  'seoul-4': {
-    age: 61,
-    education: 'MIT 건축학 석사, 서울대학교 건축학과 졸업',
-    slogan: '사람을 위한 도시, 서울',
-    pledges: [
-      { id: 'p1', title: '보행친화 도시', description: '차 없는 거리 확대 및 녹지공간 30% 증가', category: '도시' },
-      { id: 'p2', title: '공공건축 혁신', description: '시민 참여형 공공건축 설계 및 커뮤니티 공간 확대', category: '건축' },
-      { id: 'p3', title: '젠트리피케이션 방지', description: '상가 임대료 상한제 및 지역상권 보호 정책', category: '경제' },
-    ],
-    careers: [
-      { id: 'c1', period: '2010-현재', title: '도시건축 전문가', organization: '프리랜서' },
-      { id: 'c2', period: '2004-2008', title: '국회의원', organization: '열린우리당' },
-    ],
-  },
-  'gyeonggi-1': {
-    age: 62,
-    education: '서울대학교 경제학과 졸업, 미국 펜실베니아대 경제학 박사',
-    slogan: '경기도민과 함께 성장하는 경기도',
-    pledges: [
-      { id: 'p1', title: 'GTX 조기 완공', description: 'GTX-A/B/C 노선 조기 개통 및 광역교통망 확충', category: '교통' },
-      { id: 'p2', title: '반도체 클러스터 확대', description: '용인·평택 반도체 벨트 조성 및 일자리 50만 개 창출', category: '경제' },
-      { id: 'p3', title: '경기북부 균형발전', description: '경기북부특별자치도 추진 및 북부 인프라 투자 확대', category: '균형발전' },
-    ],
-    careers: [
-      { id: 'c1', period: '2022-현재', title: '경기도지사', organization: '경기도' },
-      { id: 'c2', period: '2017-2018', title: '경제부총리 겸 기획재정부 장관', organization: '대한민국 정부' },
-    ],
-  },
-  'gyeonggi-2': {
-    age: 52,
-    education: '이화여자대학교 정치외교학과 졸업',
-    slogan: '변화의 시작, 새로운 경기도',
-    pledges: [
-      { id: 'p1', title: '경기도 교통혁명', description: '광역버스 노선 확충 및 환승할인 확대', category: '교통' },
-      { id: 'p2', title: '청년 일자리 10만', description: '도내 기업 채용지원금 및 청년창업 지원 확대', category: '경제' },
-      { id: 'p3', title: '안심 돌봄 체계', description: '아이돌봄 시간 연장 및 어르신 돌봄 로봇 보급', category: '복지' },
-    ],
-    careers: [
-      { id: 'c1', period: '2024-현재', title: '국회의원', organization: '국민의힘' },
-      { id: 'c2', period: '2022-2024', title: '대통령실 홍보수석', organization: '대통령실' },
-    ],
-  },
-  'gyeonggi-3': {
-    age: 56,
-    education: '고려대학교 법학과 졸업',
-    slogan: '상식이 통하는 경기도',
-    pledges: [
-      { id: 'p1', title: '행정 효율화', description: '불필요한 규제 철폐 및 인허가 절차 간소화', category: '행정' },
-      { id: 'p2', title: '주민 직접 참여', description: '주요 정책 주민투표 의무화', category: '민주주의' },
-      { id: 'p3', title: '범죄와의 전쟁', description: '조폭 척결 및 불법 도박 근절', category: '안전' },
-    ],
-    careers: [
-      { id: 'c1', period: '2024-현재', title: '개혁신당 공동대표', organization: '개혁신당' },
-      { id: 'c2', period: '2008-2012', title: '국회의원', organization: '한나라당' },
-    ],
-  },
-};
-
-const ALL_CANDIDATES = [...SEOUL_MAYOR_CANDIDATES, ...GYEONGGI_GOVERNOR_CANDIDATES].map(c => ({
-  ...c,
-  ...CANDIDATE_DETAILS[c.id],
-}));
-
-// Group candidates by region
-const SEOUL_CANDIDATES = ALL_CANDIDATES.filter(c => c.id.startsWith('seoul'));
-const GYEONGGI_CANDIDATES = ALL_CANDIDATES.filter(c => c.id.startsWith('gyeonggi'));
+import { useCandidates } from '@/hooks/useCandidates';
 
 export function CandidateCompare() {
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'pledges' | 'careers'>('pledges');
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
+
+  // Fetch all candidates from DB
+  const { data: allCandidates = [], isLoading } = useCandidates();
+
+  // Group candidates by region
+  const candidatesByRegion = useMemo(() => {
+    const grouped: Record<string, Candidate[]> = {};
+    allCandidates.forEach(c => {
+      const region = c.position || '기타';
+      if (!grouped[region]) grouped[region] = [];
+      grouped[region].push(c);
+    });
+    return grouped;
+  }, [allCandidates]);
 
   const selectedCandidates = useMemo(() => {
-    return selectedIds.map(id => ALL_CANDIDATES.find(c => c.id === id)).filter(Boolean) as (typeof ALL_CANDIDATES[0])[];
-  }, [selectedIds]);
+    return selectedIds.map(id => allCandidates.find(c => c.id === id)).filter(Boolean) as Candidate[];
+  }, [selectedIds, allCandidates]);
 
   const toggleCandidate = (id: string) => {
     setSelectedIds(prev => {
@@ -154,13 +54,13 @@ export function CandidateCompare() {
     return Array.from(categories);
   }, [selectedCandidates]);
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category) 
-        : [...prev, category]
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
     );
-  };
+  }
 
   return (
     <motion.div
@@ -208,99 +108,68 @@ export function CandidateCompare() {
             </span>
           </div>
 
-          {/* Seoul Candidates */}
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground mb-2">서울시장 예비후보</p>
-            <div className="flex flex-wrap gap-2">
-              {SEOUL_CANDIDATES.map(candidate => {
-                const isSelected = selectedIds.includes(candidate.id);
-                const isDisabled = !isSelected && selectedIds.length >= 4;
-                return (
-                  <motion.button
-                    key={candidate.id}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => !isDisabled && toggleCandidate(candidate.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-offset-2 ring-offset-background'
-                        : isDisabled
-                        ? 'opacity-40 cursor-not-allowed'
-                        : 'hover:bg-secondary'
-                    }`}
-                    style={{
-                      backgroundColor: isSelected ? `${candidate.partyColor}15` : undefined,
-                      borderColor: isSelected ? candidate.partyColor : undefined,
-                      ['--tw-ring-color' as string]: candidate.partyColor,
-                    }}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+          {/* Candidates grouped by position */}
+          {Object.entries(candidatesByRegion).map(([position, candidates]) => (
+            <div key={position} className="mb-4 last:mb-0">
+              <p className="text-xs text-muted-foreground mb-2">{position}</p>
+              <div className="flex flex-wrap gap-2">
+                {candidates.map(candidate => {
+                  const isSelected = selectedIds.includes(candidate.id);
+                  const isDisabled = !isSelected && selectedIds.length >= 4;
+                  return (
+                    <motion.button
+                      key={candidate.id}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => !isDisabled && toggleCandidate(candidate.id)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
+                        isSelected
+                          ? 'ring-2 ring-offset-2 ring-offset-background'
+                          : isDisabled
+                          ? 'opacity-40 cursor-not-allowed'
+                          : 'hover:bg-secondary'
+                      }`}
                       style={{
-                        backgroundColor: `${candidate.partyColor}20`,
-                        color: candidate.partyColor,
+                        backgroundColor: isSelected ? `${candidate.partyColor}15` : undefined,
+                        borderColor: isSelected ? candidate.partyColor : undefined,
+                        ['--tw-ring-color' as string]: candidate.partyColor,
                       }}
                     >
-                      {candidate.name[0]}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium">{candidate.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{candidate.party}</p>
-                    </div>
-                    {isSelected && (
-                      <Check size={16} className="text-primary ml-1" />
-                    )}
-                  </motion.button>
-                );
-              })}
+                      {candidate.image ? (
+                        <img 
+                          src={candidate.image} 
+                          alt={candidate.name}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+                          style={{
+                            backgroundColor: `${candidate.partyColor}20`,
+                            color: candidate.partyColor,
+                          }}
+                        >
+                          {candidate.name[0]}
+                        </div>
+                      )}
+                      <div className="text-left">
+                        <p className="text-sm font-medium">{candidate.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{candidate.party}</p>
+                      </div>
+                      {isSelected && (
+                        <Check size={16} className="text-primary ml-1" />
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          ))}
 
-          {/* Gyeonggi Candidates */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">경기도지사 예비후보</p>
-            <div className="flex flex-wrap gap-2">
-              {GYEONGGI_CANDIDATES.map(candidate => {
-                const isSelected = selectedIds.includes(candidate.id);
-                const isDisabled = !isSelected && selectedIds.length >= 4;
-                return (
-                  <motion.button
-                    key={candidate.id}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => !isDisabled && toggleCandidate(candidate.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
-                      isSelected
-                        ? 'ring-2 ring-offset-2 ring-offset-background'
-                        : isDisabled
-                        ? 'opacity-40 cursor-not-allowed'
-                        : 'hover:bg-secondary'
-                    }`}
-                    style={{
-                      backgroundColor: isSelected ? `${candidate.partyColor}15` : undefined,
-                      borderColor: isSelected ? candidate.partyColor : undefined,
-                      ['--tw-ring-color' as string]: candidate.partyColor,
-                    }}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-                      style={{
-                        backgroundColor: `${candidate.partyColor}20`,
-                        color: candidate.partyColor,
-                      }}
-                    >
-                      {candidate.name[0]}
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm font-medium">{candidate.name}</p>
-                      <p className="text-[10px] text-muted-foreground">{candidate.party}</p>
-                    </div>
-                    {isSelected && (
-                      <Check size={16} className="text-primary ml-1" />
-                    )}
-                  </motion.button>
-                );
-              })}
+          {allCandidates.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>등록된 후보자가 없습니다</p>
             </div>
-          </div>
+          )}
         </motion.div>
 
         {/* Comparison Section */}
@@ -324,15 +193,24 @@ export function CandidateCompare() {
                       transition={{ delay: index * 0.1 }}
                       className="text-center"
                     >
-                      <div
-                        className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-2"
-                        style={{
-                          background: `linear-gradient(135deg, ${candidate.partyColor}40, ${candidate.partyColor}20)`,
-                          border: `2px solid ${candidate.partyColor}`,
-                        }}
-                      >
-                        <User size={24} style={{ color: candidate.partyColor }} />
-                      </div>
+                      {candidate.image ? (
+                        <img
+                          src={candidate.image}
+                          alt={candidate.name}
+                          className="w-14 h-14 mx-auto rounded-full object-cover mb-2"
+                          style={{ border: `2px solid ${candidate.partyColor}` }}
+                        />
+                      ) : (
+                        <div
+                          className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-2"
+                          style={{
+                            background: `linear-gradient(135deg, ${candidate.partyColor}40, ${candidate.partyColor}20)`,
+                            border: `2px solid ${candidate.partyColor}`,
+                          }}
+                        >
+                          <User size={24} style={{ color: candidate.partyColor }} />
+                        </div>
+                      )}
                       <p className="font-semibold text-sm">{candidate.name}</p>
                       <p
                         className="text-[10px] px-2 py-0.5 rounded-full inline-block mt-1"
@@ -518,15 +396,24 @@ export function CandidateCompare() {
                               }}
                             />
                             <div className="relative">
-                              <div
-                                className="w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2"
-                                style={{
-                                  background: `linear-gradient(135deg, ${candidate.partyColor}40, ${candidate.partyColor}20)`,
-                                  border: `2px solid ${candidate.partyColor}`,
-                                }}
-                              >
-                                <User size={18} style={{ color: candidate.partyColor }} />
-                              </div>
+                              {candidate.image ? (
+                                <img
+                                  src={candidate.image}
+                                  alt={candidate.name}
+                                  className="w-10 h-10 mx-auto rounded-full object-cover mb-2"
+                                  style={{ border: `2px solid ${candidate.partyColor}` }}
+                                />
+                              ) : (
+                                <div
+                                  className="w-10 h-10 mx-auto rounded-full flex items-center justify-center mb-2"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${candidate.partyColor}40, ${candidate.partyColor}20)`,
+                                    border: `2px solid ${candidate.partyColor}`,
+                                  }}
+                                >
+                                  <User size={18} style={{ color: candidate.partyColor }} />
+                                </div>
+                              )}
                               <p className="text-sm font-bold" style={{ color: candidate.partyColor }}>
                                 {candidate.name}
                               </p>
