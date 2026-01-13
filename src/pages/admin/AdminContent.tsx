@@ -1,18 +1,29 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useAllCandidatesAdmin, useCreateCandidate, useUpdateCandidate, useDeleteCandidate, type DBCandidate } from '@/hooks/useCandidates';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+type ContentTab = 'candidates' | 'news' | 'quiz';
 
 export function AdminContent() {
   const navigate = useNavigate();
-  const { isAdmin, isLoading } = useAdmin();
+  const { isAdmin, isLoading: isAdminLoading } = useAdmin();
+  const [activeTab, setActiveTab] = useState<ContentTab>('candidates');
+  const [expandedSection, setExpandedSection] = useState<ContentTab | null>('candidates');
 
-  if (isLoading) {
+  if (isAdminLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <Loader2 className="animate-spin text-primary" size={32} />
       </div>
     );
   }
@@ -21,30 +32,6 @@ export function AdminContent() {
     navigate('/');
     return null;
   }
-
-  const contentTypes = [
-    { 
-      icon: Users, 
-      label: '후보자 관리', 
-      description: '후보자 정보 등록 및 수정',
-      count: '데모 데이터',
-      color: 'bg-blue-500'
-    },
-    { 
-      icon: Newspaper, 
-      label: '뉴스 관리', 
-      description: '뉴스 기사 등록 및 수정',
-      count: '데모 데이터',
-      color: 'bg-green-500'
-    },
-    { 
-      icon: HelpCircle, 
-      label: '퀴즈 관리', 
-      description: '퀴즈 문제 등록 및 수정',
-      count: '데모 데이터',
-      color: 'bg-purple-500'
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -59,58 +46,327 @@ export function AdminContent() {
       </header>
 
       <main className="p-4 space-y-4 pb-20">
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-          <p className="text-sm text-amber-600 dark:text-amber-400">
-            ⚠️ 현재 앱은 데모 데이터를 사용 중입니다. 실제 운영 시 이 페이지에서 콘텐츠를 관리할 수 있습니다.
-          </p>
-        </div>
+        {/* Candidates Section */}
+        <ContentSection
+          icon={Users}
+          label="후보자 관리"
+          color="bg-blue-500"
+          isExpanded={expandedSection === 'candidates'}
+          onToggle={() => setExpandedSection(expandedSection === 'candidates' ? null : 'candidates')}
+        >
+          <CandidatesManager />
+        </ContentSection>
 
-        <div className="space-y-3">
-          {contentTypes.map((type, index) => {
-            const Icon = type.icon;
-            return (
-              <motion.div
-                key={type.label}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-card rounded-xl p-4 shadow-app-md"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 rounded-xl ${type.color} flex items-center justify-center`}>
-                      <Icon size={24} className="text-white" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{type.label}</p>
-                      <p className="text-xs text-muted-foreground">{type.description}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs px-2 py-1 bg-secondary rounded-full text-muted-foreground">
-                    {type.count}
-                  </span>
-                </div>
+        {/* News Section */}
+        <ContentSection
+          icon={Newspaper}
+          label="뉴스 관리"
+          color="bg-green-500"
+          isExpanded={expandedSection === 'news'}
+          onToggle={() => setExpandedSection(expandedSection === 'news' ? null : 'news')}
+        >
+          <NewsManager />
+        </ContentSection>
 
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" variant="outline" className="flex-1" disabled>
-                    목록 보기
-                  </Button>
-                  <Button size="sm" className="gap-1" disabled>
-                    <Plus size={16} />
-                    추가
-                  </Button>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-
-        <div className="text-center py-8">
-          <p className="text-sm text-muted-foreground">
-            실제 서비스 시 DB 연동 후 콘텐츠 관리가 가능합니다
-          </p>
-        </div>
+        {/* Quiz Section */}
+        <ContentSection
+          icon={HelpCircle}
+          label="퀴즈 관리"
+          color="bg-purple-500"
+          isExpanded={expandedSection === 'quiz'}
+          onToggle={() => setExpandedSection(expandedSection === 'quiz' ? null : 'quiz')}
+        >
+          <QuizManager />
+        </ContentSection>
       </main>
+    </div>
+  );
+}
+
+interface ContentSectionProps {
+  icon: React.ElementType;
+  label: string;
+  color: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}
+
+function ContentSection({ icon: Icon, label, color, isExpanded, onToggle, children }: ContentSectionProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card rounded-xl shadow-app-md overflow-hidden"
+    >
+      <button
+        onClick={onToggle}
+        className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
+            <Icon size={20} className="text-white" />
+          </div>
+          <span className="font-medium">{label}</span>
+        </div>
+        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </button>
+      
+      {isExpanded && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          className="border-t border-border"
+        >
+          {children}
+        </motion.div>
+      )}
+    </motion.div>
+  );
+}
+
+// Candidates Manager
+function CandidatesManager() {
+  const { data: candidates, isLoading } = useAllCandidatesAdmin();
+  const createCandidate = useCreateCandidate();
+  const updateCandidate = useUpdateCandidate();
+  const deleteCandidate = useDeleteCandidate();
+  const [editingCandidate, setEditingCandidate] = useState<DBCandidate | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`"${name}" 후보자를 삭제하시겠습니까?`)) return;
+    try {
+      await deleteCandidate.mutateAsync(id);
+      toast.success('후보자가 삭제되었습니다');
+    } catch (error) {
+      toast.error('삭제 실패');
+    }
+  };
+
+  if (isLoading) {
+    return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
+  }
+
+  return (
+    <div className="p-4 space-y-3">
+      <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-1 w-full">
+        <Plus size={16} /> 후보자 추가
+      </Button>
+
+      {candidates?.map(candidate => (
+        <div key={candidate.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+          <div 
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+            style={{ backgroundColor: candidate.party_color }}
+          >
+            {candidate.name[0]}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{candidate.name}</p>
+            <p className="text-xs text-muted-foreground truncate">{candidate.party} · {candidate.region_name}</p>
+          </div>
+          <div className="flex gap-1">
+            <Button size="icon" variant="ghost" onClick={() => setEditingCandidate(candidate)}>
+              <Edit size={16} />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={() => handleDelete(candidate.id, candidate.name)}>
+              <Trash2 size={16} className="text-destructive" />
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      <CandidateDialog
+        candidate={editingCandidate}
+        isOpen={!!editingCandidate || isCreateOpen}
+        onClose={() => { setEditingCandidate(null); setIsCreateOpen(false); }}
+        onSave={async (data) => {
+          try {
+            if (editingCandidate) {
+              await updateCandidate.mutateAsync({ id: editingCandidate.id, ...data });
+              toast.success('수정되었습니다');
+            } else {
+              await createCandidate.mutateAsync(data as any);
+              toast.success('추가되었습니다');
+            }
+            setEditingCandidate(null);
+            setIsCreateOpen(false);
+          } catch (error) {
+            toast.error('저장 실패');
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+interface CandidateDialogProps {
+  candidate: DBCandidate | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (data: Partial<DBCandidate>) => void;
+}
+
+function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialogProps) {
+  const [form, setForm] = useState({
+    slug: '',
+    name: '',
+    party: '',
+    party_color: '#808080',
+    summary: '',
+    position: '',
+    region_name: '서울특별시',
+    sort_order: 0,
+  });
+
+  useState(() => {
+    if (candidate) {
+      setForm({
+        slug: candidate.slug,
+        name: candidate.name,
+        party: candidate.party,
+        party_color: candidate.party_color,
+        summary: candidate.summary,
+        position: candidate.position,
+        region_name: candidate.region_name,
+        sort_order: candidate.sort_order,
+      });
+    }
+  });
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{candidate ? '후보자 수정' : '후보자 추가'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <Input placeholder="슬러그 (예: seoul-1)" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} />
+          <Input placeholder="이름" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+          <Input placeholder="정당" value={form.party} onChange={e => setForm(f => ({ ...f, party: e.target.value }))} />
+          <div className="flex gap-2">
+            <Input type="color" value={form.party_color} onChange={e => setForm(f => ({ ...f, party_color: e.target.value }))} className="w-16" />
+            <Input placeholder="정당 색상" value={form.party_color} onChange={e => setForm(f => ({ ...f, party_color: e.target.value }))} />
+          </div>
+          <Input placeholder="직위 (예: 서울시장 예비후보)" value={form.position} onChange={e => setForm(f => ({ ...f, position: e.target.value }))} />
+          <Input placeholder="지역 (예: 서울특별시)" value={form.region_name} onChange={e => setForm(f => ({ ...f, region_name: e.target.value }))} />
+          <Textarea placeholder="요약" value={form.summary} onChange={e => setForm(f => ({ ...f, summary: e.target.value }))} />
+          <Input type="number" placeholder="정렬 순서" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>취소</Button>
+          <Button onClick={() => onSave(form)}>저장</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// News Manager
+function NewsManager() {
+  const queryClient = useQueryClient();
+  const { data: news, isLoading } = useQuery({
+    queryKey: ['news-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('news_articles').select('*').order('published_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const deleteNews = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('news_articles').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['news-admin'] }),
+  });
+
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`"${title}" 뉴스를 삭제하시겠습니까?`)) return;
+    try {
+      await deleteNews.mutateAsync(id);
+      toast.success('삭제되었습니다');
+    } catch { toast.error('삭제 실패'); }
+  };
+
+  if (isLoading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
+
+  return (
+    <div className="p-4 space-y-3">
+      <p className="text-xs text-muted-foreground">{news?.length || 0}개의 뉴스</p>
+      {news?.slice(0, 10).map(article => (
+        <div key={article.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{article.title}</p>
+            <p className="text-xs text-muted-foreground">{article.source} · {new Date(article.published_at).toLocaleDateString('ko-KR')}</p>
+          </div>
+          <Button size="icon" variant="ghost" onClick={() => handleDelete(article.id, article.title)}>
+            <Trash2 size={16} className="text-destructive" />
+          </Button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Quiz Manager
+function QuizManager() {
+  const queryClient = useQueryClient();
+  const { data: questions, isLoading } = useQuery({
+    queryKey: ['quiz-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('quiz_questions').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const deleteQuestion = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('quiz_questions').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quiz-admin'] }),
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
+      const { error } = await supabase.from('quiz_questions').update({ is_active }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['quiz-admin'] }),
+  });
+
+  if (isLoading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
+
+  return (
+    <div className="p-4 space-y-3">
+      <p className="text-xs text-muted-foreground">{questions?.length || 0}개의 퀴즈</p>
+      {questions?.map(q => (
+        <div key={q.id} className="p-3 bg-muted/50 rounded-lg">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm">{q.question}</p>
+              <p className="text-xs text-muted-foreground">{q.category} · {q.difficulty} · {q.points}점</p>
+            </div>
+            <div className="flex gap-1">
+              <Button 
+                size="sm" 
+                variant={q.is_active ? "default" : "outline"}
+                onClick={() => toggleActive.mutate({ id: q.id, is_active: !q.is_active })}
+              >
+                {q.is_active ? '활성' : '비활성'}
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => deleteQuestion.mutate(q.id)}>
+                <Trash2 size={16} className="text-destructive" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

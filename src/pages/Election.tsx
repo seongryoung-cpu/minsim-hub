@@ -1,21 +1,44 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Vote, Calendar, Users, TrendingUp, MapPin, Navigation, ExternalLink } from 'lucide-react';
+import { Vote, Calendar, Users, TrendingUp, MapPin, Navigation, ExternalLink, Loader2 } from 'lucide-react';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
 import { useRegion } from '@/hooks/useRegion';
-import { getElectionStatus } from '@/types/election';
+import { useCandidates } from '@/hooks/useCandidates';
+import { 
+  calculateDDay, 
+  PRELIMINARY_PHASE_MILESTONES,
+  getMetropolitanTitle 
+} from '@/types/election';
 
 export function Election() {
   const navigate = useNavigate();
   const { region } = useRegion();
+  
+  // Fetch candidates from DB
+  const { data: candidates, isLoading: isCandidatesLoading } = useCandidates(region?.sido);
 
   const electionStatus = useMemo(() => {
     if (!region) return null;
-    return getElectionStatus(region.sido, region.sigungu);
-  }, [region]);
+    
+    const dDay = calculateDDay();
+    const regionName = region.sido;
+    
+    return {
+      regionId: `${regionName}-metro`,
+      regionName,
+      electionType: '지방선거' as const,
+      electionLevel: 'metropolitan' as const,
+      currentPhase: 'preliminary' as const,
+      electionDate: '2026-06-03',
+      dDay,
+      milestones: PRELIMINARY_PHASE_MILESTONES,
+      candidates: candidates || [],
+      title: getMetropolitanTitle(regionName),
+    };
+  }, [region, candidates]);
 
   const pageVariants = {
     initial: { opacity: 0, x: 50 },
@@ -76,7 +99,9 @@ export function Election() {
             >
               <Users size={20} className="text-primary mx-auto mb-1" />
               <p className="text-xs text-muted-foreground">등록 후보</p>
-              <p className="font-semibold text-foreground">{electionStatus.candidates.length}명</p>
+              <p className="font-semibold text-foreground">
+                {isCandidatesLoading ? '-' : `${electionStatus.candidates.length}명`}
+              </p>
             </motion.div>
             <motion.div
               whileTap={{ scale: 0.97 }}
@@ -108,20 +133,25 @@ export function Election() {
           delay={0.2}
         >
           <div className="space-y-3">
-            {electionStatus.candidates.length > 0 ? (
+            {isCandidatesLoading ? (
+              <>
+                <CandidateCardSkeleton />
+                <CandidateCardSkeleton />
+              </>
+            ) : electionStatus.candidates.length > 0 ? (
               electionStatus.candidates.map((candidate, index) => (
                 <CandidateCard
                   key={candidate.id}
                   candidate={candidate}
                   index={index}
-                  onPress={() => console.log('Candidate detail:', candidate.id)}
+                  onPress={() => navigate(`/candidate/${candidate.id}`)}
                 />
               ))
             ) : (
-              <>
-                <CandidateCardSkeleton />
-                <CandidateCardSkeleton />
-              </>
+              <div className="text-center py-8 text-muted-foreground">
+                <Users size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="text-sm">등록된 후보자가 없습니다</p>
+              </div>
             )}
           </div>
         </DashboardSection>
