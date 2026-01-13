@@ -1,32 +1,27 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { QuizCard } from '@/components/quiz/QuizCard';
 import { QuizIntroScreen } from '@/components/quiz/QuizIntroScreen';
 import { QuizResultScreen } from '@/components/quiz/QuizResultScreen';
 import { useQuizStats } from '@/hooks/useQuizStats';
-import { DAILY_QUIZ_QUESTIONS } from '@/types/quiz';
-import type { QuizResult, QuizCategory } from '@/types/quiz';
+import { useDailyQuiz } from '@/hooks/useQuizQuestions';
+import type { QuizResult } from '@/types/quiz';
 
 type QuizPhase = 'intro' | 'playing' | 'result';
 
 export function QuizPage() {
   const navigate = useNavigate();
   const { stats, isLoaded, updateStats, canPlayToday } = useQuizStats();
+  const { data: todayQuestions, isLoading: isQuestionsLoading } = useDailyQuiz();
   const [phase, setPhase] = useState<QuizPhase>('intro');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [results, setResults] = useState<QuizResult[]>([]);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
 
-  // 오늘의 퀴즈 5문제 선택 (랜덤 또는 날짜 기반)
-  const todayQuestions = useMemo(() => {
-    const shuffled = [...DAILY_QUIZ_QUESTIONS].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 5);
-  }, []);
-
-  const currentQuestion = todayQuestions[currentQuestionIndex];
-  const categories = useMemo(() => todayQuestions.map(q => q.category), [todayQuestions]);
+  const currentQuestion = todayQuestions?.[currentQuestionIndex];
+  const categories = useMemo(() => (todayQuestions || []).map(q => q.category), [todayQuestions]);
 
   const handleStart = useCallback(() => {
     const canPlay = canPlayToday();
@@ -37,6 +32,8 @@ export function QuizPage() {
   }, [canPlayToday]);
 
   const handleAnswer = useCallback((selectedIndex: number, isCorrect: boolean) => {
+    if (!currentQuestion || !todayQuestions) return;
+    
     const newResult: QuizResult = {
       questionId: currentQuestion.id,
       selectedAnswer: selectedIndex,
@@ -56,13 +53,14 @@ export function QuizPage() {
       }
       setPhase('result');
     }
-  }, [currentQuestion, currentQuestionIndex, todayQuestions.length, results, isPracticeMode, updateStats, categories]);
+  }, [currentQuestion, currentQuestionIndex, todayQuestions, results, isPracticeMode, updateStats, categories]);
 
   const handlePlayAgain = useCallback(() => {
     setPhase('intro');
   }, []);
 
   const earnedPoints = useMemo(() => {
+    if (!todayQuestions) return 0;
     return results.reduce((sum, r, i) => {
       return sum + (r.isCorrect ? todayQuestions[i]?.points || 0 : 0);
     }, 0);
@@ -70,10 +68,26 @@ export function QuizPage() {
 
   const correctCount = results.filter(r => r.isCorrect).length;
 
-  if (!isLoaded) {
+  if (!isLoaded || isQuestionsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">로딩 중...</div>
+        <Loader2 className="animate-spin text-muted-foreground" size={32} />
+      </div>
+    );
+  }
+
+  if (!todayQuestions || todayQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <p className="text-muted-foreground text-center mb-4">
+          오늘의 퀴즈가 준비되지 않았습니다.
+        </p>
+        <button
+          onClick={() => navigate(-1)}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+        >
+          돌아가기
+        </button>
       </div>
     );
   }
