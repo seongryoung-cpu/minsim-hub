@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      news_articles: {
+        Row: {
+          article_url: string | null
+          candidate_id: string | null
+          category: string
+          created_at: string
+          id: string
+          image_url: string | null
+          published_at: string
+          source: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          article_url?: string | null
+          candidate_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published_at?: string
+          source: string
+          summary: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          article_url?: string | null
+          candidate_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          published_at?: string
+          source?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -62,6 +104,48 @@ export type Database = {
           updated_at?: string
           user_id?: string
           verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Relationships: []
+      }
+      quiz_questions: {
+        Row: {
+          category: string
+          correct_answer: number
+          created_at: string
+          difficulty: string
+          explanation: string
+          id: string
+          is_active: boolean
+          options: Json
+          points: number
+          question: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          correct_answer: number
+          created_at?: string
+          difficulty?: string
+          explanation: string
+          id?: string
+          is_active?: boolean
+          options: Json
+          points?: number
+          question: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          correct_answer?: number
+          created_at?: string
+          difficulty?: string
+          explanation?: string
+          id?: string
+          is_active?: boolean
+          options?: Json
+          points?: number
+          question?: string
+          updated_at?: string
         }
         Relationships: []
       }
