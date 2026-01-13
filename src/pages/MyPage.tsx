@@ -1,10 +1,14 @@
 import { motion } from 'framer-motion';
-import { User, Settings, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun } from 'lucide-react';
+import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { Switch } from '@/components/ui/switch';
+import { AuthModal } from '@/components/auth/AuthModal';
+import { VerificationBadge } from '@/components/auth/VerificationBadge';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import type { Region } from '@/types/region';
 
 interface MyPageProps {
@@ -21,6 +25,9 @@ const menuItems = [
 export function MyPage({ region, onRegionChange }: MyPageProps) {
   const navigate = useNavigate();
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const { isAuthenticated, isLoading, profile, signOut } = useAuthContext();
+  
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -37,6 +44,16 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
+
+  const handleSignOut = async () => {
+    const { error } = await signOut();
+    if (error) {
+      toast.error('로그아웃 실패');
+    } else {
+      toast.success('로그아웃되었습니다');
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -58,18 +75,79 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-2xl p-5 shadow-app-md"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <User size={32} className="text-primary" />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-            <div className="flex-1">
-              <h2 className="font-semibold text-foreground text-lg">시민 님</h2>
-              <p className="text-sm text-muted-foreground">로그인하고 더 많은 기능을 이용하세요</p>
-            </div>
-          </div>
-          <button className="w-full mt-4 py-3 bg-primary text-primary-foreground rounded-xl font-medium">
-            로그인 / 회원가입
-          </button>
+          ) : isAuthenticated && profile ? (
+            <>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="프로필" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={32} className="text-primary" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-foreground text-lg">
+                      {profile.display_name || '시민'} 님
+                    </h2>
+                    <VerificationBadge level={profile.verification_level} size="sm" showLabel={false} />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {profile.verification_level === 'identity' ? '본인 인증 완료' :
+                     profile.verification_level === 'phone' ? '휴대폰 인증 완료' :
+                     '소셜 로그인 완료'}
+                  </p>
+                </div>
+              </div>
+              
+              {/* 인증 레벨 업그레이드 안내 */}
+              {profile.verification_level !== 'identity' && (
+                <div className="mt-4 p-3 bg-secondary/50 rounded-xl">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Shield size={16} className="text-primary" />
+                    <span className="text-muted-foreground">
+                      {profile.verification_level === 'social' 
+                        ? '본인 인증을 완료하면 더 많은 기능을 이용할 수 있어요' 
+                        : '본인 인증을 완료하면 투표 참여가 가능해요'}
+                    </span>
+                  </div>
+                  <button className="w-full mt-2 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium">
+                    본인 인증하기
+                  </button>
+                </div>
+              )}
+              
+              <button
+                onClick={handleSignOut}
+                className="w-full mt-4 py-3 bg-secondary text-foreground rounded-xl font-medium flex items-center justify-center gap-2"
+              >
+                <LogOut size={18} />
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User size={32} className="text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h2 className="font-semibold text-foreground text-lg">시민 님</h2>
+                  <p className="text-sm text-muted-foreground">로그인하고 더 많은 기능을 이용하세요</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="w-full mt-4 py-3 bg-primary text-primary-foreground rounded-xl font-medium"
+              >
+                로그인 / 회원가입
+              </button>
+            </>
+          )}
         </motion.div>
 
         {/* PQ Stats Card */}
@@ -184,6 +262,11 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
         onOpenChange={setIsShareOpen}
         title="민심잇다"
         description="나의 목소리가 정치가 되는 곳 - 2026 지방선거 정보 플랫폼"
+      />
+
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
     </motion.div>
   );

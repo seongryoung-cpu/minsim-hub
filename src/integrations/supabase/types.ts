@@ -14,7 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          identity_ci: string | null
+          identity_provider: string | null
+          identity_verified_at: string | null
+          phone_number: string | null
+          phone_verified_at: string | null
+          region_sido: string | null
+          region_sigungu: string | null
+          updated_at: string
+          user_id: string
+          verification_level: Database["public"]["Enums"]["verification_level"]
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          identity_ci?: string | null
+          identity_provider?: string | null
+          identity_verified_at?: string | null
+          phone_number?: string | null
+          phone_verified_at?: string | null
+          region_sido?: string | null
+          region_sigungu?: string | null
+          updated_at?: string
+          user_id: string
+          verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          identity_ci?: string | null
+          identity_provider?: string | null
+          identity_verified_at?: string | null
+          phone_number?: string | null
+          phone_verified_at?: string | null
+          region_sido?: string | null
+          region_sigungu?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +73,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      verification_level: "anonymous" | "social" | "phone" | "identity"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +200,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      verification_level: ["anonymous", "social", "phone", "identity"],
+    },
   },
 } as const
