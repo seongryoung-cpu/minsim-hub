@@ -14,6 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
+      candidate_careers: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          id: string
+          organization: string
+          period: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          id?: string
+          organization: string
+          period: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          id?: string
+          organization?: string
+          period?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_careers_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidate_pledges: {
+        Row: {
+          candidate_id: string
+          category: string
+          created_at: string
+          description: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          candidate_id: string
+          category: string
+          created_at?: string
+          description: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          candidate_id?: string
+          category?: string
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_pledges_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidates: {
+        Row: {
+          age: number | null
+          created_at: string
+          education: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          name: string
+          party: string
+          party_color: string
+          position: string
+          region_name: string
+          region_type: string
+          slogan: string | null
+          slug: string
+          sort_order: number
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          education?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name: string
+          party: string
+          party_color?: string
+          position: string
+          region_name: string
+          region_type?: string
+          slogan?: string | null
+          slug: string
+          sort_order?: number
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          education?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          name?: string
+          party?: string
+          party_color?: string
+          position?: string
+          region_name?: string
+          region_type?: string
+          slogan?: string | null
+          slug?: string
+          sort_order?: number
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       news_articles: {
         Row: {
           article_url: string | null
