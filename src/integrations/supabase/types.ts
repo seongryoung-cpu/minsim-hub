@@ -65,6 +65,45 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_stats: {
+        Row: {
+          correct_answers: number
+          created_at: string
+          current_streak: number
+          id: string
+          last_played_date: string | null
+          longest_streak: number
+          total_points: number
+          total_quizzes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          correct_answers?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_played_date?: string | null
+          longest_streak?: number
+          total_points?: number
+          total_quizzes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_played_date?: string | null
+          longest_streak?: number
+          total_points?: number
+          total_quizzes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           admin_response: string | null
