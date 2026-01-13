@@ -47,9 +47,9 @@ export function Home({ region, onRegionChange }: HomeProps) {
   // 표시할 후보자 수
   const displayedCandidates = showAllCandidates 
     ? shuffledCandidates 
-    : shuffledCandidates.slice(0, 3);
+    : shuffledCandidates.slice(0, 4);
   
-  const remainingCount = shuffledCandidates.length - 3;
+  const remainingCount = shuffledCandidates.length - 4;
 
   const handleViewAllCandidates = useCallback(() => {
     setShowAllCandidates(true);
