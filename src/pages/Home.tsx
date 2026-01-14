@@ -5,11 +5,12 @@ import { RegionSheet } from '@/components/region/RegionSheet';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { DashboardSection, ExpandableSlot } from '@/components/dashboard/DashboardSection';
-import { CandidateCard } from '@/components/dashboard/CandidateCard';
+import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { getElectionStatus, getMetropolitanTitle } from '@/types/election';
+import { useCandidates } from '@/hooks/useCandidates';
 import type { Region } from '@/types/region';
 
 interface HomeProps {
@@ -23,7 +24,11 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
 
-  // 광역단체 선거 상태 데이터 로드 (sido 기준)
+  // DB에서 후보자 데이터 로드
+  const regionName = `${region.sido}${region.sigungu ? ` ${region.sigungu}` : ''}`;
+  const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(regionName);
+
+  // 광역단체 선거 상태 데이터 로드 (타임라인용)
   const electionStatus = useMemo(() => {
     return getElectionStatus(region.sido, region.sigungu);
   }, [region.sido, region.sigungu]);
@@ -33,16 +38,16 @@ export function Home({ region, onRegionChange }: HomeProps) {
     return getMetropolitanTitle(region.sido);
   }, [region.sido]);
 
-  // 후보자 공정 표시를 위해 셔플 (매 세션마다 랜덤)
+  // DB 후보자를 셔플 (매 세션마다 랜덤)
   const shuffledCandidates = useMemo(() => {
-    const candidates = [...electionStatus.candidates];
+    const candidates = dbCandidates ? [...dbCandidates] : [];
     // Fisher-Yates 셔플 알고리즘
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
     return candidates;
-  }, [electionStatus.candidates]);
+  }, [dbCandidates]);
 
   // 표시할 후보자 수
   const displayedCandidates = showAllCandidates 
@@ -109,14 +114,22 @@ export function Home({ region, onRegionChange }: HomeProps) {
             delay={0.2}
           >
             <div className="space-y-3">
-              {displayedCandidates.map((candidate, index) => (
-                <CandidateCard
-                  key={candidate.id}
-                  candidate={candidate}
-                  index={index}
-                  onPress={() => navigate(`/candidate/${candidate.id}`)}
-                />
-              ))}
+              {candidatesLoading ? (
+                <>
+                  <CandidateCardSkeleton />
+                  <CandidateCardSkeleton />
+                  <CandidateCardSkeleton />
+                </>
+              ) : (
+                displayedCandidates.map((candidate, index) => (
+                  <CandidateCard
+                    key={candidate.id}
+                    candidate={candidate}
+                    index={index}
+                    onPress={() => navigate(`/candidate/${candidate.id}`)}
+                  />
+                ))
+              )}
               {!showAllCandidates && remainingCount > 0 && (
                 <motion.button
                   initial={{ opacity: 0 }}
