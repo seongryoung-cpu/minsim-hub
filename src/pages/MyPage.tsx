@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
 import { PolicyMatchHistory, PolicyMatchResultModal } from '@/components/policy-match/PolicyMatchHistory';
+import { FollowedCandidatesList } from '@/components/candidate/FollowedCandidatesList';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -233,6 +234,9 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
             </>
           )}
         </motion.div>
+
+        {/* Followed Candidates */}
+        <FollowedCandidatesList />
 
         {/* Policy Match History */}
         <PolicyMatchHistory onViewResult={(result) => setSelectedResult(result)} />
