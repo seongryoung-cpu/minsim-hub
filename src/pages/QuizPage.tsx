@@ -7,6 +7,7 @@ import { QuizIntroScreen } from '@/components/quiz/QuizIntroScreen';
 import { QuizResultScreen } from '@/components/quiz/QuizResultScreen';
 import { useQuizStats } from '@/hooks/useQuizStats';
 import { useDailyQuiz } from '@/hooks/useQuizQuestions';
+import { logActivity } from '@/lib/activityLogger';
 import type { QuizResult } from '@/types/quiz';
 
 type QuizPhase = 'intro' | 'playing' | 'result';
@@ -50,6 +51,13 @@ export function QuizPage() {
       const allResults = [...results, newResult];
       if (!isPracticeMode) {
         updateStats(allResults, categories);
+        
+        const correctCount = allResults.filter(r => r.isCorrect).length;
+        logActivity({
+          activityType: 'quiz_complete',
+          description: `퀴즈 완료: ${correctCount}/${allResults.length} 정답`,
+          metadata: { correctCount, totalQuestions: allResults.length },
+        });
       }
       setPhase('result');
     }

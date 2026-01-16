@@ -23,6 +23,7 @@ import { useSavePolicyMatchResult } from '@/hooks/usePolicyMatchResults';
 import { useCandidates } from '@/hooks/useCandidates';
 import { useRegion } from '@/hooks/useRegion';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { logActivity } from '@/lib/activityLogger';
 import { toast } from 'sonner';
 
 export type GameStep = 'intro' | 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
@@ -217,7 +218,14 @@ export function PolicyMatchGame() {
   const handlePreferenceSelect = useCallback((preference: PreferredCandidate) => {
     setUserPreference(preference);
     setCurrentStep('result');
-  }, []);
+    
+    // 정책 매칭 완료 로깅
+    logActivity({
+      activityType: 'policy_match_complete',
+      description: `정책 매칭 완료: ${policyCards.length}개 질문`,
+      metadata: { totalQuestions: policyCards.length, preference },
+    });
+  }, [policyCards.length]);
 
   // 결과 계산 (먼저 정의해야 handleContinueToSentiment에서 사용 가능)
   const results = useMemo(() => {

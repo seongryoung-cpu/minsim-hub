@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logActivity } from '@/lib/activityLogger';
 import type { User, AuthError } from '@supabase/supabase-js';
 import type { UserProfile, AuthState, VerificationLevel } from '@/types/auth';
 
@@ -114,6 +115,14 @@ export function useAuth() {
       email,
       password,
     });
+    
+    if (!error && data.user) {
+      logActivity({
+        activityType: 'login',
+        description: `이메일 로그인: ${email}`,
+      });
+    }
+    
     return { data, error };
   }, []);
 
@@ -129,6 +138,14 @@ export function useAuth() {
         },
       },
     });
+    
+    if (!error && data.user) {
+      logActivity({
+        activityType: 'signup',
+        description: `새 계정 생성: ${email}`,
+      });
+    }
+    
     return { data, error };
   }, []);
 
@@ -145,6 +162,11 @@ export function useAuth() {
 
   // 로그아웃
   const signOut = useCallback(async () => {
+    logActivity({
+      activityType: 'logout',
+      description: '로그아웃',
+    });
+    
     const { error } = await supabase.auth.signOut();
     return { error };
   }, []);
