@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash, ImageIcon, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -12,6 +12,7 @@ interface AppSettings {
   app_name: string;
   app_slogan: string;
   app_version: string;
+  logo_url: string;
   contact_email: string;
   contact_phone: string;
   social_x: string;
@@ -27,10 +28,13 @@ export function AdminSettings() {
   const { isAdmin, isLoading: adminLoading } = useAdmin();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [settings, setSettings] = useState<AppSettings>({
     app_name: '',
     app_slogan: '',
     app_version: '',
+    logo_url: '',
     contact_email: '',
     contact_phone: '',
     social_x: '',
@@ -67,6 +71,7 @@ export function AdminSettings() {
           app_name: settingsMap.app_name || '',
           app_slogan: settingsMap.app_slogan || '',
           app_version: settingsMap.app_version || '',
+          logo_url: settingsMap.logo_url || '',
           contact_email: settingsMap.contact_email || '',
           contact_phone: settingsMap.contact_phone || '',
           social_x: settingsMap.social_x || '',
@@ -87,6 +92,58 @@ export function AdminSettings() {
     fetchSettings();
   }, [isAdmin]);
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('이미지 파일만 업로드 가능합니다');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('파일 크기는 2MB 이하여야 합니다');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('app-assets')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('app-assets')
+        .getPublicUrl(filePath);
+
+      setSettings(prev => ({ ...prev, logo_url: publicUrl }));
+      toast.success('로고가 업로드되었습니다');
+    } catch (error) {
+      console.error('Failed to upload logo:', error);
+      toast.error('로고 업로드에 실패했습니다');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setSettings(prev => ({ ...prev, logo_url: '' }));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
 
@@ -96,8 +153,7 @@ export function AdminSettings() {
         value,
       }));
 
-      // Ensure rows exist for every key (UPDATE on a missing row doesn't error,
-      // it just updates 0 rows, which looks like "saved" but isn't persisted.)
+      // Ensure rows exist for every key
       const keys = entries.map((e) => e.key);
       const { data: existing, error: existingError } = await supabase
         .from('app_settings')
@@ -131,7 +187,7 @@ export function AdminSettings() {
 
       toast.success('설정이 저장되었습니다');
 
-      // Re-fetch once to keep UI in sync across refreshes
+      // Re-fetch once to keep UI in sync
       const { data, error } = await supabase
         .from('app_settings')
         .select('key, value');
@@ -146,6 +202,7 @@ export function AdminSettings() {
           app_name: settingsMap.app_name || '',
           app_slogan: settingsMap.app_slogan || '',
           app_version: settingsMap.app_version || '',
+          logo_url: settingsMap.logo_url || '',
           contact_email: settingsMap.contact_email || '',
           contact_phone: settingsMap.contact_phone || '',
           social_x: settingsMap.social_x || '',
@@ -211,6 +268,70 @@ export function AdminSettings() {
 
       <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 pb-20">
         <div className="grid md:grid-cols-2 gap-6">
+          {/* Logo Upload */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4 md:col-span-2"
+          >
+            <h2 className="font-semibold text-lg">로고 이미지</h2>
+            <p className="text-sm text-muted-foreground">
+              앱 로고 이미지를 업로드합니다. 권장 크기: 512x512px, 최대 2MB
+            </p>
+            
+            <div className="flex items-start gap-6">
+              {/* Logo Preview */}
+              <div className="relative">
+                <div className="w-24 h-24 rounded-xl bg-secondary border-2 border-dashed border-border flex items-center justify-center overflow-hidden">
+                  {settings.logo_url ? (
+                    <img 
+                      src={settings.logo_url} 
+                      alt="App Logo" 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <ImageIcon size={32} className="text-muted-foreground" />
+                  )}
+                </div>
+                {settings.logo_url && (
+                  <button
+                    onClick={handleRemoveLogo}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center hover:bg-destructive/80 transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Upload Button */}
+              <div className="flex-1 space-y-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-full md:w-auto"
+                >
+                  {isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Upload size={16} className="mr-2" />
+                  )}
+                  {isUploading ? '업로드 중...' : '이미지 선택'}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  PNG, JPG, WEBP 형식 지원
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
           {/* App Info Settings */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
