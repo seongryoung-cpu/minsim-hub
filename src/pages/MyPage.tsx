@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink } from 'lucide-react';
+import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -13,7 +13,18 @@ import { IdentityVerificationModal } from '@/components/auth/IdentityVerificatio
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { Region } from '@/types/region';
 import type { PolicyMatchResult } from '@/hooks/usePolicyMatchResults';
 
@@ -37,6 +48,9 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   const { user, isAuthenticated, isLoading, profile, signOut, refreshProfile } = useAuthContext();
   const { isAdmin } = useAdmin();
   const { settings: appSettings } = useAppSettings();
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -67,6 +81,39 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   const handleVerificationSuccess = async () => {
     toast.success('본인 인증이 완료되었습니다!');
     await refreshProfile();
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('로그인이 필요합니다');
+        setIsDeleting(false);
+        return;
+      }
+
+      const response = await supabase.functions.invoke('delete-account', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      toast.success('회원 탈퇴가 완료되었습니다');
+      setIsDeleteDialogOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+      toast.error('회원 탈퇴에 실패했습니다');
+    }
+    
+    setIsDeleting(false);
   };
 
   return (
@@ -150,13 +197,21 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                 </button>
               )}
               
-              <button
-                onClick={handleSignOut}
-                className="w-full mt-4 py-3 bg-secondary text-foreground rounded-xl font-medium flex items-center justify-center gap-2"
-              >
-                <LogOut size={18} />
-                로그아웃
-              </button>
+              <div className="flex gap-3 mt-4">
+                <button
+                  onClick={handleSignOut}
+                  className="flex-1 py-3 bg-secondary text-foreground rounded-xl font-medium flex items-center justify-center gap-2"
+                >
+                  <LogOut size={18} />
+                  로그아웃
+                </button>
+                <button
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  className="py-3 px-4 bg-destructive/10 text-destructive rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -436,6 +491,30 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
         isOpen={!!selectedResult}
         onClose={() => setSelectedResult(null)}
       />
+
+      {/* Delete Account Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>회원 탈퇴</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말로 탈퇴하시겠습니까?
+              <br /><br />
+              탈퇴 시 모든 데이터(프로필, 정책 매칭 결과, 퀴즈 기록 등)가 삭제되며, 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : '탈퇴하기'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
