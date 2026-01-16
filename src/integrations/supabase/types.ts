@@ -243,6 +243,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_logs: {
+        Row: {
+          admin_user_id: string
+          body: string
+          created_at: string
+          failed_count: number
+          id: string
+          sent_count: number
+          target_type: string
+          target_user_ids: string[] | null
+          title: string
+        }
+        Insert: {
+          admin_user_id: string
+          body: string
+          created_at?: string
+          failed_count?: number
+          id?: string
+          sent_count?: number
+          target_type?: string
+          target_user_ids?: string[] | null
+          title: string
+        }
+        Update: {
+          admin_user_id?: string
+          body?: string
+          created_at?: string
+          failed_count?: number
+          id?: string
+          sent_count?: number
+          target_type?: string
+          target_user_ids?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
