@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Send, Loader2, Users, User, X, Check } from 'lucide-react';
+import { Bell, Send, Loader2, Users, User, Check, History, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface PushSubscriber {
   user_id: string;
@@ -21,8 +23,22 @@ interface PushSubscriber {
   endpoint: string;
 }
 
+interface NotificationLog {
+  id: string;
+  admin_user_id: string;
+  title: string;
+  body: string;
+  target_type: string;
+  target_user_ids: string[] | null;
+  sent_count: number;
+  failed_count: number;
+  created_at: string;
+}
+
 export function PushNotificationSender() {
+  const { user } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('send');
   const [subscribers, setSubscribers] = useState<PushSubscriber[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -30,10 +46,13 @@ export function PushNotificationSender() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sendToAll, setSendToAll] = useState(true);
+  const [logs, setLogs] = useState<NotificationLog[]>([]);
+  const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       fetchSubscribers();
+      fetchLogs();
     }
   }, [isOpen]);
 
@@ -82,6 +101,42 @@ export function PushNotificationSender() {
     }
   };
 
+  const fetchLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('notification_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      setLogs((data || []) as NotificationLog[]);
+    } catch (error) {
+      console.error('Failed to fetch logs:', error);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
+
+  const saveLog = async (sentCount: number, failedCount: number) => {
+    if (!user) return;
+    
+    try {
+      await supabase.from('notification_logs').insert({
+        admin_user_id: user.id,
+        title,
+        body,
+        target_type: sendToAll ? 'all' : 'selected',
+        target_user_ids: sendToAll ? null : selectedUsers,
+        sent_count: sentCount,
+        failed_count: failedCount
+      });
+    } catch (error) {
+      console.error('Failed to save log:', error);
+    }
+  };
+
   const handleSelectUser = (userId: string) => {
     setSelectedUsers(prev => 
       prev.includes(userId) 
@@ -110,9 +165,10 @@ export function PushNotificationSender() {
     }
 
     setIsSending(true);
+    let totalSent = 0;
+    let totalFailed = 0;
+    
     try {
-      const targetUsers = sendToAll ? undefined : selectedUsers;
-      
       if (sendToAll) {
         // Send to all subscribers
         const { data, error } = await supabase.functions.invoke('send-push-notification', {
@@ -124,12 +180,11 @@ export function PushNotificationSender() {
         });
 
         if (error) throw error;
-        toast.success(`푸시 알림 전송 완료: ${data.sent}건 성공`);
+        totalSent = data.sent || 0;
+        totalFailed = data.failed || 0;
+        toast.success(`푸시 알림 전송 완료: ${totalSent}건 성공`);
       } else {
         // Send to selected users one by one
-        let successCount = 0;
-        let failCount = 0;
-
         for (const userId of selectedUsers) {
           try {
             const { data, error } = await supabase.functions.invoke('send-push-notification', {
@@ -142,21 +197,25 @@ export function PushNotificationSender() {
             });
 
             if (error) throw error;
-            successCount += data.sent || 0;
-            failCount += data.failed || 0;
+            totalSent += data.sent || 0;
+            totalFailed += data.failed || 0;
           } catch {
-            failCount++;
+            totalFailed++;
           }
         }
 
-        toast.success(`푸시 알림 전송 완료: ${successCount}건 성공, ${failCount}건 실패`);
+        toast.success(`푸시 알림 전송 완료: ${totalSent}건 성공, ${totalFailed}건 실패`);
       }
+
+      // Save log
+      await saveLog(totalSent, totalFailed);
+      await fetchLogs();
 
       // Reset form
       setTitle('');
       setBody('');
       setSelectedUsers([]);
-      setIsOpen(false);
+      setActiveTab('history');
     } catch (error) {
       console.error('Failed to send push:', error);
       toast.error('푸시 알림 전송에 실패했습니다');
@@ -186,167 +245,248 @@ export function PushNotificationSender() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bell size={20} className="text-primary" />
-              푸시 알림 전송
+              푸시 알림 관리
             </DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-4 py-4">
-            {/* Title Input */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">알림 제목</label>
-              <Input
-                placeholder="알림 제목을 입력하세요"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="send" className="flex items-center gap-2">
+                <Send size={14} />
+                알림 전송
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History size={14} />
+                전송 기록
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Body Input */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">알림 내용</label>
-              <Textarea
-                placeholder="알림 내용을 입력하세요"
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={3}
-              />
-            </div>
+            <TabsContent value="send" className="flex-1 overflow-y-auto mt-4">
+              <div className="space-y-4">
+                {/* Title Input */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">알림 제목</label>
+                  <Input
+                    placeholder="알림 제목을 입력하세요"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                  />
+                </div>
 
-            {/* Target Selection */}
-            <div>
-              <label className="text-sm font-medium mb-3 block">수신 대상</label>
-              
-              {/* Send to All Toggle */}
-              <div 
-                className={`p-3 rounded-xl border-2 cursor-pointer transition-colors mb-3 ${
-                  sendToAll ? 'border-primary bg-primary/5' : 'border-border'
-                }`}
-                onClick={() => setSendToAll(true)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    sendToAll ? 'border-primary bg-primary' : 'border-muted-foreground'
-                  }`}>
-                    {sendToAll && <Check size={12} className="text-primary-foreground" />}
+                {/* Body Input */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">알림 내용</label>
+                  <Textarea
+                    placeholder="알림 내용을 입력하세요"
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                {/* Target Selection */}
+                <div>
+                  <label className="text-sm font-medium mb-3 block">수신 대상</label>
+                  
+                  {/* Send to All Toggle */}
+                  <div 
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-colors mb-3 ${
+                      sendToAll ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                    onClick={() => setSendToAll(true)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        sendToAll ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      }`}>
+                        {sendToAll && <Check size={12} className="text-primary-foreground" />}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users size={18} className="text-muted-foreground" />
+                        <span className="font-medium">모든 구독자</span>
+                        <span className="text-xs text-muted-foreground">({subscribers.length}명)</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Users size={18} className="text-muted-foreground" />
-                    <span className="font-medium">모든 구독자</span>
-                    <span className="text-xs text-muted-foreground">({subscribers.length}명)</span>
+
+                  <div 
+                    className={`p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                      !sendToAll ? 'border-primary bg-primary/5' : 'border-border'
+                    }`}
+                    onClick={() => setSendToAll(false)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                        !sendToAll ? 'border-primary bg-primary' : 'border-muted-foreground'
+                      }`}>
+                        {!sendToAll && <Check size={12} className="text-primary-foreground" />}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <User size={18} className="text-muted-foreground" />
+                        <span className="font-medium">특정 사용자 선택</span>
+                        {!sendToAll && selectedUsers.length > 0 && (
+                          <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
+                            {selectedUsers.length}명 선택됨
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div 
-                className={`p-3 rounded-xl border-2 cursor-pointer transition-colors ${
-                  !sendToAll ? 'border-primary bg-primary/5' : 'border-border'
-                }`}
-                onClick={() => setSendToAll(false)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                    !sendToAll ? 'border-primary bg-primary' : 'border-muted-foreground'
-                  }`}>
-                    {!sendToAll && <Check size={12} className="text-primary-foreground" />}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User size={18} className="text-muted-foreground" />
-                    <span className="font-medium">특정 사용자 선택</span>
-                    {!sendToAll && selectedUsers.length > 0 && (
-                      <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-                        {selectedUsers.length}명 선택됨
-                      </span>
+                {/* User List (when not sending to all) */}
+                {!sendToAll && (
+                  <div className="border rounded-xl overflow-hidden">
+                    <div className="p-3 bg-secondary/50 border-b flex items-center justify-between">
+                      <span className="text-sm font-medium">구독자 목록</span>
+                      <button
+                        onClick={handleSelectAll}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        {selectedUsers.length === subscribers.length ? '전체 해제' : '전체 선택'}
+                      </button>
+                    </div>
+                    
+                    {isLoading ? (
+                      <div className="p-8 flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : subscribers.length === 0 ? (
+                      <div className="p-8 text-center text-muted-foreground text-sm">
+                        푸시 알림을 구독한 사용자가 없습니다
+                      </div>
+                    ) : (
+                      <ScrollArea className="h-48">
+                        <div className="divide-y">
+                          {subscribers.map((subscriber) => (
+                            <div
+                              key={subscriber.user_id}
+                              className="flex items-center gap-3 p-3 hover:bg-secondary/30 cursor-pointer"
+                              onClick={() => handleSelectUser(subscriber.user_id)}
+                            >
+                              <Checkbox 
+                                checked={selectedUsers.includes(subscriber.user_id)}
+                                onCheckedChange={() => handleSelectUser(subscriber.user_id)}
+                              />
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                                {subscriber.avatar_url ? (
+                                  <img 
+                                    src={subscriber.avatar_url} 
+                                    alt="" 
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <User size={16} className="text-primary" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium truncate">
+                                  {subscriber.display_name || '익명 사용자'}
+                                </p>
+                                <p className="text-xs text-muted-foreground truncate">
+                                  {subscriber.user_id.slice(0, 8)}...
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
                     )}
                   </div>
-                </div>
-              </div>
-            </div>
+                )}
 
-            {/* User List (when not sending to all) */}
-            {!sendToAll && (
-              <div className="border rounded-xl overflow-hidden">
-                <div className="p-3 bg-secondary/50 border-b flex items-center justify-between">
-                  <span className="text-sm font-medium">구독자 목록</span>
-                  <button
-                    onClick={handleSelectAll}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {selectedUsers.length === subscribers.length ? '전체 해제' : '전체 선택'}
-                  </button>
+                {/* Send Button */}
+                <button
+                  onClick={handleSend}
+                  disabled={isSending || !title.trim() || !body.trim() || (!sendToAll && selectedUsers.length === 0)}
+                  className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isSending ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      전송 중...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      {sendToAll 
+                        ? `모든 구독자에게 전송 (${subscribers.length}명)`
+                        : `선택한 사용자에게 전송 (${selectedUsers.length}명)`
+                      }
+                    </>
+                  )}
+                </button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="flex-1 overflow-hidden mt-4">
+              {isLoadingLogs ? (
+                <div className="p-8 flex items-center justify-center">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
-                
-                {isLoading ? (
-                  <div className="p-8 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                  </div>
-                ) : subscribers.length === 0 ? (
-                  <div className="p-8 text-center text-muted-foreground text-sm">
-                    푸시 알림을 구독한 사용자가 없습니다
-                  </div>
-                ) : (
-                  <ScrollArea className="h-48">
-                    <div className="divide-y">
-                      {subscribers.map((subscriber) => (
-                        <div
-                          key={subscriber.user_id}
-                          className="flex items-center gap-3 p-3 hover:bg-secondary/30 cursor-pointer"
-                          onClick={() => handleSelectUser(subscriber.user_id)}
+              ) : logs.length === 0 ? (
+                <div className="p-8 text-center">
+                  <History size={32} className="mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">전송 기록이 없습니다</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="space-y-3">
+                    {logs.map((log) => {
+                      const timeAgo = (dateStr: string) => {
+                        const now = new Date();
+                        const date = new Date(dateStr);
+                        const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+                        
+                        if (diff < 60) return '방금 전';
+                        if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+                        if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+                        return `${Math.floor(diff / 86400)}일 전`;
+                      };
+
+                      return (
+                        <div 
+                          key={log.id}
+                          className="p-3 bg-secondary/30 rounded-xl space-y-2"
                         >
-                          <Checkbox 
-                            checked={selectedUsers.includes(subscriber.user_id)}
-                            onCheckedChange={() => handleSelectUser(subscriber.user_id)}
-                          />
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                            {subscriber.avatar_url ? (
-                              <img 
-                                src={subscriber.avatar_url} 
-                                alt="" 
-                                className="w-full h-full object-cover" 
-                              />
-                            ) : (
-                              <User size={16} className="text-primary" />
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{log.title}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-2">{log.body}</p>
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                              <Clock size={12} />
+                              {timeAgo(log.created_at)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className={`px-2 py-0.5 rounded-full ${
+                              log.target_type === 'all' 
+                                ? 'bg-blue-500/10 text-blue-600' 
+                                : 'bg-purple-500/10 text-purple-600'
+                            }`}>
+                              {log.target_type === 'all' 
+                                ? '전체 발송' 
+                                : `${log.target_user_ids?.length || 0}명 지정`
+                              }
+                            </span>
+                            <span className="text-green-600">
+                              성공 {log.sent_count}
+                            </span>
+                            {log.failed_count > 0 && (
+                              <span className="text-red-600">
+                                실패 {log.failed_count}
+                              </span>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {subscriber.display_name || '익명 사용자'}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {subscriber.user_id.slice(0, 8)}...
-                            </p>
-                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Send Button */}
-          <div className="pt-4 border-t">
-            <button
-              onClick={handleSend}
-              disabled={isSending || !title.trim() || !body.trim() || (!sendToAll && selectedUsers.length === 0)}
-              className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-            >
-              {isSending ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  전송 중...
-                </>
-              ) : (
-                <>
-                  <Send size={18} />
-                  {sendToAll 
-                    ? `모든 구독자에게 전송 (${subscribers.length}명)`
-                    : `선택한 사용자에게 전송 (${selectedUsers.length}명)`
-                  }
-                </>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
               )}
-            </button>
-          </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
