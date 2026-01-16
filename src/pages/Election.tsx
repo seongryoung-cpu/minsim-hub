@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Vote, Calendar, Users, TrendingUp, MapPin, Navigation, ExternalLink, Loader2 } from 'lucide-react';
+import { Vote, Calendar, Users, MapPin, Navigation, ExternalLink } from 'lucide-react';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
@@ -92,25 +92,12 @@ export function Election() {
           <p className="text-2xl font-bold text-primary mb-4">
             D-{electionStatus.dDay}
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              className="bg-secondary rounded-xl p-3 cursor-pointer active:bg-secondary/70 transition-colors"
-            >
-              <Users size={20} className="text-primary mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">등록 후보</p>
-              <p className="font-semibold text-foreground">
-                {isCandidatesLoading ? '-' : `${electionStatus.candidates.length}명`}
-              </p>
-            </motion.div>
-            <motion.div
-              whileTap={{ scale: 0.97 }}
-              className="bg-secondary rounded-xl p-3 cursor-pointer active:bg-secondary/70 transition-colors"
-            >
-              <TrendingUp size={20} className="text-primary mx-auto mb-1" />
-              <p className="text-xs text-muted-foreground">여론조사</p>
-              <p className="font-semibold text-foreground">준비중</p>
-            </motion.div>
+          <div className="bg-secondary rounded-xl p-4 text-center">
+            <Users size={24} className="text-primary mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">등록 후보</p>
+            <p className="font-semibold text-foreground text-lg">
+              {isCandidatesLoading ? '-' : `${electionStatus.candidates.length}명`}
+            </p>
           </div>
         </motion.div>
 
