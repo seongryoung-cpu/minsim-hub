@@ -44,7 +44,8 @@ function transformToCandidate(
   careers: DBCandidateCareer[] = []
 ): Candidate {
   return {
-    id: db.slug,
+    id: db.slug, // for URL routing
+    dbId: db.id, // actual UUID for DB operations like follow
     name: db.name,
     party: db.party,
     partyColor: db.party_color,

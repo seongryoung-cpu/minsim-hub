@@ -27,7 +27,8 @@ export interface CandidateCareer {
 }
 
 export interface Candidate {
-  id: string;
+  id: string; // slug for URL routing
+  dbId?: string; // actual UUID from database for DB operations
   name: string;
   party: string;
   partyColor: string;
