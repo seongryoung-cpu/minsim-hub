@@ -8,6 +8,8 @@ export interface AppSettings {
   social_facebook: string;
   social_instagram: string;
   social_youtube: string;
+  link_privacy: string;
+  link_terms: string;
 }
 
 export function useAppSettings() {
@@ -35,6 +37,8 @@ export function useAppSettings() {
           social_facebook: settingsMap.social_facebook || '',
           social_instagram: settingsMap.social_instagram || '',
           social_youtube: settingsMap.social_youtube || '',
+          link_privacy: settingsMap.link_privacy || '',
+          link_terms: settingsMap.link_terms || '',
         });
       } catch (error) {
         console.error('Failed to fetch app settings:', error);

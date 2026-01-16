@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -15,6 +15,8 @@ interface AppSettings {
   social_facebook: string;
   social_instagram: string;
   social_youtube: string;
+  link_privacy: string;
+  link_terms: string;
 }
 
 export function AdminSettings() {
@@ -29,6 +31,8 @@ export function AdminSettings() {
     social_facebook: '',
     social_instagram: '',
     social_youtube: '',
+    link_privacy: '',
+    link_terms: '',
   });
 
   useEffect(() => {
@@ -60,6 +64,8 @@ export function AdminSettings() {
           social_facebook: settingsMap.social_facebook || '',
           social_instagram: settingsMap.social_instagram || '',
           social_youtube: settingsMap.social_youtube || '',
+          link_privacy: settingsMap.link_privacy || '',
+          link_terms: settingsMap.link_terms || '',
         });
       } catch (error) {
         console.error('Failed to fetch settings:', error);
@@ -109,13 +115,21 @@ export function AdminSettings() {
 
   if (!isAdmin) return null;
 
-  const settingsFields = [
+  const contactFields = [
     { key: 'contact_email', label: '이메일', icon: Mail, placeholder: 'contact@example.com', type: 'email' },
     { key: 'contact_phone', label: '전화번호', icon: Phone, placeholder: '02-1234-5678', type: 'tel' },
+  ];
+
+  const socialFields = [
     { key: 'social_x', label: 'X (트위터)', icon: Twitter, placeholder: 'https://x.com/username', type: 'url' },
     { key: 'social_facebook', label: '페이스북', icon: Facebook, placeholder: 'https://facebook.com/page', type: 'url' },
     { key: 'social_instagram', label: '인스타그램', icon: Instagram, placeholder: 'https://instagram.com/username', type: 'url' },
     { key: 'social_youtube', label: '유튜브', icon: Youtube, placeholder: 'https://youtube.com/@channel', type: 'url' },
+  ];
+
+  const legalFields = [
+    { key: 'link_privacy', label: '개인정보처리방침', icon: Shield, placeholder: 'https://example.com/privacy', type: 'url' },
+    { key: 'link_terms', label: '이용약관', icon: FileText, placeholder: 'https://example.com/terms', type: 'url' },
   ];
 
   return (
@@ -131,19 +145,15 @@ export function AdminSettings() {
       </header>
 
       <main className="p-4 space-y-6 pb-20">
-        {/* Contact & Social Settings */}
+        {/* Contact Settings */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
         >
-          <h2 className="font-semibold text-lg">연락처 & 소셜 미디어</h2>
-          <p className="text-sm text-muted-foreground">
-            앱에 표시될 연락처와 소셜 미디어 링크를 설정합니다.
-          </p>
-
-          <div className="space-y-4 pt-2">
-            {settingsFields.map((field, index) => {
+          <h2 className="font-semibold text-lg">연락처</h2>
+          <div className="space-y-4">
+            {contactFields.map((field, index) => {
               const Icon = field.icon;
               return (
                 <motion.div
@@ -151,6 +161,85 @@ export function AdminSettings() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
+                  className="space-y-2"
+                >
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Icon size={16} className="text-muted-foreground" />
+                    {field.label}
+                  </label>
+                  <Input
+                    type={field.type}
+                    value={settings[field.key as keyof AppSettings]}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      [field.key]: e.target.value
+                    }))}
+                    placeholder={field.placeholder}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Social Media Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
+        >
+          <h2 className="font-semibold text-lg">소셜 미디어</h2>
+          <div className="space-y-4">
+            {socialFields.map((field, index) => {
+              const Icon = field.icon;
+              return (
+                <motion.div
+                  key={field.key}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
+                  className="space-y-2"
+                >
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Icon size={16} className="text-muted-foreground" />
+                    {field.label}
+                  </label>
+                  <Input
+                    type={field.type}
+                    value={settings[field.key as keyof AppSettings]}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      [field.key]: e.target.value
+                    }))}
+                    placeholder={field.placeholder}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* Legal Links Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
+        >
+          <h2 className="font-semibold text-lg">법적 고지</h2>
+          <p className="text-sm text-muted-foreground">
+            개인정보처리방침과 이용약관 페이지 링크를 설정합니다.
+          </p>
+          <div className="space-y-4">
+            {legalFields.map((field, index) => {
+              const Icon = field.icon;
+              return (
+                <motion.div
+                  key={field.key}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + index * 0.05 }}
                   className="space-y-2"
                 >
                   <label className="text-sm font-medium flex items-center gap-2">
