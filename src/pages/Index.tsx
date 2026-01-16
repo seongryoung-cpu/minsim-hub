@@ -90,7 +90,10 @@ function Index() {
 
   // Main app
   return (
-    <AppContainer>
+    <AppContainer 
+      region={currentRegion} 
+      onRegionClick={() => setIsRegionSheetOpen(true)}
+    >
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route

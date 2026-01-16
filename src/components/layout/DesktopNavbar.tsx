@@ -1,7 +1,9 @@
-import { Home, Vote, MessageSquare, User, FileText, Bell, Search } from 'lucide-react';
+import { Home, Vote, MessageSquare, User, FileText, Bell, MapPin, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useNotifications } from '@/hooks/useNotifications';
+import type { Region } from '@/types/region';
 
 interface NavItem {
   id: string;
@@ -17,10 +19,39 @@ const navItems: NavItem[] = [
   { id: 'my', label: '마이페이지', icon: User, path: '/my' },
 ];
 
-export function DesktopNavbar() {
+// 시/도별 이모지 아이콘
+const SIDO_EMOJI: Record<string, string> = {
+  '서울특별시': '🏛️',
+  '부산광역시': '🌊',
+  '대구광역시': '🍎',
+  '인천광역시': '✈️',
+  '광주광역시': '💡',
+  '대전광역시': '🔬',
+  '울산광역시': '🏭',
+  '세종특별자치시': '🏢',
+  '경기도': '🏙️',
+  '강원도': '🏔️',
+  '충청북도': '🌾',
+  '충청남도': '🌻',
+  '전라북도': '🎋',
+  '전라남도': '🌿',
+  '경상북도': '🏯',
+  '경상남도': '🌸',
+  '제주특별자치도': '🍊',
+};
+
+interface DesktopNavbarProps {
+  region?: Region;
+  onRegionClick?: () => void;
+}
+
+export function DesktopNavbar({ region, onRegionClick }: DesktopNavbarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useAppSettings();
+  const { unreadCount } = useNotifications();
+
+  const sidoEmoji = region ? SIDO_EMOJI[region.sido] || '📍' : '📍';
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -77,13 +108,38 @@ export function DesktopNavbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors">
-              <Search size={18} className="text-muted-foreground" />
-            </button>
-            <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
+            {/* Region Selector */}
+            {region && onRegionClick && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={onRegionClick}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary/60 hover:bg-secondary transition-colors"
+              >
+                <span className="text-sm">{sidoEmoji}</span>
+                <span className="text-sm font-medium text-foreground max-w-[120px] truncate">
+                  {region.sigungu}
+                </span>
+                <ChevronDown size={14} className="text-muted-foreground" />
+              </motion.button>
+            )}
+
+            {/* Notification Button */}
+            <motion.button 
+              whileTap={{ scale: 0.95 }}
+              className="p-2 rounded-lg hover:bg-secondary transition-colors relative"
+            >
               <Bell size={18} className="text-muted-foreground" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full" />
-            </button>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                </span>
+              )}
+            </motion.button>
+
+            {/* App Info */}
             <button 
               onClick={() => navigate('/app-info')}
               className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary transition-colors text-sm text-muted-foreground"
