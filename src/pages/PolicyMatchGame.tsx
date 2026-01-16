@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Brain, Heart, X } from 'lucide-react';
+import { Brain, Heart, X, Loader2 } from 'lucide-react';
 import { SwipeCard, SwipeControls } from '@/components/policy-match/SwipeCard';
 import { PreRevealScreen } from '@/components/policy-match/PreRevealScreen';
 import { RadarResultScreen } from '@/components/policy-match/RadarResultScreen';
@@ -10,14 +10,16 @@ import { GameIntroScreen } from '@/components/policy-match/GameIntroScreen';
 import { JourneyProgress } from '@/components/policy-match/JourneyProgress';
 import { CategoryInsights } from '@/components/policy-match/CategoryInsights';
 import { 
-  POLICY_CARDS, 
+  POLICY_CARDS as FALLBACK_POLICY_CARDS, 
   POLICY_CATEGORIES,
   type MatchResult, 
   type UserChoice,
   type PreferredCandidate,
   type CategoryScore,
+  type PolicyCard,
 } from '@/types/policy';
-import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES } from '@/types/election';
+import { usePolicyCards } from '@/hooks/usePolicyCards';
+import { useCandidates } from '@/hooks/useCandidates';
 import { useRegion } from '@/hooks/useRegion';
 
 export type GameStep = 'intro' | 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
@@ -30,29 +32,58 @@ export function PolicyMatchGame() {
   const [currentStep, setCurrentStep] = useState<GameStep>('intro');
   const [userPreference, setUserPreference] = useState<PreferredCandidate>(null);
 
-  // 지역에 따른 후보자 필터링
-  const candidates = useMemo(() => {
-    if (region?.sido === '서울특별시') {
-      return SEOUL_MAYOR_CANDIDATES;
-    } else if (region?.sido === '경기도') {
-      return GYEONGGI_GOVERNOR_CANDIDATES;
-    }
-    return [...SEOUL_MAYOR_CANDIDATES, ...GYEONGGI_GOVERNOR_CANDIDATES];
-  }, [region?.sido]);
+  // DB에서 정책 카드 로드
+  const { data: dbPolicyCards, isLoading: cardsLoading } = usePolicyCards(region?.sido);
+  
+  // DB에서 후보자 로드
+  const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(region?.sido);
 
-  const currentCard = POLICY_CARDS[currentIndex];
-  const progress = ((currentIndex) / POLICY_CARDS.length) * 100;
+  // DB 데이터가 있으면 사용, 없으면 폴백 데이터 사용
+  const policyCards: PolicyCard[] = useMemo(() => {
+    if (dbPolicyCards && dbPolicyCards.length > 0) {
+      return dbPolicyCards;
+    }
+    // 폴백: 하드코딩된 데이터 사용
+    return FALLBACK_POLICY_CARDS;
+  }, [dbPolicyCards]);
+
+  // 후보자 데이터 변환
+  const candidates = useMemo(() => {
+    if (dbCandidates && dbCandidates.length > 0) {
+      return dbCandidates.map(c => ({
+        id: c.id,
+        name: c.name,
+        party: c.party,
+        partyColor: c.partyColor,
+        image: c.image,
+        summary: c.summary,
+        position: c.position,
+      }));
+    }
+    // 폴백 없음 - DB 후보자만 사용
+    return [];
+  }, [dbCandidates]);
+
+  // 카테고리 목록 추출
+  const categories = useMemo(() => {
+    const cats = [...new Set(policyCards.map(c => c.category))];
+    return cats.length > 0 ? cats : POLICY_CATEGORIES;
+  }, [policyCards]);
+
+  const isLoading = cardsLoading || candidatesLoading;
+  const currentCard = policyCards[currentIndex];
+  const progress = policyCards.length > 0 ? ((currentIndex) / policyCards.length) * 100 : 0;
 
   // 카테고리별 점수 계산
   const calculateCategoryScores = useCallback((candidateId: string): CategoryScore[] => {
     const categoryData: Record<string, { userTotal: number; candidateTotal: number; count: number }> = {};
 
-    POLICY_CATEGORIES.forEach(cat => {
+    categories.forEach(cat => {
       categoryData[cat] = { userTotal: 0, candidateTotal: 0, count: 0 };
     });
 
     choices.forEach(choice => {
-      const card = POLICY_CARDS.find(p => p.id === choice.cardId);
+      const card = policyCards.find(p => p.id === choice.cardId);
       if (!card) return;
 
       const alignment = card.candidateAlignment.find(a => a.candidateId === candidateId);
@@ -65,21 +96,23 @@ export function PolicyMatchGame() {
           ? 100 - (alignment.intensity * 20)
           : 50;
 
-      categoryData[card.category].userTotal += userScore;
-      categoryData[card.category].candidateTotal += candidateScore;
-      categoryData[card.category].count += 1;
+      if (categoryData[card.category]) {
+        categoryData[card.category].userTotal += userScore;
+        categoryData[card.category].candidateTotal += candidateScore;
+        categoryData[card.category].count += 1;
+      }
     });
 
-    return POLICY_CATEGORIES.map(category => ({
+    return categories.map(category => ({
       category,
-      userScore: categoryData[category].count > 0 
+      userScore: categoryData[category]?.count > 0 
         ? Math.round(categoryData[category].userTotal / categoryData[category].count)
         : 50,
-      candidateScore: categoryData[category].count > 0
+      candidateScore: categoryData[category]?.count > 0
         ? Math.round(categoryData[category].candidateTotal / categoryData[category].count)
         : 50,
     }));
-  }, [choices]);
+  }, [choices, policyCards, categories]);
 
   // 결과 계산
   const calculateResults = useCallback((): MatchResult[] => {
@@ -92,7 +125,7 @@ export function PolicyMatchGame() {
 
     // 사용자 선택에 따른 점수 계산 (intensity 반영)
     choices.forEach(choice => {
-      const card = POLICY_CARDS.find(p => p.id === choice.cardId);
+      const card = policyCards.find(p => p.id === choice.cardId);
       if (!card) return;
 
       const userAgrees = choice.direction === 'right';
@@ -120,7 +153,7 @@ export function PolicyMatchGame() {
     // 결과 변환 및 정렬
     const results: MatchResult[] = candidates.map(candidate => {
       const score = scores[candidate.id];
-      const matchScore = score.total > 0 
+      const matchScore = score?.total > 0 
         ? Math.round((score.agree / score.total) * 100)
         : 50;
 
@@ -137,22 +170,24 @@ export function PolicyMatchGame() {
     });
 
     return results.sort((a, b) => b.matchScore - a.matchScore);
-  }, [choices, candidates, calculateCategoryScores]);
+  }, [choices, candidates, policyCards, calculateCategoryScores]);
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
+    if (!currentCard) return;
+    
     const newChoice: UserChoice = {
       cardId: currentCard.id,
       direction,
     };
     setChoices(prev => [...prev, newChoice]);
 
-    if (currentIndex < POLICY_CARDS.length - 1) {
+    if (currentIndex < policyCards.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
       // 스와이프 완료 → Pre-reveal 단계로
       setCurrentStep('pre-reveal');
     }
-  }, [currentCard?.id, currentIndex]);
+  }, [currentCard, currentIndex, policyCards.length]);
 
   const handleUndo = useCallback(() => {
     if (choices.length > 0 && currentIndex > 0) {
@@ -195,6 +230,35 @@ export function PolicyMatchGame() {
     });
     return scoresMap;
   }, [candidates, calculateCategoryScores]);
+
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">정책 데이터 로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 데이터 없음
+  if (policyCards.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <p className="text-muted-foreground">정책 데이터가 없습니다.</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="text-primary underline"
+          >
+            돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Step 0: 인트로 화면
   if (currentStep === 'intro') {
@@ -274,7 +338,7 @@ export function PolicyMatchGame() {
           <Brain size={16} className="text-primary" />
           <span className="text-sm font-semibold">
             <span className="text-primary text-lg">{currentIndex + 1}</span>
-            <span className="text-muted-foreground"> / {POLICY_CARDS.length}</span>
+            <span className="text-muted-foreground"> / {policyCards.length}</span>
           </span>
         </div>
         <motion.span 
@@ -293,7 +357,7 @@ export function PolicyMatchGame() {
         <div className="relative h-[400px] sm:h-[450px] max-w-md mx-auto">
           <AnimatePresence mode="popLayout">
             {/* Background cards */}
-            {POLICY_CARDS.slice(currentIndex + 1, currentIndex + 3).map((card, i) => (
+            {policyCards.slice(currentIndex + 1, currentIndex + 3).map((card, i) => (
               <motion.div
                 key={card.id}
                 className="absolute inset-0 bg-card rounded-3xl shadow-lg border border-border/30"
@@ -311,7 +375,7 @@ export function PolicyMatchGame() {
                 isTop={true}
                 onSwipe={handleSwipe}
                 cardNumber={currentIndex + 1}
-                totalCards={POLICY_CARDS.length}
+                totalCards={policyCards.length}
               />
             )}
           </AnimatePresence>
@@ -321,7 +385,7 @@ export function PolicyMatchGame() {
       {/* Category Insights (shows after 3 choices) */}
       {choices.length >= 3 && (
         <div className="px-4 pb-2">
-          <CategoryInsights choices={choices} cards={POLICY_CARDS} />
+          <CategoryInsights choices={choices} cards={policyCards} />
         </div>
       )}
 

@@ -192,6 +192,90 @@ export type Database = {
         }
         Relationships: []
       }
+      policy_candidate_alignments: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          id: string
+          intensity: number
+          policy_card_id: string
+          stance: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          id?: string
+          intensity?: number
+          policy_card_id: string
+          stance: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          id?: string
+          intensity?: number
+          policy_card_id?: string
+          stance?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_candidate_alignments_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_candidate_alignments_policy_card_id_fkey"
+            columns: ["policy_card_id"]
+            isOneToOne: false
+            referencedRelation: "policy_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policy_cards: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_active: boolean
+          left_label: string
+          region_name: string
+          right_label: string
+          sort_order: number
+          statement: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          left_label: string
+          region_name?: string
+          right_label: string
+          sort_order?: number
+          statement: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          left_label?: string
+          region_name?: string
+          right_label?: string
+          sort_order?: number
+          statement?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

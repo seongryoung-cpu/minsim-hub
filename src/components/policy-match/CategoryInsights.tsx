@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { CATEGORY_COLORS, POLICY_CATEGORIES, type UserChoice, type PolicyCard } from '@/types/policy';
+import { CATEGORY_COLORS, type UserChoice, type PolicyCard } from '@/types/policy';
 
 interface CategoryInsightsProps {
   choices: UserChoice[];
@@ -7,8 +8,13 @@ interface CategoryInsightsProps {
 }
 
 export function CategoryInsights({ choices, cards }: CategoryInsightsProps) {
+  // 카드에서 카테고리 목록 추출
+  const categories = useMemo(() => {
+    return [...new Set(cards.map(c => c.category))];
+  }, [cards]);
+
   // 카테고리별 선택 집계
-  const categoryStats = POLICY_CATEGORIES.map(category => {
+  const categoryStats = categories.map(category => {
     const categoryCards = cards.filter(c => c.category === category);
     const categoryChoices = choices.filter(choice => {
       const card = cards.find(c => c.id === choice.cardId);
