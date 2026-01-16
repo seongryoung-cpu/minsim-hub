@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Search, Shield, ShieldOff, X, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Search, Shield, ShieldOff, X, Save, Loader2, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
@@ -15,6 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   Select,
   SelectContent,
@@ -36,7 +46,9 @@ export function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterLevel, setFilterLevel] = useState<VerificationLevel | 'all'>('all');
   const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserWithRole | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Edit form state
   const [editDisplayName, setEditDisplayName] = useState('');
@@ -159,6 +171,36 @@ export function AdminUsers() {
     setIsSaving(false);
   };
 
+  const handleDelete = async () => {
+    if (!deletingUser) return;
+    setIsDeleting(true);
+
+    try {
+      // Delete user roles first
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', deletingUser.user_id);
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', deletingUser.user_id);
+
+      if (profileError) throw profileError;
+
+      toast.success('사용자가 삭제되었습니다');
+      setDeletingUser(null);
+      fetchUsers(); // Refresh list
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      toast.error('삭제에 실패했습니다');
+    }
+
+    setIsDeleting(false);
+  };
+
   if (adminLoading || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -256,13 +298,23 @@ export function AdminUsers() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEditModal(user)}
-                >
-                  수정
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditModal(user)}
+                  >
+                    수정
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDeletingUser(user)}
+                    className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </div>
               </div>
 
               {user.region_sido && (
@@ -382,6 +434,30 @@ export function AdminUsers() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingUser} onOpenChange={(open) => !open && setDeletingUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>사용자 삭제</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="font-medium text-foreground">{deletingUser?.display_name || '익명'}</span> 사용자를 정말 삭제하시겠습니까?
+              <br />
+              이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : '삭제'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
