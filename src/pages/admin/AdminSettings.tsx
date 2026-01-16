@@ -91,27 +91,77 @@ export function AdminSettings() {
     setIsSaving(true);
 
     try {
-      const updates = Object.entries(settings).map(([key, value]) => ({
+      const entries = Object.entries(settings).map(([key, value]) => ({
         key,
         value,
       }));
 
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('app_settings')
-          .update({ value: update.value })
-          .eq('key', update.key);
+      // Ensure rows exist for every key (UPDATE on a missing row doesn't error,
+      // it just updates 0 rows, which looks like "saved" but isn't persisted.)
+      const keys = entries.map((e) => e.key);
+      const { data: existing, error: existingError } = await supabase
+        .from('app_settings')
+        .select('key')
+        .in('key', keys);
 
-        if (error) throw error;
+      if (existingError) throw existingError;
+
+      const existingSet = new Set(existing?.map((r) => r.key) ?? []);
+      const missing = entries.filter((e) => !existingSet.has(e.key));
+
+      if (missing.length > 0) {
+        const { error: insertError } = await supabase
+          .from('app_settings')
+          .insert(missing.map((m) => ({ key: m.key, value: m.value })));
+
+        if (insertError) throw insertError;
       }
 
+      const results = await Promise.all(
+        entries.map(({ key, value }) =>
+          supabase
+            .from('app_settings')
+            .update({ value })
+            .eq('key', key)
+        )
+      );
+
+      const firstError = results.find((r) => r.error)?.error;
+      if (firstError) throw firstError;
+
       toast.success('설정이 저장되었습니다');
+
+      // Re-fetch once to keep UI in sync across refreshes
+      const { data, error } = await supabase
+        .from('app_settings')
+        .select('key, value');
+
+      if (!error) {
+        const settingsMap: Record<string, string> = {};
+        data?.forEach((item) => {
+          settingsMap[item.key] = item.value || '';
+        });
+
+        setSettings({
+          app_name: settingsMap.app_name || '',
+          app_slogan: settingsMap.app_slogan || '',
+          app_version: settingsMap.app_version || '',
+          contact_email: settingsMap.contact_email || '',
+          contact_phone: settingsMap.contact_phone || '',
+          social_x: settingsMap.social_x || '',
+          social_facebook: settingsMap.social_facebook || '',
+          social_instagram: settingsMap.social_instagram || '',
+          social_youtube: settingsMap.social_youtube || '',
+          link_privacy: settingsMap.link_privacy || '',
+          link_terms: settingsMap.link_terms || '',
+        });
+      }
     } catch (error) {
       console.error('Failed to save settings:', error);
       toast.error('저장에 실패했습니다');
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
   };
 
   if (adminLoading || isLoading) {
