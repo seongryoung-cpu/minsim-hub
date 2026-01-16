@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2 } from 'lucide-react';
+import { User, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
 import { IdentityVerificationModal } from '@/components/auth/IdentityVerificationModal';
-import { PushNotificationToggle } from '@/components/notification/PushNotificationToggle';
+
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -265,15 +265,25 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           <ChevronRight size={20} className="text-muted-foreground" />
         </motion.button>
 
-        {/* Push Notification Setting */}
-        <motion.div
+        {/* Notification Settings */}
+        <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="shadow-app-md rounded-2xl overflow-hidden"
+          onClick={() => navigate('/notification-settings')}
+          className="w-full bg-card rounded-2xl p-4 shadow-app-md flex items-center justify-between active:scale-[0.98] transition-transform"
         >
-          <PushNotificationToggle />
-        </motion.div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Bell size={20} className="text-primary" />
+            </div>
+            <div className="text-left">
+              <p className="font-medium text-foreground">알림 설정</p>
+              <p className="text-sm text-muted-foreground">푸시 알림, 알림 유형별 설정</p>
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-muted-foreground" />
+        </motion.button>
 
         {/* Menu Items */}
         <motion.div
