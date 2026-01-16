@@ -513,6 +513,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_followed_candidates: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
