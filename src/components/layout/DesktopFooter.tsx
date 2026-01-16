@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 export function DesktopFooter() {
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
 
   return (
     <footer className="hidden lg:block bg-card border-t border-border">
@@ -14,8 +16,12 @@ export function DesktopFooter() {
                 <span className="text-xl">🗳️</span>
               </div>
               <div>
-                <h2 className="font-bold text-lg text-foreground">민심잇다</h2>
-                <p className="text-xs text-muted-foreground">지역 정치 참여 플랫폼</p>
+                <h2 className="font-bold text-lg text-foreground">
+                  {settings?.app_name || '민심잇다'}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {settings?.app_slogan || '지역 정치 참여 플랫폼'}
+                </p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -76,13 +82,44 @@ export function DesktopFooter() {
                 </button>
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">이용약관</span>
+                {settings?.link_terms ? (
+                  <a 
+                    href={settings.link_terms}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    이용약관
+                  </a>
+                ) : (
+                  <span className="text-sm text-muted-foreground">이용약관</span>
+                )}
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">개인정보처리방침</span>
+                {settings?.link_privacy ? (
+                  <a 
+                    href={settings.link_privacy}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    개인정보처리방침
+                  </a>
+                ) : (
+                  <span className="text-sm text-muted-foreground">개인정보처리방침</span>
+                )}
               </li>
               <li>
-                <span className="text-sm text-muted-foreground">문의하기</span>
+                {settings?.contact_email ? (
+                  <a 
+                    href={`mailto:${settings.contact_email}`}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    문의하기
+                  </a>
+                ) : (
+                  <span className="text-sm text-muted-foreground">문의하기</span>
+                )}
               </li>
             </ul>
           </div>
@@ -91,19 +128,73 @@ export function DesktopFooter() {
           <div>
             <h3 className="font-semibold text-foreground mb-4">연락처</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>이메일: contact@minsimitda.kr</li>
-              <li>전화: 02-000-0000</li>
+              {settings?.contact_email && (
+                <li>
+                  <a href={`mailto:${settings.contact_email}`} className="hover:text-primary transition-colors">
+                    이메일: {settings.contact_email}
+                  </a>
+                </li>
+              )}
+              {settings?.contact_phone && (
+                <li>
+                  <a href={`tel:${settings.contact_phone}`} className="hover:text-primary transition-colors">
+                    전화: {settings.contact_phone}
+                  </a>
+                </li>
+              )}
+              {!settings?.contact_email && !settings?.contact_phone && (
+                <>
+                  <li>이메일: contact@minsimitda.kr</li>
+                  <li>전화: 02-000-0000</li>
+                </>
+              )}
             </ul>
             <div className="mt-4 flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
-                𝕏
-              </div>
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
-                f
-              </div>
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
-                in
-              </div>
+              {settings?.social_x ? (
+                <a
+                  href={settings.social_x}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+                  aria-label="X (Twitter)"
+                >
+                  𝕏
+                </a>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
+                  𝕏
+                </div>
+              )}
+              {settings?.social_facebook ? (
+                <a
+                  href={settings.social_facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+                  aria-label="Facebook"
+                >
+                  f
+                </a>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
+                  f
+                </div>
+              )}
+              {settings?.social_instagram ? (
+                <a
+                  href={settings.social_instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors"
+                  aria-label="Instagram"
+                >
+                  in
+                </a>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
+                  in
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -111,7 +202,7 @@ export function DesktopFooter() {
         {/* Copyright */}
         <div className="mt-12 pt-8 border-t border-border flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            © 2025 민심잇다. All rights reserved.
+            © 2025 {settings?.app_name || '민심잇다'}. All rights reserved.
           </p>
           <p className="text-xs text-muted-foreground">
             Made with ❤️ for Korean Democracy
