@@ -27,6 +27,37 @@ export function useAuth() {
     return data as UserProfile | null;
   }, []);
 
+  // 프로필이 없으면(예: 트리거 미설정/과거 유저) 최초 1회 생성
+  const ensureProfileForUser = async (user: User): Promise<UserProfile | null> => {
+    const existing = await fetchProfile(user.id);
+    if (existing) return existing;
+
+    const displayName =
+      (user.user_metadata?.full_name as string | undefined) ||
+      (user.user_metadata?.name as string | undefined) ||
+      null;
+
+    const avatarUrl = (user.user_metadata?.avatar_url as string | undefined) || null;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: user.id,
+        display_name: displayName,
+        avatar_url: avatarUrl,
+        // verification_level은 DB default('social') 사용
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error creating profile:', error);
+      return null;
+    }
+
+    return data as UserProfile;
+  };
+
   // 인증 상태 변경 리스너
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -36,7 +67,7 @@ export function useAuth() {
         if (user) {
           // setTimeout으로 defer하여 deadlock 방지
           setTimeout(async () => {
-            const profile = await fetchProfile(user.id);
+            const profile = await ensureProfileForUser(user);
             setState({
               user,
               profile,
@@ -59,7 +90,7 @@ export function useAuth() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const user = session?.user ?? null;
       if (user) {
-        fetchProfile(user.id).then(profile => {
+        ensureProfileForUser(user).then(profile => {
           setState({
             user,
             profile,
