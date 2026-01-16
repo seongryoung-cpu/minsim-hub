@@ -150,7 +150,7 @@ export function AdminSettings() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="h-14 flex items-center px-4 gap-3">
+        <div className="max-w-4xl mx-auto h-14 flex items-center px-4 gap-3">
           <button onClick={() => navigate('/admin')} className="p-1 rounded-lg hover:bg-muted">
             <ArrowLeft size={20} />
           </button>
@@ -159,169 +159,171 @@ export function AdminSettings() {
         </div>
       </header>
 
-      <main className="p-4 space-y-6 pb-20">
-        {/* App Info Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
-        >
-          <h2 className="font-semibold text-lg">앱 정보</h2>
-          <p className="text-sm text-muted-foreground">
-            앱 이름, 슬로건, 버전 정보를 설정합니다.
-          </p>
-          <div className="space-y-4">
-            {appInfoFields.map((field, index) => {
-              const Icon = field.icon;
-              return (
-                <motion.div
-                  key={field.key}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="space-y-2"
-                >
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Icon size={16} className="text-muted-foreground" />
-                    {field.label}
-                  </label>
-                  <Input
-                    type={field.type}
-                    value={settings[field.key as keyof AppSettings]}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      [field.key]: e.target.value
-                    }))}
-                    placeholder={field.placeholder}
-                  />
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+      <main className="max-w-4xl mx-auto p-4 md:p-6 space-y-6 pb-20">
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* App Info Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4"
+          >
+            <h2 className="font-semibold text-lg">앱 정보</h2>
+            <p className="text-sm text-muted-foreground">
+              앱 이름, 슬로건, 버전 정보를 설정합니다.
+            </p>
+            <div className="space-y-4">
+              {appInfoFields.map((field, index) => {
+                const Icon = field.icon;
+                return (
+                  <motion.div
+                    key={field.key}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Icon size={16} className="text-muted-foreground" />
+                      {field.label}
+                    </label>
+                    <Input
+                      type={field.type}
+                      value={settings[field.key as keyof AppSettings]}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        [field.key]: e.target.value
+                      }))}
+                      placeholder={field.placeholder}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
 
-        {/* Contact Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
-        >
-          <h2 className="font-semibold text-lg">연락처</h2>
-          <div className="space-y-4">
-            {contactFields.map((field, index) => {
-              const Icon = field.icon;
-              return (
-                <motion.div
-                  key={field.key}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + index * 0.05 }}
-                  className="space-y-2"
-                >
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Icon size={16} className="text-muted-foreground" />
-                    {field.label}
-                  </label>
-                  <Input
-                    type={field.type}
-                    value={settings[field.key as keyof AppSettings]}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      [field.key]: e.target.value
-                    }))}
-                    placeholder={field.placeholder}
-                  />
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+          {/* Contact Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4"
+          >
+            <h2 className="font-semibold text-lg">연락처</h2>
+            <div className="space-y-4">
+              {contactFields.map((field, index) => {
+                const Icon = field.icon;
+                return (
+                  <motion.div
+                    key={field.key}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + index * 0.05 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Icon size={16} className="text-muted-foreground" />
+                      {field.label}
+                    </label>
+                    <Input
+                      type={field.type}
+                      value={settings[field.key as keyof AppSettings]}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        [field.key]: e.target.value
+                      }))}
+                      placeholder={field.placeholder}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
 
-        {/* Social Media Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
-        >
-          <h2 className="font-semibold text-lg">소셜 미디어</h2>
-          <div className="space-y-4">
-            {socialFields.map((field, index) => {
-              const Icon = field.icon;
-              return (
-                <motion.div
-                  key={field.key}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.1 + index * 0.05 }}
-                  className="space-y-2"
-                >
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Icon size={16} className="text-muted-foreground" />
-                    {field.label}
-                  </label>
-                  <Input
-                    type={field.type}
-                    value={settings[field.key as keyof AppSettings]}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      [field.key]: e.target.value
-                    }))}
-                    placeholder={field.placeholder}
-                  />
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+          {/* Social Media Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4"
+          >
+            <h2 className="font-semibold text-lg">소셜 미디어</h2>
+            <div className="space-y-4">
+              {socialFields.map((field, index) => {
+                const Icon = field.icon;
+                return (
+                  <motion.div
+                    key={field.key}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 + index * 0.05 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Icon size={16} className="text-muted-foreground" />
+                      {field.label}
+                    </label>
+                    <Input
+                      type={field.type}
+                      value={settings[field.key as keyof AppSettings]}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        [field.key]: e.target.value
+                      }))}
+                      placeholder={field.placeholder}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
 
-        {/* Legal Links Settings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
-        >
-          <h2 className="font-semibold text-lg">법적 고지</h2>
-          <p className="text-sm text-muted-foreground">
-            개인정보처리방침과 이용약관 페이지 링크를 설정합니다.
-          </p>
-          <div className="space-y-4">
-            {legalFields.map((field, index) => {
-              const Icon = field.icon;
-              return (
-                <motion.div
-                  key={field.key}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 + index * 0.05 }}
-                  className="space-y-2"
-                >
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Icon size={16} className="text-muted-foreground" />
-                    {field.label}
-                  </label>
-                  <Input
-                    type={field.type}
-                    value={settings[field.key as keyof AppSettings]}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      [field.key]: e.target.value
-                    }))}
-                    placeholder={field.placeholder}
-                  />
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+          {/* Legal Links Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4"
+          >
+            <h2 className="font-semibold text-lg">법적 고지</h2>
+            <p className="text-sm text-muted-foreground">
+              개인정보처리방침과 이용약관 페이지 링크를 설정합니다.
+            </p>
+            <div className="space-y-4">
+              {legalFields.map((field, index) => {
+                const Icon = field.icon;
+                return (
+                  <motion.div
+                    key={field.key}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 + index * 0.05 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <Icon size={16} className="text-muted-foreground" />
+                      {field.label}
+                    </label>
+                    <Input
+                      type={field.type}
+                      value={settings[field.key as keyof AppSettings]}
+                      onChange={(e) => setSettings(prev => ({
+                        ...prev,
+                        [field.key]: e.target.value
+                      }))}
+                      placeholder={field.placeholder}
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        </div>
 
         {/* Save Button */}
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full h-12"
+          className="w-full md:w-auto md:min-w-[200px] h-12"
         >
           {isSaving ? (
             <Loader2 className="w-5 h-5 animate-spin" />
