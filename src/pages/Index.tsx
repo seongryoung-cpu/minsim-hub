@@ -22,6 +22,7 @@ import { AdminUsers } from '@/pages/admin/AdminUsers';
 import { AdminContent } from '@/pages/admin/AdminContent';
 import { AdminReports } from '@/pages/admin/AdminReports';
 import { AdminPolicyCards } from '@/pages/admin/AdminPolicyCards';
+import { AdminSettings } from '@/pages/admin/AdminSettings';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -119,6 +120,7 @@ function Index() {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/content" element={<AdminContent />} />
           <Route path="/admin/policy-cards" element={<AdminPolicyCards />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/reports" element={<AdminReports />} />
         </Routes>
       </AnimatePresence>
