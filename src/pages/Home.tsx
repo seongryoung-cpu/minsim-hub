@@ -24,8 +24,10 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
 
-  // DB에서 후보자 데이터 로드
-  const regionName = `${region.sido}${region.sigungu ? ` ${region.sigungu}` : ''}`;
+  // DB에서 후보자 데이터 로드 (sigungu가 '전체'이거나 없으면 sido만 사용)
+  const regionName = region.sigungu && region.sigungu !== '전체' 
+    ? `${region.sido} ${region.sigungu}` 
+    : region.sido;
   const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(regionName);
 
   // 광역단체 선거 상태 데이터 로드 (타임라인용)
