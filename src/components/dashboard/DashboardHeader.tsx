@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
-import { MapPin, Bell, ChevronDown, Sparkles } from 'lucide-react';
+import { MapPin, Bell, ChevronDown } from 'lucide-react';
 import type { Region } from '@/types/region';
+import { useAppSettings } from '@/hooks/useAppSettings';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
   region: Region;
@@ -35,6 +37,8 @@ export function DashboardHeader({
   onNotificationClick,
 }: DashboardHeaderProps) {
   const sidoEmoji = SIDO_EMOJI[region.sido] || '📍';
+  const { settings } = useAppSettings();
+  const navigate = useNavigate();
 
   return (
     <motion.header
@@ -43,54 +47,41 @@ export function DashboardHeader({
       className="sticky top-0 z-20 bg-background/90 backdrop-blur-xl border-b border-border/50"
     >
       <div className="h-14 sm:h-16 flex items-center justify-between px-4 sm:px-6">
-        {/* Region selector - Enhanced Design */}
+        {/* Left: App Logo & Name */}
+        <motion.div
+          whileTap={{ scale: 0.97 }}
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center overflow-hidden shadow-sm">
+            {settings?.logo_url ? (
+              <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-lg">🗳️</span>
+            )}
+          </div>
+          <h1 className="font-bold text-base text-foreground hidden sm:block">
+            {settings?.app_name || '민심잇다'}
+          </h1>
+        </motion.div>
+
+        {/* Center: Region selector */}
         <motion.button
           whileTap={{ scale: 0.97 }}
           whileHover={{ scale: 1.02 }}
           onClick={onRegionClick}
-          className="group flex items-center gap-3 px-3 py-2 -ml-3 rounded-2xl hover:bg-primary/5 transition-all duration-300"
+          className="group flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 hover:bg-secondary transition-all duration-300"
         >
-          {/* Animated Icon Container */}
-          <motion.div 
-            className="relative"
-            whileHover={{ rotate: [0, -10, 10, 0] }}
-            transition={{ duration: 0.5 }}
+          <span className="text-sm">{sidoEmoji}</span>
+          <span className="font-medium text-foreground text-sm">
+            {region.sigungu}
+          </span>
+          <motion.div
+            animate={{ y: [0, 2, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shadow-sm border border-primary/10 group-hover:shadow-md group-hover:border-primary/20 transition-all">
-              <span className="text-lg">{sidoEmoji}</span>
-            </div>
-            {/* Pulse indicator */}
-            <motion.div
-              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary flex items-center justify-center"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            >
-              <MapPin size={8} className="text-primary-foreground" />
-            </motion.div>
+            <ChevronDown size={14} className="text-muted-foreground" />
           </motion.div>
-
-          {/* Location Text */}
-          <div className="text-left">
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-foreground text-base tracking-tight">
-                {region.sigungu}
-              </span>
-              <motion.div
-                animate={{ y: [0, 2, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                <ChevronDown size={16} className="text-primary" />
-              </motion.div>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                {region.sido}
-              </span>
-              <span className="text-[10px] text-primary/60 font-medium">
-                • 지역 변경
-              </span>
-            </div>
-          </div>
         </motion.button>
 
         {/* Right Actions */}
