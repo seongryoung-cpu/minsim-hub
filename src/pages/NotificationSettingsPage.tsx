@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Bell, Newspaper, Users, Brain, Trophy, Settings, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -5,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { PushNotificationToggle } from '@/components/notification/PushNotificationToggle';
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NotificationSettingItemProps {
   icon: React.ReactNode;
@@ -13,6 +15,7 @@ interface NotificationSettingItemProps {
   enabled: boolean;
   onToggle: (value: boolean) => void;
   disabled?: boolean;
+  count?: number;
 }
 
 function NotificationSettingItem({ 
@@ -21,16 +24,27 @@ function NotificationSettingItem({
   description, 
   enabled, 
   onToggle,
-  disabled 
+  disabled,
+  count
 }: NotificationSettingItemProps) {
   return (
     <div className="flex items-center gap-3 p-4 bg-card rounded-xl justify-between">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center relative">
           {icon}
+          {count !== undefined && count > 0 && (
+            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+              {count > 99 ? '99+' : count}
+            </span>
+          )}
         </div>
         <div>
-          <p className="font-medium text-foreground">{title}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-foreground">{title}</p>
+            {count !== undefined && (
+              <span className="text-xs text-muted-foreground">({count}건)</span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
@@ -45,8 +59,37 @@ function NotificationSettingItem({
 
 export function NotificationSettingsPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, isLoading: authLoading } = useAuthContext();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuthContext();
   const { preferences, isLoading, isSaving, updatePreference } = useNotificationPreferences();
+  const [notificationCounts, setNotificationCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (user) {
+      fetchNotificationCounts();
+    }
+  }, [user]);
+
+  const fetchNotificationCounts = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('type')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      data?.forEach((notification) => {
+        const type = notification.type || 'system';
+        counts[type] = (counts[type] || 0) + 1;
+      });
+      setNotificationCounts(counts);
+    } catch (error) {
+      console.error('Failed to fetch notification counts:', error);
+    }
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -139,6 +182,7 @@ export function NotificationSettingsPage() {
               enabled={preferences?.news_enabled ?? true}
               onToggle={(value) => updatePreference('news_enabled', value)}
               disabled={isSaving}
+              count={notificationCounts['news'] || 0}
             />
             <NotificationSettingItem
               icon={<Users size={20} className="text-primary" />}
@@ -147,6 +191,7 @@ export function NotificationSettingsPage() {
               enabled={preferences?.candidate_updates_enabled ?? true}
               onToggle={(value) => updatePreference('candidate_updates_enabled', value)}
               disabled={isSaving}
+              count={notificationCounts['candidate_updates'] || 0}
             />
             <NotificationSettingItem
               icon={<Brain size={20} className="text-primary" />}
@@ -155,6 +200,7 @@ export function NotificationSettingsPage() {
               enabled={preferences?.policy_match_enabled ?? true}
               onToggle={(value) => updatePreference('policy_match_enabled', value)}
               disabled={isSaving}
+              count={notificationCounts['policy_match'] || 0}
             />
             <NotificationSettingItem
               icon={<Trophy size={20} className="text-primary" />}
@@ -163,6 +209,7 @@ export function NotificationSettingsPage() {
               enabled={preferences?.quiz_enabled ?? true}
               onToggle={(value) => updatePreference('quiz_enabled', value)}
               disabled={isSaving}
+              count={notificationCounts['quiz'] || 0}
             />
             <NotificationSettingItem
               icon={<Settings size={20} className="text-primary" />}
@@ -171,6 +218,7 @@ export function NotificationSettingsPage() {
               enabled={preferences?.system_enabled ?? true}
               onToggle={(value) => updatePreference('system_enabled', value)}
               disabled={isSaving}
+              count={notificationCounts['system'] || 0}
             />
           </div>
         </motion.section>
