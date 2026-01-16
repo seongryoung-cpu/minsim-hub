@@ -1,6 +1,7 @@
 import { Home, Vote, MessageSquare, User, FileText, Bell, Search } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface NavItem {
   id: string;
@@ -19,6 +20,7 @@ const navItems: NavItem[] = [
 export function DesktopNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -34,11 +36,17 @@ export function DesktopNavbar() {
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => navigate('/')}
           >
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-lg">🗳️</span>
+            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center overflow-hidden">
+              {settings?.logo_url ? (
+                <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
+              ) : (
+                <span className="text-lg">🗳️</span>
+              )}
             </div>
             <div>
-              <h1 className="font-bold text-lg text-foreground">민심잇다</h1>
+              <h1 className="font-bold text-lg text-foreground">
+                {settings?.app_name || '민심잇다'}
+              </h1>
             </div>
           </div>
 
