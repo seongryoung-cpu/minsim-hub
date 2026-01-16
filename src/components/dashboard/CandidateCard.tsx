@@ -128,7 +128,7 @@ export function CandidateCard({
         whileTap={{ scale: 0.99 }}
         transition={{ delay: 0.05 * index, duration: 0.3 }}
         onClick={handleClick}
-        className="group bg-card rounded-xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-lg cursor-pointer transition-all"
+        className="group bg-card rounded-xl p-4 border border-border/50 hover:border-primary/40 cursor-pointer transition-all"
       >
         <div className="flex items-center gap-4">
           {/* Avatar */}
@@ -211,7 +211,7 @@ export function CandidateCard({
       whileTap={{ scale: 0.98 }}
       transition={{ delay: 0.08 * index, duration: 0.3 }}
       onClick={handleClick}
-      className="w-full bg-card rounded-2xl overflow-hidden shadow-sm border border-border/50 hover:shadow-xl hover:border-primary/40 transition-all group cursor-pointer"
+      className="w-full bg-card rounded-2xl overflow-hidden shadow-sm border border-border/50 hover:border-primary/40 transition-all group cursor-pointer"
     >
       <div className="flex">
         {/* Large Candidate Image */}
