@@ -1,87 +1,60 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Calendar, Users, Megaphone, CheckCheck, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, Calendar, Users, Megaphone, CheckCheck, Trash2, Newspaper, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface Notification {
-  id: string;
-  type: 'election' | 'candidate' | 'news';
-  title: string;
-  message: string;
-  time: string;
-  read: boolean;
-}
+import { useNotifications } from '@/hooks/useNotifications';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface NotificationSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'election',
-    title: '대선 D-30',
-    message: '제21대 대통령 선거가 30일 앞으로 다가왔습니다.',
-    time: '방금 전',
-    read: false,
-  },
-  {
-    id: '2',
-    type: 'candidate',
-    title: '이재명 후보 공약 업데이트',
-    message: '경제 분야 새로운 공약이 등록되었습니다.',
-    time: '1시간 전',
-    read: false,
-  },
-  {
-    id: '3',
-    type: 'news',
-    title: '오늘의 선거 뉴스',
-    message: '주요 후보들의 지지율 변동 소식을 확인하세요.',
-    time: '3시간 전',
-    read: true,
-  },
-  {
-    id: '4',
-    type: 'election',
-    title: '사전투표 안내',
-    message: '사전투표 일정과 장소를 확인하세요.',
-    time: '어제',
-    read: true,
-  },
-];
-
-const NOTIFICATION_ICONS = {
+const NOTIFICATION_ICONS: Record<string, typeof Bell> = {
   election: Calendar,
   candidate: Users,
-  news: Megaphone,
+  news: Newspaper,
+  default: Megaphone,
 };
 
-const NOTIFICATION_COLORS = {
+const NOTIFICATION_COLORS: Record<string, string> = {
   election: 'from-primary/20 to-primary/5 border-primary/20',
   candidate: 'from-accent/20 to-accent/5 border-accent/20',
-  news: 'from-secondary/80 to-secondary/40 border-border',
+  news: 'from-red-500/20 to-red-500/5 border-red-500/20',
+  default: 'from-secondary/80 to-secondary/40 border-border',
 };
 
 export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps) {
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const { isAuthenticated } = useAuthContext();
+  const { 
+    notifications, 
+    unreadCount, 
+    isLoading, 
+    markAsRead, 
+    markAllAsRead, 
+    clearAllNotifications 
+  } = useNotifications();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const handleNotificationClick = (notification: { id: string; data: Record<string, unknown>; is_read: boolean }) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // Open article URL if available
+    const articleUrl = notification.data?.article_url as string;
+    if (articleUrl) {
+      window.open(articleUrl, '_blank');
+    }
   };
 
-  const clearAll = () => {
-    setNotifications([]);
-  };
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+  const formatTime = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: ko });
+    } catch {
+      return dateString;
+    }
   };
 
   return (
@@ -106,7 +79,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={markAllAsRead}
+                  onClick={() => markAllAsRead()}
                   className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                 >
                   <CheckCheck size={14} className="mr-1" />
@@ -115,7 +88,7 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={clearAll}
+                  onClick={() => clearAllNotifications()}
                   className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
                 >
                   <Trash2 size={14} className="mr-1" />
@@ -127,92 +100,114 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          <AnimatePresence mode="popLayout">
-            {notifications.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-16 text-muted-foreground"
-              >
-                <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-                  <Bell size={28} className="text-muted-foreground/50" />
-                </div>
-                <p className="text-sm font-medium">알림이 없습니다</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  새로운 소식이 있으면 알려드릴게요
-                </p>
-              </motion.div>
-            ) : (
-              notifications.map((notification, index) => {
-                const Icon = NOTIFICATION_ICONS[notification.type];
-                const colorClass = NOTIFICATION_COLORS[notification.type];
+          {!isAuthenticated ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                <Bell size={28} className="text-muted-foreground/50" />
+              </div>
+              <p className="text-sm font-medium">로그인이 필요합니다</p>
+              <p className="text-xs text-muted-foreground/70 mt-1 text-center">
+                로그인하면 관심 후보의<br />새 소식을 알림으로 받을 수 있어요
+              </p>
+            </div>
+          ) : isLoading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="animate-spin text-muted-foreground" size={24} />
+            </div>
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {notifications.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex flex-col items-center justify-center py-16 text-muted-foreground"
+                >
+                  <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                    <Bell size={28} className="text-muted-foreground/50" />
+                  </div>
+                  <p className="text-sm font-medium">알림이 없습니다</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1 text-center">
+                    관심 후보를 팔로우하면<br />새 소식을 알림으로 받을 수 있어요
+                  </p>
+                </motion.div>
+              ) : (
+                notifications.map((notification, index) => {
+                  const Icon = NOTIFICATION_ICONS[notification.type] || NOTIFICATION_ICONS.default;
+                  const colorClass = NOTIFICATION_COLORS[notification.type] || NOTIFICATION_COLORS.default;
+                  const hasLink = !!notification.data?.article_url;
 
-                return (
-                  <motion.button
-                    key={notification.id}
-                    layout
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20, scale: 0.9 }}
-                    transition={{ delay: index * 0.05 }}
-                    onClick={() => markAsRead(notification.id)}
-                    className={`w-full text-left p-3 rounded-xl border transition-all ${
-                      notification.read
-                        ? 'bg-muted/30 border-border/30'
-                        : `bg-gradient-to-br ${colorClass}`
-                    }`}
-                  >
-                    <div className="flex gap-3">
-                      <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                          notification.read
-                            ? 'bg-muted'
-                            : 'bg-background/80 shadow-sm'
-                        }`}
-                      >
-                        <Icon
-                          size={18}
-                          className={
-                            notification.read
-                              ? 'text-muted-foreground'
-                              : 'text-foreground'
-                          }
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4
-                            className={`text-sm font-semibold truncate ${
-                              notification.read
-                                ? 'text-muted-foreground'
-                                : 'text-foreground'
-                            }`}
-                          >
-                            {notification.title}
-                          </h4>
-                          {!notification.read && (
-                            <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                          )}
-                        </div>
-                        <p
-                          className={`text-xs mt-0.5 line-clamp-2 ${
-                            notification.read
-                              ? 'text-muted-foreground/70'
-                              : 'text-muted-foreground'
+                  return (
+                    <motion.button
+                      key={notification.id}
+                      layout
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20, scale: 0.9 }}
+                      transition={{ delay: index * 0.05 }}
+                      onClick={() => handleNotificationClick(notification)}
+                      className={`w-full text-left p-3 rounded-xl border transition-all ${
+                        notification.is_read
+                          ? 'bg-muted/30 border-border/30'
+                          : `bg-gradient-to-br ${colorClass}`
+                      }`}
+                    >
+                      <div className="flex gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                            notification.is_read
+                              ? 'bg-muted'
+                              : 'bg-background/80 shadow-sm'
                           }`}
                         >
-                          {notification.message}
-                        </p>
-                        <span className="text-[10px] text-muted-foreground/60 mt-1 block">
-                          {notification.time}
-                        </span>
+                          <Icon
+                            size={18}
+                            className={
+                              notification.is_read
+                                ? 'text-muted-foreground'
+                                : 'text-foreground'
+                            }
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4
+                              className={`text-sm font-semibold truncate ${
+                                notification.is_read
+                                  ? 'text-muted-foreground'
+                                  : 'text-foreground'
+                              }`}
+                            >
+                              {notification.title}
+                            </h4>
+                            {!notification.is_read && (
+                              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                            )}
+                          </div>
+                          <p
+                            className={`text-xs mt-0.5 line-clamp-2 ${
+                              notification.is_read
+                                ? 'text-muted-foreground/70'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            {notification.body}
+                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-[10px] text-muted-foreground/60">
+                              {formatTime(notification.created_at)}
+                            </span>
+                            {hasLink && (
+                              <ExternalLink size={12} className="text-muted-foreground/40" />
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </motion.button>
-                );
-              })
-            )}
-          </AnimatePresence>
+                    </motion.button>
+                  );
+                })
+              )}
+            </AnimatePresence>
+          )}
         </div>
       </SheetContent>
     </Sheet>

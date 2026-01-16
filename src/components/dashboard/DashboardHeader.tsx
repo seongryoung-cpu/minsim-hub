@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { MapPin, Bell, ChevronDown } from 'lucide-react';
 import type { Region } from '@/types/region';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useNotifications } from '@/hooks/useNotifications';
 import { useNavigate } from 'react-router-dom';
 
 interface DashboardHeaderProps {
@@ -38,6 +39,7 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const sidoEmoji = SIDO_EMOJI[region.sido] || '📍';
   const { settings } = useAppSettings();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   return (
@@ -94,12 +96,19 @@ export function DashboardHeader({
             className="relative w-10 h-10 rounded-xl flex items-center justify-center hover:bg-secondary transition-all"
           >
             <Bell size={20} className="text-foreground" />
-            {/* Notification badge */}
-            <motion.span 
-              className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-gradient-to-br from-accent to-accent/80 rounded-full border-2 border-background"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-            />
+            {/* Notification badge - only show if there are unread notifications */}
+            {unreadCount > 0 && (
+              <motion.span 
+                className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 rounded-full border-2 border-background flex items-center justify-center"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              >
+                <span className="text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              </motion.span>
+            )}
           </motion.button>
         </div>
       </div>
