@@ -37,7 +37,7 @@ interface MyPageProps {
 }
 
 const menuItems = [
-  { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문', path: null },
+  { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문', path: '/faq' },
 ];
 
 export function MyPage({ region, onRegionChange }: MyPageProps) {
