@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { MapPin, ArrowRight, Users, Vote, MessageCircle } from 'lucide-react';
 import { RegionSheet } from '@/components/region/RegionSheet';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import type { Region } from '@/types/region';
 
 interface OnboardingScreenProps {
@@ -28,6 +29,7 @@ const features = [
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
+  const { settings } = useAppSettings();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -44,32 +46,40 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.5 }}
-            className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center"
+            className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center overflow-hidden"
             style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
           >
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-              <path
-                d="M16 20h16M16 24h12M16 28h8"
-                stroke="white"
-                strokeWidth="2.5"
-                strokeLinecap="round"
+            {settings?.logo_url ? (
+              <img 
+                src={settings.logo_url} 
+                alt="Logo" 
+                className="w-10 h-10 object-contain"
               />
-              <circle cx="36" cy="32" r="6" fill="white" />
-              <path
-                d="M34 32l2 2 3-3"
-                stroke="hsl(220 70% 50%)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            ) : (
+              <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
+                <path
+                  d="M16 20h16M16 24h12M16 28h8"
+                  stroke="white"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+                <circle cx="36" cy="32" r="6" fill="white" />
+                <path
+                  d="M34 32l2 2 3-3"
+                  stroke="hsl(220 70% 50%)"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            )}
           </motion.div>
 
           <h1 className="text-3xl font-bold text-foreground mb-3">
-            민심잇다
+            {settings?.app_name || '민심잇다'}
           </h1>
           <p className="text-muted-foreground text-lg">
-            나의 목소리가 정치가 되는 곳
+            {settings?.app_slogan || '나의 목소리가 정치가 되는 곳'}
           </p>
         </motion.div>
 
