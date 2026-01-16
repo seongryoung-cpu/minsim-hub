@@ -463,16 +463,20 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           transition={{ delay: 0.45 }}
           className="text-center py-4"
         >
-          <p className="text-xs text-muted-foreground">민심잇다 v1.0.0</p>
-          <p className="text-xs text-muted-foreground mt-1">나의 목소리가 정치가 되는 곳</p>
+          <p className="text-xs text-muted-foreground">
+            {appSettings?.app_name || '민심잇다'} v{appSettings?.app_version || '1.0.0'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {appSettings?.app_slogan || '나의 목소리가 정치가 되는 곳'}
+          </p>
         </motion.div>
       </main>
 
       <ShareSheet
         open={isShareOpen}
         onOpenChange={setIsShareOpen}
-        title="민심잇다"
-        description="나의 목소리가 정치가 되는 곳 - 2026 지방선거 정보 플랫폼"
+        title={appSettings?.app_name || '민심잇다'}
+        description={`${appSettings?.app_slogan || '나의 목소리가 정치가 되는 곳'} - 2026 지방선거 정보 플랫폼`}
       />
 
       <AuthModal

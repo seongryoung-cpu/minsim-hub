@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -9,6 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface AppSettings {
+  app_name: string;
+  app_slogan: string;
+  app_version: string;
   contact_email: string;
   contact_phone: string;
   social_x: string;
@@ -25,6 +28,9 @@ export function AdminSettings() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState<AppSettings>({
+    app_name: '',
+    app_slogan: '',
+    app_version: '',
     contact_email: '',
     contact_phone: '',
     social_x: '',
@@ -58,6 +64,9 @@ export function AdminSettings() {
         });
 
         setSettings({
+          app_name: settingsMap.app_name || '',
+          app_slogan: settingsMap.app_slogan || '',
+          app_version: settingsMap.app_version || '',
           contact_email: settingsMap.contact_email || '',
           contact_phone: settingsMap.contact_phone || '',
           social_x: settingsMap.social_x || '',
@@ -115,6 +124,12 @@ export function AdminSettings() {
 
   if (!isAdmin) return null;
 
+  const appInfoFields = [
+    { key: 'app_name', label: '앱 이름', icon: Info, placeholder: '민심잇다', type: 'text' },
+    { key: 'app_slogan', label: '슬로건', icon: Tag, placeholder: '나의 목소리가 정치가 되는 곳', type: 'text' },
+    { key: 'app_version', label: '버전', icon: Hash, placeholder: '1.0.0', type: 'text' },
+  ];
+
   const contactFields = [
     { key: 'contact_email', label: '이메일', icon: Mail, placeholder: 'contact@example.com', type: 'email' },
     { key: 'contact_phone', label: '전화번호', icon: Phone, placeholder: '02-1234-5678', type: 'tel' },
@@ -145,10 +160,51 @@ export function AdminSettings() {
       </header>
 
       <main className="p-4 space-y-6 pb-20">
+        {/* App Info Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
+        >
+          <h2 className="font-semibold text-lg">앱 정보</h2>
+          <p className="text-sm text-muted-foreground">
+            앱 이름, 슬로건, 버전 정보를 설정합니다.
+          </p>
+          <div className="space-y-4">
+            {appInfoFields.map((field, index) => {
+              const Icon = field.icon;
+              return (
+                <motion.div
+                  key={field.key}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="space-y-2"
+                >
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Icon size={16} className="text-muted-foreground" />
+                    {field.label}
+                  </label>
+                  <Input
+                    type={field.type}
+                    value={settings[field.key as keyof AppSettings]}
+                    onChange={(e) => setSettings(prev => ({
+                      ...prev,
+                      [field.key]: e.target.value
+                    }))}
+                    placeholder={field.placeholder}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+
         {/* Contact Settings */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
           className="bg-card rounded-xl p-4 shadow-app-md space-y-4"
         >
           <h2 className="font-semibold text-lg">연락처</h2>
@@ -160,7 +216,7 @@ export function AdminSettings() {
                   key={field.key}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: 0.1 + index * 0.05 }}
                   className="space-y-2"
                 >
                   <label className="text-sm font-medium flex items-center gap-2">
