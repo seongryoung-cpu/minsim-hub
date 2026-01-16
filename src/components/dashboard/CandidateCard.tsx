@@ -1,7 +1,8 @@
 import { motion } from 'framer-motion';
-import { User, ChevronRight, Heart, FileText } from 'lucide-react';
+import { User, ChevronRight, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
+import { useAppSettings } from '@/hooks/useAppSettings';
 import { useToast } from '@/hooks/use-toast';
 import type { Candidate } from '@/types/election';
 
@@ -22,8 +23,10 @@ export function CandidateCard({
 }: CandidateCardProps) {
   const navigate = useNavigate();
   const { isFollowing, toggleFollow } = useFollowedCandidates();
+  const { settings } = useAppSettings();
   const { toast } = useToast();
   const following = isFollowing(candidate.id);
+  const enableHover = settings?.enable_hover_animation !== false;
 
   const handleClick = () => {
     if (onPress) {
@@ -55,8 +58,8 @@ export function CandidateCard({
       <motion.div
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        whileHover={{ x: 4, backgroundColor: 'hsl(var(--secondary) / 0.8)' }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={enableHover ? { x: 4, backgroundColor: 'hsl(var(--secondary) / 0.8)' } : undefined}
+        whileTap={enableHover ? { scale: 0.98 } : undefined}
         transition={{ delay: 0.05 * index, duration: 0.3 }}
         onClick={handleClick}
         className="group flex items-center gap-3 p-3 rounded-xl bg-secondary/30 cursor-pointer transition-all"
@@ -124,8 +127,8 @@ export function CandidateCard({
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ scale: 1.01, y: -2 }}
-        whileTap={{ scale: 0.99 }}
+        whileHover={enableHover ? { scale: 1.01, y: -2 } : undefined}
+        whileTap={enableHover ? { scale: 0.99 } : undefined}
         transition={{ delay: 0.05 * index, duration: 0.3 }}
         onClick={handleClick}
         className="group bg-card rounded-xl p-4 border border-border/50 hover:border-primary/40 cursor-pointer transition-all"
@@ -207,8 +210,8 @@ export function CandidateCard({
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={enableHover ? { scale: 1.02, y: -2 } : undefined}
+      whileTap={enableHover ? { scale: 0.98 } : undefined}
       transition={{ delay: 0.08 * index, duration: 0.3 }}
       onClick={handleClick}
       className="w-full bg-card rounded-2xl overflow-hidden shadow-sm border border-border/50 hover:border-primary/40 transition-all group cursor-pointer"

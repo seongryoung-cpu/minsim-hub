@@ -14,6 +14,7 @@ export interface AppSettings {
   social_youtube: string;
   link_privacy: string;
   link_terms: string;
+  enable_hover_animation: boolean;
 }
 
 export function useAppSettings() {
@@ -47,6 +48,7 @@ export function useAppSettings() {
           social_youtube: settingsMap.social_youtube || '',
           link_privacy: settingsMap.link_privacy || '',
           link_terms: settingsMap.link_terms || '',
+          enable_hover_animation: settingsMap.enable_hover_animation !== 'false',
         });
       } catch (error) {
         console.error('Failed to fetch app settings:', error);
