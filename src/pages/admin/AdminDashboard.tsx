@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Shield, Users, FileText, BarChart3, MessageSquare, 
   ChevronRight, Settings, LogOut, ArrowLeft, Activity,
-  LogIn, Trophy, Target, UserPlus, UserCheck, Bell, Send, Loader2
+  LogIn, Trophy, Target, UserPlus, UserCheck
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
+import { PushNotificationSender } from '@/components/admin/PushNotificationSender';
 import {
   AreaChart,
   Area,
@@ -63,29 +63,6 @@ export function AdminDashboard() {
   const [verificationDist, setVerificationDist] = useState<VerificationDistribution[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSendingPush, setIsSendingPush] = useState(false);
-
-  const handleSendTestPush = async () => {
-    setIsSendingPush(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-push-notification', {
-        body: {
-          title: '테스트 알림 🔔',
-          body: '관리자가 보낸 테스트 푸시 알림입니다.',
-          data: { type: 'test', url: '/my' }
-        }
-      });
-
-      if (error) throw error;
-
-      toast.success(`푸시 알림 전송 완료: ${data.sent}건 성공, ${data.failed}건 실패`);
-    } catch (error) {
-      console.error('Failed to send test push:', error);
-      toast.error('푸시 알림 전송에 실패했습니다');
-    } finally {
-      setIsSendingPush(false);
-    }
-  };
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -476,37 +453,13 @@ export function AdminDashboard() {
           </div>
         </div>
 
-        {/* Push Notification Test */}
+        {/* Push Notification Sender */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="bg-card rounded-xl p-4 shadow-app-md"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <Bell size={20} className="text-primary" />
-            <h3 className="font-semibold">푸시 알림 테스트</h3>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            등록된 모든 푸시 구독자에게 테스트 알림을 전송합니다.
-          </p>
-          <button
-            onClick={handleSendTestPush}
-            disabled={isSendingPush}
-            className="w-full py-3 bg-primary text-primary-foreground rounded-xl font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isSendingPush ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                전송 중...
-              </>
-            ) : (
-              <>
-                <Send size={18} />
-                테스트 알림 전송
-              </>
-            )}
-          </button>
+          <PushNotificationSender />
         </motion.div>
 
         {/* Admin Info */}
