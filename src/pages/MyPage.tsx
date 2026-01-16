@@ -367,11 +367,45 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           </motion.div>
         )}
 
+        {/* Legal Links */}
+        {appSettings && (appSettings.link_privacy || appSettings.link_terms) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center justify-center gap-4"
+          >
+            {appSettings.link_terms && (
+              <a
+                href={appSettings.link_terms}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              >
+                이용약관
+              </a>
+            )}
+            {appSettings.link_privacy && appSettings.link_terms && (
+              <span className="text-muted-foreground">|</span>
+            )}
+            {appSettings.link_privacy && (
+              <a
+                href={appSettings.link_privacy}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              >
+                개인정보처리방침
+              </a>
+            )}
+          </motion.div>
+        )}
+
         {/* App Info */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={{ delay: 0.45 }}
           className="text-center py-4"
         >
           <p className="text-xs text-muted-foreground">민심잇다 v1.0.0</p>
