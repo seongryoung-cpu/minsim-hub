@@ -276,6 +276,66 @@ export type Database = {
         }
         Relationships: []
       }
+      policy_match_results: {
+        Row: {
+          choices_json: Json
+          created_at: string
+          id: string
+          preferred_candidate_id: string | null
+          preferred_candidate_name: string | null
+          region_name: string
+          results_json: Json
+          top_match_candidate_id: string | null
+          top_match_candidate_name: string
+          top_match_score: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          choices_json?: Json
+          created_at?: string
+          id?: string
+          preferred_candidate_id?: string | null
+          preferred_candidate_name?: string | null
+          region_name: string
+          results_json?: Json
+          top_match_candidate_id?: string | null
+          top_match_candidate_name: string
+          top_match_score: number
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          choices_json?: Json
+          created_at?: string
+          id?: string
+          preferred_candidate_id?: string | null
+          preferred_candidate_name?: string | null
+          region_name?: string
+          results_json?: Json
+          top_match_candidate_id?: string | null
+          top_match_candidate_name?: string
+          top_match_score?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policy_match_results_preferred_candidate_id_fkey"
+            columns: ["preferred_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "policy_match_results_top_match_candidate_id_fkey"
+            columns: ["top_match_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
