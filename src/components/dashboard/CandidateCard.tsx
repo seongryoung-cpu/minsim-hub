@@ -205,12 +205,12 @@ export function CandidateCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.08 * index, duration: 0.3 }}
       onClick={handleClick}
-      className="w-full bg-card rounded-2xl p-4 shadow-sm border border-border/50 hover:shadow-md hover:border-primary/20 transition-all group cursor-pointer"
+      className="w-full bg-card rounded-2xl p-3 shadow-sm border border-border/50 hover:shadow-md hover:border-primary/20 transition-all group cursor-pointer"
     >
-      <div className="flex items-center gap-4">
-        {/* Larger Candidate Image for Mobile */}
+      <div className="flex items-center gap-3">
+        {/* Candidate Image */}
         <div
-          className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+          className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
           style={{
             background: `linear-gradient(145deg, ${candidate.partyColor}20, ${candidate.partyColor}08)`,
             border: `2px solid ${candidate.partyColor}40`,
@@ -223,16 +223,16 @@ export function CandidateCard({
               className="w-full h-full object-cover"
             />
           ) : (
-            <User size={28} style={{ color: candidate.partyColor }} />
+            <User size={24} style={{ color: candidate.partyColor }} />
           )}
         </div>
 
         {/* Candidate Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-foreground text-base">{candidate.name}</span>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="font-bold text-foreground text-sm truncate">{candidate.name}</span>
             <span
-              className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+              className="text-[10px] px-1.5 py-0.5 rounded-full font-medium flex-shrink-0"
               style={{
                 backgroundColor: `${candidate.partyColor}15`,
                 color: candidate.partyColor,
@@ -241,27 +241,7 @@ export function CandidateCard({
               {candidate.party}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground mb-1.5">{candidate.position}</p>
-          
-          {/* Pledge Tags Preview */}
-          {candidate.pledges && candidate.pledges.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {candidate.pledges.slice(0, 2).map((pledge) => (
-                <span
-                  key={pledge.id}
-                  className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-secondary text-secondary-foreground"
-                >
-                  <FileText size={10} className="flex-shrink-0" />
-                  <span className="truncate max-w-[80px]">{pledge.title}</span>
-                </span>
-              ))}
-              {candidate.pledges.length > 2 && (
-                <span className="text-[10px] text-muted-foreground self-center">
-                  +{candidate.pledges.length - 2}
-                </span>
-              )}
-            </div>
-          )}
+          <p className="text-[11px] text-muted-foreground truncate">{candidate.position}</p>
         </div>
 
         {/* Follow Button & Arrow */}
@@ -270,7 +250,7 @@ export function CandidateCard({
             <motion.button
               whileTap={{ scale: 0.85 }}
               onClick={handleFollowClick}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${
                 following 
                   ? 'bg-rose-100 dark:bg-rose-900/30' 
                   : 'hover:bg-secondary'
@@ -278,12 +258,12 @@ export function CandidateCard({
               aria-label={following ? '팔로우 취소' : '팔로우'}
             >
               <Heart 
-                size={20} 
+                size={18} 
                 className={following ? "text-rose-500 fill-rose-500" : "text-muted-foreground group-hover:text-rose-400 transition-colors"} 
               />
             </motion.button>
           )}
-          <ChevronRight size={20} className="text-muted-foreground" />
+          <ChevronRight size={18} className="text-muted-foreground" />
         </div>
       </div>
     </motion.div>
@@ -323,21 +303,17 @@ export function CandidateCardSkeleton({ variant = 'default' }: { variant?: 'defa
   }
 
   return (
-    <div className="bg-card rounded-2xl p-4 border border-border/50 animate-pulse">
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-secondary" />
-        <div className="flex-1 space-y-2">
-          <div className="flex items-center gap-2">
-            <div className="h-5 w-16 bg-secondary rounded" />
-            <div className="h-4 w-12 bg-secondary rounded-full" />
+    <div className="bg-card rounded-2xl p-3 border border-border/50 animate-pulse">
+      <div className="flex items-center gap-3">
+        <div className="w-14 h-14 rounded-xl bg-secondary" />
+        <div className="flex-1 space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="h-4 w-14 bg-secondary rounded" />
+            <div className="h-3 w-10 bg-secondary rounded-full" />
           </div>
-          <div className="h-3 w-24 bg-secondary rounded" />
-          <div className="flex gap-1.5">
-            <div className="h-6 w-20 bg-secondary rounded-md" />
-            <div className="h-6 w-20 bg-secondary rounded-md" />
-          </div>
+          <div className="h-3 w-20 bg-secondary rounded" />
         </div>
-        <div className="w-10 h-10 bg-secondary rounded-full" />
+        <div className="w-9 h-9 bg-secondary rounded-full" />
       </div>
     </div>
   );
