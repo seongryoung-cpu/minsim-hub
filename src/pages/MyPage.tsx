@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell } from 'lucide-react';
+import { User, HelpCircle, ChevronRight, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -38,7 +38,6 @@ interface MyPageProps {
 
 const menuItems = [
   { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문', path: null },
-  { icon: FileText, label: '기획서', description: '앱 기능 명세 확인', path: '/app-info' },
 ];
 
 export function MyPage({ region, onRegionChange }: MyPageProps) {
