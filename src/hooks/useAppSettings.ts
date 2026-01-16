@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface AppSettings {
+  app_name: string;
+  app_slogan: string;
+  app_version: string;
   contact_email: string;
   contact_phone: string;
   social_x: string;
@@ -31,6 +34,9 @@ export function useAppSettings() {
         });
 
         setSettings({
+          app_name: settingsMap.app_name || '민심잇다',
+          app_slogan: settingsMap.app_slogan || '나의 목소리가 정치가 되는 곳',
+          app_version: settingsMap.app_version || '1.0.0',
           contact_email: settingsMap.contact_email || '',
           contact_phone: settingsMap.contact_phone || '',
           social_x: settingsMap.social_x || '',
