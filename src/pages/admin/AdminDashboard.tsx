@@ -8,12 +8,35 @@ import {
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
 interface DashboardStats {
   totalUsers: number;
   verifiedUsers: number;
   pendingReports: number;
   todaySignups: number;
+}
+
+interface SignupTrend {
+  date: string;
+  count: number;
+}
+
+interface VerificationDistribution {
+  name: string;
+  value: number;
+  color: string;
 }
 
 export function AdminDashboard() {
@@ -26,6 +49,8 @@ export function AdminDashboard() {
     pendingReports: 0,
     todaySignups: 0,
   });
+  const [signupTrends, setSignupTrends] = useState<SignupTrend[]>([]);
+  const [verificationDist, setVerificationDist] = useState<VerificationDistribution[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -66,6 +91,52 @@ export function AdminDashboard() {
           pendingReports: pendingReports || 0,
           todaySignups: todaySignups || 0,
         });
+
+        // Fetch signup trends (last 7 days)
+        const last7Days: SignupTrend[] = [];
+        for (let i = 6; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          const dateStr = date.toISOString().split('T')[0];
+          const nextDate = new Date(date);
+          nextDate.setDate(nextDate.getDate() + 1);
+          const nextDateStr = nextDate.toISOString().split('T')[0];
+
+          const { count } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', dateStr)
+            .lt('created_at', nextDateStr);
+
+          last7Days.push({
+            date: `${date.getMonth() + 1}/${date.getDate()}`,
+            count: count || 0,
+          });
+        }
+        setSignupTrends(last7Days);
+
+        // Fetch verification level distribution
+        const { count: socialCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('verification_level', 'social');
+
+        const { count: phoneCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('verification_level', 'phone');
+
+        const { count: identityCount } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .eq('verification_level', 'identity');
+
+        setVerificationDist([
+          { name: '소셜 로그인', value: socialCount || 0, color: 'hsl(var(--chart-1))' },
+          { name: '휴대폰 인증', value: phoneCount || 0, color: 'hsl(var(--chart-2))' },
+          { name: '본인 인증', value: identityCount || 0, color: 'hsl(var(--chart-3))' },
+        ]);
+
       } catch (error) {
         console.error('Failed to fetch stats:', error);
       }
@@ -146,6 +217,101 @@ export function AdminDashboard() {
               <p className="text-sm text-muted-foreground">{stat.label}</p>
             </motion.div>
           ))}
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Signup Trends Chart */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-card rounded-xl p-4 shadow-app-md"
+          >
+            <h3 className="font-semibold mb-4">최근 7일 가입 추이</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={signupTrends}>
+                  <defs>
+                    <linearGradient id="colorSignups" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    allowDecimals={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    fill="url(#colorSignups)"
+                    name="가입자 수"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          {/* Verification Level Distribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-card rounded-xl p-4 shadow-app-md"
+          >
+            <h3 className="font-semibold mb-4">인증 레벨 분포</h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={verificationDist}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={40}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {verificationDist.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: number) => [`${value}명`, '']}
+                  />
+                  <Legend 
+                    verticalAlign="bottom"
+                    height={36}
+                    formatter={(value) => <span className="text-xs text-muted-foreground">{value}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
         </div>
 
         {/* Quick Actions */}
