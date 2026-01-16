@@ -3,7 +3,8 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Shield, Users, FileText, BarChart3, MessageSquare, 
-  ChevronRight, Settings, LogOut, ArrowLeft 
+  ChevronRight, Settings, LogOut, ArrowLeft, Activity,
+  LogIn, Trophy, Target, UserPlus, UserCheck
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -39,6 +40,14 @@ interface VerificationDistribution {
   color: string;
 }
 
+interface ActivityLog {
+  id: string;
+  user_id: string | null;
+  activity_type: string;
+  description: string;
+  created_at: string;
+}
+
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user, signOut } = useAuthContext();
@@ -51,6 +60,7 @@ export function AdminDashboard() {
   });
   const [signupTrends, setSignupTrends] = useState<SignupTrend[]>([]);
   const [verificationDist, setVerificationDist] = useState<VerificationDistribution[]>([]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -136,6 +146,15 @@ export function AdminDashboard() {
           { name: '휴대폰 인증', value: phoneCount || 0, color: 'hsl(var(--chart-2))' },
           { name: '본인 인증', value: identityCount || 0, color: 'hsl(var(--chart-3))' },
         ]);
+
+        // Fetch recent activity logs
+        const { data: logsData } = await supabase
+          .from('activity_logs')
+          .select('id, user_id, activity_type, description, created_at')
+          .order('created_at', { ascending: false })
+          .limit(10);
+
+        setActivityLogs(logsData || []);
 
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -313,6 +332,92 @@ export function AdminDashboard() {
             </div>
           </motion.div>
         </div>
+
+        {/* Recent Activity Logs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="bg-card rounded-xl p-4 shadow-app-md"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Activity size={20} className="text-primary" />
+            <h3 className="font-semibold">최근 활동</h3>
+          </div>
+          
+          {activityLogs.length > 0 ? (
+            <div className="space-y-3">
+              {activityLogs.map((log) => {
+                const getIcon = () => {
+                  switch (log.activity_type) {
+                    case 'login': return <LogIn size={16} className="text-green-500" />;
+                    case 'logout': return <LogOut size={16} className="text-gray-500" />;
+                    case 'signup': return <UserPlus size={16} className="text-blue-500" />;
+                    case 'quiz_complete': return <Trophy size={16} className="text-amber-500" />;
+                    case 'policy_match_complete': return <Target size={16} className="text-purple-500" />;
+                    case 'identity_verify': return <UserCheck size={16} className="text-emerald-500" />;
+                    default: return <Activity size={16} className="text-muted-foreground" />;
+                  }
+                };
+
+                const getActivityLabel = () => {
+                  switch (log.activity_type) {
+                    case 'login': return '로그인';
+                    case 'logout': return '로그아웃';
+                    case 'signup': return '회원가입';
+                    case 'quiz_complete': return '퀴즈 완료';
+                    case 'policy_match_complete': return '정책 매칭';
+                    case 'candidate_follow': return '후보 팔로우';
+                    case 'candidate_unfollow': return '팔로우 취소';
+                    case 'identity_verify': return '본인 인증';
+                    case 'profile_update': return '프로필 수정';
+                    default: return log.activity_type;
+                  }
+                };
+
+                const timeAgo = (dateStr: string) => {
+                  const now = new Date();
+                  const date = new Date(dateStr);
+                  const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
+                  
+                  if (diff < 60) return '방금 전';
+                  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+                  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+                  return `${Math.floor(diff / 86400)}일 전`;
+                };
+
+                return (
+                  <div 
+                    key={log.id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                      {getIcon()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+                          {getActivityLabel()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">
+                        {log.description}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      {timeAgo(log.created_at)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Activity size={32} className="mx-auto text-muted-foreground mb-2" />
+              <p className="text-sm text-muted-foreground">아직 활동 로그가 없습니다</p>
+            </div>
+          )}
+        </motion.div>
 
         {/* Quick Actions */}
         <div className="space-y-3">
