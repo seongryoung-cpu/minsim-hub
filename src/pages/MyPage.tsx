@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2 } from 'lucide-react';
+import { User, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -11,11 +11,13 @@ import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
 import { IdentityVerificationModal } from '@/components/auth/IdentityVerificationModal';
+import { PushNotificationToggle } from '@/components/notification/PushNotificationToggle';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,7 +37,6 @@ interface MyPageProps {
 }
 
 const menuItems = [
-  { icon: Bell, label: '알림 설정', description: '푸시 알림 관리', path: null },
   { icon: HelpCircle, label: '도움말', description: '자주 묻는 질문', path: null },
   { icon: FileText, label: '기획서', description: '앱 기능 명세 확인', path: '/app-info' },
 ];
@@ -264,6 +265,16 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           <ChevronRight size={20} className="text-muted-foreground" />
         </motion.button>
 
+        {/* Push Notification Setting */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="shadow-app-md rounded-2xl overflow-hidden"
+        >
+          <PushNotificationToggle />
+        </motion.div>
+
         {/* Menu Items */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -295,6 +306,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
             );
           })}
         </motion.div>
+
 
         {/* Dark Mode Toggle */}
         <motion.div
