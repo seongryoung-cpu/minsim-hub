@@ -233,8 +233,8 @@ export function CandidateCard({
 
         {/* Candidate Info */}
         <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-bold text-foreground text-base truncate">{candidate.name}</span>
+          <div className="flex flex-wrap items-center gap-1.5 mb-1">
+            <span className="font-bold text-foreground text-base">{candidate.name}</span>
             <span
               className="text-[10px] px-2 py-0.5 rounded-full font-semibold flex-shrink-0"
               style={{
@@ -245,7 +245,7 @@ export function CandidateCard({
               {candidate.party}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground truncate mb-2">{candidate.position}</p>
+          <p className="text-xs text-muted-foreground mb-1">{candidate.position}</p>
           
           {/* Summary preview */}
           {candidate.summary && (
