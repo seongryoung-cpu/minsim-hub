@@ -24,11 +24,10 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [showAllCandidates, setShowAllCandidates] = useState(false);
 
-  // DB에서 후보자 데이터 로드 (sigungu가 '전체'이거나 없으면 sido만 사용)
-  const regionName = region.sigungu && region.sigungu !== '전체' 
-    ? `${region.sido} ${region.sigungu}` 
-    : region.sido;
-  const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(regionName);
+  // DB에서 후보자 데이터 로드
+  // 현재 DB의 후보자(region_name)는 광역(sido) 기준으로 저장되어 있어,
+  // 구/군(sigungu)을 선택했더라도 광역단체 후보를 보여주도록 sido로 조회합니다.
+  const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(region.sido);
 
   // 광역단체 선거 상태 데이터 로드 (타임라인용)
   const electionStatus = useMemo(() => {
