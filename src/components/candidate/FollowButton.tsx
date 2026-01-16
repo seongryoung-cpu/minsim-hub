@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, UserCheck, Bell, BellOff } from 'lucide-react';
+import { UserPlus, UserCheck, Heart } from 'lucide-react';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
 
 interface FollowButtonProps {
@@ -30,7 +30,7 @@ export function FollowButton({
         onClick={handleClick}
         className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${
           following 
-            ? 'bg-primary/10 text-primary' 
+            ? 'text-red-500' 
             : 'hover:bg-secondary text-muted-foreground hover:text-foreground'
         }`}
       >
@@ -38,20 +38,21 @@ export function FollowButton({
           {following ? (
             <motion.div
               key="following"
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: 180 }}
+              initial={{ scale: 0 }}
+              animate={{ scale: [1, 1.3, 1] }}
+              exit={{ scale: 0 }}
+              transition={{ duration: 0.3 }}
             >
-              <Bell size={20} className="fill-current" />
+              <Heart size={22} className="fill-current" />
             </motion.div>
           ) : (
             <motion.div
               key="not-following"
-              initial={{ scale: 0, rotate: 180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: -180 }}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0 }}
             >
-              <BellOff size={20} />
+              <Heart size={22} />
             </motion.div>
           )}
         </AnimatePresence>
