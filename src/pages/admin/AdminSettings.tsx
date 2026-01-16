@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash, ImageIcon, Upload, X } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash, ImageIcon, Upload, X, MousePointer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,6 +22,7 @@ interface AppSettings {
   social_youtube: string;
   link_privacy: string;
   link_terms: string;
+  enable_hover_animation: string;
 }
 
 export function AdminSettings() {
@@ -43,6 +45,7 @@ export function AdminSettings() {
     social_youtube: '',
     link_privacy: '',
     link_terms: '',
+    enable_hover_animation: 'true',
   });
 
   useEffect(() => {
@@ -80,6 +83,7 @@ export function AdminSettings() {
           social_youtube: settingsMap.social_youtube || '',
           link_privacy: settingsMap.link_privacy || '',
           link_terms: settingsMap.link_terms || '',
+          enable_hover_animation: settingsMap.enable_hover_animation ?? 'true',
         });
       } catch (error) {
         console.error('Failed to fetch settings:', error);
@@ -211,6 +215,7 @@ export function AdminSettings() {
           social_youtube: settingsMap.social_youtube || '',
           link_privacy: settingsMap.link_privacy || '',
           link_terms: settingsMap.link_terms || '',
+          enable_hover_animation: settingsMap.enable_hover_animation ?? 'true',
         });
       }
     } catch (error) {
@@ -332,7 +337,45 @@ export function AdminSettings() {
             </div>
           </motion.div>
 
-          {/* App Info Settings */}
+          {/* UI/UX Settings */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4 md:col-span-2"
+          >
+            <h2 className="font-semibold text-lg">UI/UX 설정</h2>
+            <p className="text-sm text-muted-foreground">
+              사용자 인터페이스 관련 설정을 관리합니다.
+            </p>
+            <div className="space-y-4">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center justify-between p-4 rounded-lg bg-secondary/30"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <MousePointer size={20} className="text-primary" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">호버 애니메이션</label>
+                    <p className="text-xs text-muted-foreground">
+                      후보자 카드 등에 마우스 호버 시 애니메이션 효과를 적용합니다
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={settings.enable_hover_animation === 'true'}
+                  onCheckedChange={(checked) => setSettings(prev => ({
+                    ...prev,
+                    enable_hover_animation: checked ? 'true' : 'false'
+                  }))}
+                />
+              </motion.div>
+            </div>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
