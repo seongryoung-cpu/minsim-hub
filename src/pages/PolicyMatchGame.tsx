@@ -19,18 +19,24 @@ import {
   type PolicyCard,
 } from '@/types/policy';
 import { usePolicyCards } from '@/hooks/usePolicyCards';
+import { useSavePolicyMatchResult } from '@/hooks/usePolicyMatchResults';
 import { useCandidates } from '@/hooks/useCandidates';
 import { useRegion } from '@/hooks/useRegion';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export type GameStep = 'intro' | 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
 
 export function PolicyMatchGame() {
   const navigate = useNavigate();
   const { region } = useRegion();
+  const { isAuthenticated } = useAuthContext();
+  const saveResult = useSavePolicyMatchResult();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [choices, setChoices] = useState<UserChoice[]>([]);
   const [currentStep, setCurrentStep] = useState<GameStep>('intro');
   const [userPreference, setUserPreference] = useState<PreferredCandidate>(null);
+  const [hasSaved, setHasSaved] = useState(false);
 
   // DB에서 정책 카드 로드
   const { data: dbPolicyCards, isLoading: cardsLoading } = usePolicyCards(region?.sido);
@@ -201,6 +207,7 @@ export function PolicyMatchGame() {
     setChoices([]);
     setCurrentStep('swipe');
     setUserPreference(null);
+    setHasSaved(false);
   }, []);
 
   const handleStart = useCallback(() => {
@@ -212,10 +219,7 @@ export function PolicyMatchGame() {
     setCurrentStep('result');
   }, []);
 
-  const handleContinueToSentiment = useCallback(() => {
-    setCurrentStep('sentiment');
-  }, []);
-
+  // 결과 계산 (먼저 정의해야 handleContinueToSentiment에서 사용 가능)
   const results = useMemo(() => {
     if (currentStep !== 'swipe' && currentStep !== 'intro') {
       return calculateResults();
@@ -230,6 +234,32 @@ export function PolicyMatchGame() {
     });
     return scoresMap;
   }, [candidates, calculateCategoryScores]);
+
+  const handleContinueToSentiment = useCallback(async () => {
+    setCurrentStep('sentiment');
+    
+    // 결과 저장 (로그인한 사용자만, 한 번만)
+    if (isAuthenticated && !hasSaved && results.length > 0) {
+      const topMatch = results[0];
+      try {
+        await saveResult.mutateAsync({
+          region_name: region?.sido || '전국',
+          top_match_candidate_id: topMatch.candidateId,
+          top_match_candidate_name: topMatch.candidateName,
+          top_match_score: topMatch.matchScore,
+          preferred_candidate_id: userPreference?.candidateId || null,
+          preferred_candidate_name: userPreference?.candidateName || null,
+          results: results,
+          choices: choices,
+          total_questions: policyCards.length,
+        });
+        setHasSaved(true);
+        toast.success('결과가 저장되었습니다');
+      } catch (error) {
+        console.error('Failed to save result:', error);
+      }
+    }
+  }, [isAuthenticated, hasSaved, results, userPreference, region?.sido, choices, policyCards.length, saveResult]);
 
   // 로딩 상태
   if (isLoading) {

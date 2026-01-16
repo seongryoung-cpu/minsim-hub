@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Bell, HelpCircle, ChevronRight, MapPin, FileText, Share2, Moon, Sun, LogOut, Shield, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
+import { PolicyMatchHistory, PolicyMatchResultModal } from '@/components/policy-match/PolicyMatchHistory';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -12,6 +14,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
 import { toast } from 'sonner';
 import type { Region } from '@/types/region';
+import type { PolicyMatchResult } from '@/hooks/usePolicyMatchResults';
 
 interface MyPageProps {
   region: Region;
@@ -29,6 +32,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<PolicyMatchResult | null>(null);
   const { isAuthenticated, isLoading, profile, signOut, refreshProfile } = useAuthContext();
   const { isAdmin } = useAdmin();
   
@@ -173,6 +177,9 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           )}
         </motion.div>
 
+        {/* Policy Match History */}
+        <PolicyMatchHistory onViewResult={(result) => setSelectedResult(result)} />
+
         {/* PQ Stats Card */}
         <PQStatsCard />
 
@@ -296,6 +303,12 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
         isOpen={isVerificationModalOpen}
         onClose={() => setIsVerificationModalOpen(false)}
         onSuccess={handleVerificationSuccess}
+      />
+
+      <PolicyMatchResultModal
+        result={selectedResult}
+        isOpen={!!selectedResult}
+        onClose={() => setSelectedResult(null)}
       />
     </motion.div>
   );
