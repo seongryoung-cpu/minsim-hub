@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { ArrowRight, Users, Scale, Newspaper, MessageSquare } from 'lucide-react';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
@@ -25,8 +26,6 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const [showAllCandidates, setShowAllCandidates] = useState(false);
 
   // DB에서 후보자 데이터 로드
-  // 현재 DB의 후보자(region_name)는 광역(sido) 기준으로 저장되어 있어,
-  // 구/군(sigungu)을 선택했더라도 광역단체 후보를 보여주도록 sido로 조회합니다.
   const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(region.sido);
 
   // 광역단체 선거 상태 데이터 로드 (타임라인용)
@@ -42,7 +41,6 @@ export function Home({ region, onRegionChange }: HomeProps) {
   // DB 후보자를 셔플 (매 세션마다 랜덤)
   const shuffledCandidates = useMemo(() => {
     const candidates = dbCandidates ? [...dbCandidates] : [];
-    // Fisher-Yates 셔플 알고리즘
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
@@ -61,15 +59,39 @@ export function Home({ region, onRegionChange }: HomeProps) {
     setShowAllCandidates(true);
   }, []);
 
-  const handleNavigateToElection = useCallback(() => {
-    navigate('/election');
-  }, [navigate]);
-
   const pageVariants = {
-    initial: { opacity: 0, x: 50 },
-    animate: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -50 },
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -20 },
   };
+
+  // Quick action cards for desktop
+  const quickActions = [
+    {
+      id: 'compare',
+      icon: Scale,
+      title: '후보자 비교',
+      description: '공약과 정책을 나란히 비교해보세요',
+      color: 'from-primary to-primary/70',
+      path: '/compare',
+    },
+    {
+      id: 'news',
+      icon: Newspaper,
+      title: '뉴스 피드',
+      description: '후보자 관련 최신 소식',
+      color: 'from-accent to-accent/70',
+      path: '/news',
+    },
+    {
+      id: 'discussion',
+      icon: MessageSquare,
+      title: '토론장',
+      description: '주민들과 의견을 나눠보세요',
+      color: 'from-emerald-500 to-emerald-400',
+      path: '/discussion',
+    },
+  ];
 
   return (
     <motion.div
@@ -78,117 +100,229 @@ export function Home({ region, onRegionChange }: HomeProps) {
       animate="animate"
       exit="exit"
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="min-h-screen bg-background pb-20 lg:pb-0"
+      className="min-h-screen bg-background pb-20 lg:pb-8"
     >
-      <DashboardHeader
-        region={region}
-        onRegionClick={() => setIsRegionSheetOpen(true)}
-        onNotificationClick={() => setIsNotificationOpen(true)}
-      />
+      {/* Mobile Header - Hidden on Desktop */}
+      <div className="lg:hidden">
+        <DashboardHeader
+          region={region}
+          onRegionClick={() => setIsRegionSheetOpen(true)}
+          onNotificationClick={() => setIsNotificationOpen(true)}
+        />
+      </div>
 
-      <main className="p-4 sm:p-5 lg:p-8 space-y-5 sm:space-y-6 lg:space-y-8">
-        {/* Election Status with D-Day + Timeline */}
-        <DashboardSection
-          title={`${metropolitanTitle} 선거 진행 현황`}
-          icon="🗳️"
-          badge={`D-${electionStatus.dDay}`}
-          delay={0.1}
+      <main className="p-4 sm:p-5 lg:px-8 lg:py-6">
+        {/* Desktop Hero Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="hidden lg:block mb-8"
         >
-          <ElectionTimeline
-            milestones={electionStatus.milestones}
-            currentPhase={electionStatus.currentPhase}
-          />
-        </DashboardSection>
-
-        {/* Quiz Banner */}
-        <QuizBanner />
-
-        {/* Desktop: Two column layout */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-8 space-y-5 lg:space-y-0">
-          {/* Policy Match Banner */}
-          <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
-
-          {/* Candidates Section */}
-          <DashboardSection
-            title={`${metropolitanTitle} 예비후보`}
-            icon="👥"
-            delay={0.2}
-          >
-            <div className="space-y-3">
-              {candidatesLoading ? (
-                <>
-                  <CandidateCardSkeleton />
-                  <CandidateCardSkeleton />
-                  <CandidateCardSkeleton />
-                </>
-              ) : (
-                displayedCandidates.map((candidate, index) => (
-                  <CandidateCard
-                    key={candidate.id}
-                    candidate={candidate}
-                    index={index}
-                    onPress={() => navigate(`/candidate/${candidate.id}`)}
-                  />
-                ))
-              )}
-              {!showAllCandidates && remainingCount > 0 && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                  onClick={handleViewAllCandidates}
-                  className="w-full py-3 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors border border-dashed border-primary/30"
-                >
-                  +{remainingCount}명 더 보기
-                </motion.button>
-              )}
-              {showAllCandidates && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center text-xs text-muted-foreground py-2"
-                >
-                  ※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다
-                </motion.p>
-              )}
-              
-              {/* Compare Button - More Prominent */}
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => navigate('/compare')}
-                className="w-full py-4 mt-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-2xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 hover:shadow-xl hover:shadow-primary/30 transition-all"
-              >
-                <span className="text-lg">⚖️</span>
-                <span>후보자 공약 비교하기</span>
-              </motion.button>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">
+                {region.sigungu} 선거 정보
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                {metropolitanTitle} 예비후보 현황과 정책을 확인하세요
+              </p>
             </div>
-          </DashboardSection>
-        </div>
-
-        {/* Expandable Future Slots */}
-        <DashboardSection
-          title="더 알아보기"
-          icon="✨"
-          delay={0.3}
-        >
-          <div className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-3 lg:space-y-0">
-            <ExpandableSlot
-              title="뉴스 피드"
-              description="관심 후보자의 최신 뉴스를 확인하세요"
-              icon="📰"
-              onPress={() => navigate('/news')}
-            />
-            <ExpandableSlot
-              title="오늘의 담론"
-              description="지역 주민들과 함께 토론해보세요"
-              icon="💬"
-              comingSoon
-            />
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setIsRegionSheetOpen(true)}
+              className="px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-xl text-sm font-medium transition-colors"
+            >
+              지역 변경
+            </motion.button>
           </div>
-        </DashboardSection>
+        </motion.div>
+
+        {/* Desktop Three Column Layout */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-6 space-y-5 lg:space-y-0">
+          
+          {/* Left Column - Main Content */}
+          <div className="lg:col-span-8 space-y-5 lg:space-y-6">
+            {/* Election Timeline */}
+            <DashboardSection
+              title={`${metropolitanTitle} 선거 진행 현황`}
+              icon="🗳️"
+              badge={`D-${electionStatus.dDay}`}
+              delay={0.1}
+            >
+              <ElectionTimeline
+                milestones={electionStatus.milestones}
+                currentPhase={electionStatus.currentPhase}
+              />
+            </DashboardSection>
+
+            {/* Quiz Banner */}
+            <QuizBanner />
+
+            {/* Policy Match & Quick Actions - Desktop Grid */}
+            <div className="lg:grid lg:grid-cols-2 lg:gap-5">
+              <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
+              
+              {/* Quick Actions - Desktop Only */}
+              <div className="hidden lg:block">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="bg-card rounded-2xl p-5 shadow-sm border border-border/50 h-full"
+                >
+                  <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <span>⚡</span>
+                    빠른 메뉴
+                  </h3>
+                  <div className="space-y-3">
+                    {quickActions.map((action) => (
+                      <motion.button
+                        key={action.id}
+                        whileHover={{ x: 4 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(action.path)}
+                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left group"
+                      >
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-sm`}>
+                          <action.icon size={18} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground text-sm">{action.title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{action.description}</p>
+                        </div>
+                        <ArrowRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Expandable Slots - Mobile Only */}
+            <div className="lg:hidden">
+              <DashboardSection
+                title="더 알아보기"
+                icon="✨"
+                delay={0.3}
+              >
+                <div className="space-y-3">
+                  <ExpandableSlot
+                    title="뉴스 피드"
+                    description="관심 후보자의 최신 뉴스를 확인하세요"
+                    icon="📰"
+                    onPress={() => navigate('/news')}
+                  />
+                  <ExpandableSlot
+                    title="오늘의 담론"
+                    description="지역 주민들과 함께 토론해보세요"
+                    icon="💬"
+                    comingSoon
+                  />
+                </div>
+              </DashboardSection>
+            </div>
+          </div>
+
+          {/* Right Column - Sidebar (Desktop) / Full width (Mobile) */}
+          <div className="lg:col-span-4 space-y-5 lg:space-y-6">
+            {/* Candidates Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-card rounded-2xl p-5 shadow-sm border border-border/50"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Users size={18} className="text-primary" />
+                  {metropolitanTitle} 예비후보
+                </h3>
+                <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">
+                  {shuffledCandidates.length}명
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {candidatesLoading ? (
+                  <>
+                    <CandidateCardSkeleton />
+                    <CandidateCardSkeleton />
+                    <CandidateCardSkeleton />
+                  </>
+                ) : (
+                  displayedCandidates.map((candidate, index) => (
+                    <CandidateCard
+                      key={candidate.id}
+                      candidate={candidate}
+                      index={index}
+                      onPress={() => navigate(`/candidate/${candidate.id}`)}
+                    />
+                  ))
+                )}
+
+                {!showAllCandidates && remainingCount > 0 && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    onClick={handleViewAllCandidates}
+                    className="w-full py-2.5 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors border border-dashed border-primary/30"
+                  >
+                    +{remainingCount}명 더 보기
+                  </motion.button>
+                )}
+
+                {showAllCandidates && (
+                  <p className="text-center text-xs text-muted-foreground py-1">
+                    ※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다
+                  </p>
+                )}
+
+                {/* Compare Button */}
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate('/compare')}
+                  className="w-full py-3.5 mt-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-xl shadow-md shadow-primary/20 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all"
+                >
+                  <Scale size={18} />
+                  <span>후보자 공약 비교하기</span>
+                </motion.button>
+              </div>
+            </motion.div>
+
+            {/* Additional Info Card - Desktop Only */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="hidden lg:block bg-gradient-to-br from-secondary/50 to-secondary/30 rounded-2xl p-5 border border-border/50"
+            >
+              <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
+                <span>💡</span>
+                선거 참여 팁
+              </h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  후보자의 공약을 꼼꼼히 비교해보세요
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  정책 매칭으로 나와 맞는 후보를 찾아보세요
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary">•</span>
+                  퀴즈로 선거 지식을 쌓아보세요
+                </li>
+              </ul>
+            </motion.div>
+          </div>
+        </div>
       </main>
 
       <RegionSheet
