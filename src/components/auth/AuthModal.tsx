@@ -81,33 +81,34 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    // Use the mock email as password for demo (simple approach)
-    const mockPassword = `mock_${selectedProvider}_${Date.now()}`;
+    // Use a consistent password based on email for demo mode
+    const mockPassword = `Mock123!${mockEmail}`;
     
-    // Try to sign up first, if fails try to sign in
+    // Try to sign up first
     const { error: signUpError } = await signUpWithEmail(mockEmail, mockPassword, mockName);
     
     if (signUpError) {
-      // If user exists, we can't sign in without knowing password
-      // For demo, just show success
-      setMockStep('success');
-      setTimeout(() => {
-        toast.success(`${providerConfig[selectedProvider!].name} 로그인 성공!`, {
-          description: '(데모 모드)'
+      // If user already exists, try to sign in
+      const { error: signInError } = await signInWithEmail(mockEmail, mockPassword);
+      
+      if (signInError) {
+        // User exists but password doesn't match - show error
+        setMockStep('input');
+        toast.error('이미 다른 방법으로 가입된 계정입니다', {
+          description: '이메일 로그인을 사용해주세요'
         });
-        onClose();
-        resetForm();
-      }, 1000);
-    } else {
-      setMockStep('success');
-      setTimeout(() => {
-        toast.success(`${providerConfig[selectedProvider!].name} 로그인 성공!`, {
-          description: '환영합니다!'
-        });
-        onClose();
-        resetForm();
-      }, 1000);
+        return;
+      }
     }
+    
+    setMockStep('success');
+    setTimeout(() => {
+      toast.success(`${providerConfig[selectedProvider!].name} 로그인 성공!`, {
+        description: '환영합니다!'
+      });
+      onClose();
+      resetForm();
+    }, 1000);
   };
 
   const resetForm = () => {

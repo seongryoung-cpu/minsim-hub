@@ -160,6 +160,17 @@ export function useAuth() {
     return updateProfile(updates);
   }, [state.user, updateProfile]);
 
+  // 프로필 새로고침 (state도 업데이트)
+  const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {
+    if (!state.user) return null;
+    
+    const profile = await fetchProfile(state.user.id);
+    if (profile) {
+      setState(prev => ({ ...prev, profile }));
+    }
+    return profile;
+  }, [state.user, fetchProfile]);
+
   return {
     ...state,
     signInWithEmail,
@@ -168,6 +179,6 @@ export function useAuth() {
     signOut,
     updateProfile,
     upgradeVerificationLevel,
-    refreshProfile: () => state.user && fetchProfile(state.user.id),
+    refreshProfile,
   };
 }
