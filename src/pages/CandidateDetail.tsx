@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, User, Share2, Briefcase, FileText, GraduationCap, Calendar, Building2, Newspaper, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FollowButton } from '@/components/candidate/FollowButton';
 import { NewsCard } from '@/components/news/NewsCard';
 import { useCandidateBySlug } from '@/hooks/useCandidates';
 import { useNewsForCandidate } from '@/hooks/useNews';
@@ -78,12 +77,7 @@ export function CandidateDetail() {
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-semibold">후보자 정보</h1>
-          <FollowButton
-            candidateId={candidate.id}
-            candidateName={candidate.name}
-            partyColor={candidate.partyColor}
-            variant="icon"
-          />
+          <div className="w-10" /> {/* Spacer for centering */}
         </div>
       </header>
 
