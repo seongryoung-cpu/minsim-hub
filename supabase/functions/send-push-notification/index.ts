@@ -11,6 +11,19 @@ interface PushPayload {
   body: string;
   data?: Record<string, unknown>;
   user_id?: string;
+  notification_type?: 'news' | 'candidate_updates' | 'quiz' | 'policy_match' | 'system';
+}
+
+// Map notification_type to preference column name
+function getPreferenceColumn(type: string | undefined): string | null {
+  const mapping: Record<string, string> = {
+    news: 'news_enabled',
+    candidate_updates: 'candidate_updates_enabled',
+    quiz: 'quiz_enabled',
+    policy_match: 'policy_match_enabled',
+    system: 'system_enabled',
+  };
+  return type ? mapping[type] || null : null;
 }
 
 // Web Push implementation for Deno
@@ -113,7 +126,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const payload: PushPayload = await req.json();
-    const { title, body, data, user_id } = payload;
+    const { title, body, data, user_id, notification_type } = payload;
 
     if (!title || !body) {
       return new Response(
@@ -141,11 +154,48 @@ serve(async (req) => {
       );
     }
 
+    // Get user preferences if notification_type is specified
+    const preferenceColumn = getPreferenceColumn(notification_type);
+    let userPreferences: Record<string, boolean> = {};
+
+    if (preferenceColumn) {
+      const userIds = [...new Set(subscriptions.map((s: { user_id: string }) => s.user_id))];
+      const { data: preferences } = await supabase
+        .from('notification_preferences')
+        .select('*')
+        .in('user_id', userIds);
+
+      if (preferences) {
+        for (const pref of preferences) {
+          const prefValue = (pref as Record<string, unknown>)[preferenceColumn];
+          userPreferences[pref.user_id as string] = prefValue !== false;
+        }
+      }
+    }
+
+    // Filter subscriptions based on user preferences
+    const filteredSubscriptions = subscriptions.filter(sub => {
+      if (!preferenceColumn) return true; // No type specified, send to all
+      // If user has preference set, check it; otherwise default to true
+      return userPreferences[sub.user_id] !== false;
+    });
+
+    if (filteredSubscriptions.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          message: 'No subscriptions after filtering by preferences', 
+          sent: 0,
+          filtered_out: subscriptions.length 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const pushPayload = JSON.stringify({ title, body, data });
     let sentCount = 0;
     const failedSubscriptions: string[] = [];
 
-    for (const sub of subscriptions) {
+    for (const sub of filteredSubscriptions) {
       try {
         const response = await sendWebPush(
           sub.endpoint,
@@ -181,8 +231,9 @@ serve(async (req) => {
       JSON.stringify({ 
         message: 'Push notifications sent', 
         sent: sentCount,
-        failed: subscriptions.length - sentCount,
-        cleaned: failedSubscriptions.length
+        failed: filteredSubscriptions.length - sentCount,
+        cleaned: failedSubscriptions.length,
+        filtered_out: subscriptions.length - filteredSubscriptions.length
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
