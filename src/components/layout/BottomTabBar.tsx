@@ -1,24 +1,26 @@
 import { Home, Vote, MessageSquare, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAppSettings } from '@/hooks/useAppSettings';
 
 interface TabItem {
   id: string;
   label: string;
-  icon: typeof Home;
+  icon: typeof Home | 'logo';
   path: string;
 }
-
-const tabs: TabItem[] = [
-  { id: 'home', label: '홈', icon: Home, path: '/' },
-  { id: 'election', label: '선거', icon: Vote, path: '/election' },
-  { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion' },
-  { id: 'my', label: '마이', icon: User, path: '/my' },
-];
 
 export function BottomTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
+
+  const tabs: TabItem[] = [
+    { id: 'home', label: settings?.app_name || '홈', icon: 'logo', path: '/' },
+    { id: 'election', label: '선거', icon: Vote, path: '/election' },
+    { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion' },
+    { id: 'my', label: '마이', icon: User, path: '/my' },
+  ];
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -30,7 +32,7 @@ export function BottomTabBar() {
       <div className="flex items-center justify-around h-16 sm:h-[72px]">
         {tabs.map((tab) => {
           const active = isActive(tab.path);
-          const Icon = tab.icon;
+          const isLogoTab = tab.icon === 'logo';
 
           return (
             <button
@@ -43,11 +45,30 @@ export function BottomTabBar() {
                 whileTap={{ scale: 0.9 }}
                 transition={{ duration: 0.1 }}
               >
-                <Icon
-                  size={24}
-                  className={`transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
-                  strokeWidth={active ? 2.5 : 2}
-                />
+                {isLogoTab ? (
+                  <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center bg-primary/10">
+                    {settings?.logo_url ? (
+                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
+                    ) : (
+                      <Home
+                        size={20}
+                        className={`transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                        strokeWidth={active ? 2.5 : 2}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  (() => {
+                    const Icon = tab.icon as typeof Home;
+                    return (
+                      <Icon
+                        size={24}
+                        className={`transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
+                        strokeWidth={active ? 2.5 : 2}
+                      />
+                    );
+                  })()
+                )}
                 {active && (
                   <motion.div
                     layoutId="tab-indicator"
@@ -57,11 +78,11 @@ export function BottomTabBar() {
                 )}
               </motion.div>
               <span
-                className={`text-[10px] sm:text-xs font-medium transition-colors ${
+                className={`text-[10px] sm:text-xs font-medium transition-colors truncate max-w-[60px] ${
                   active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                 }`}
               >
-                {tab.label}
+                {isLogoTab ? (settings?.app_name || '홈') : tab.label}
               </span>
             </button>
           );
