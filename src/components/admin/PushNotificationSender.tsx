@@ -35,6 +35,16 @@ interface NotificationLog {
   created_at: string;
 }
 
+const NOTIFICATION_TYPES = [
+  { value: 'system', label: '시스템 알림', description: '일반 공지사항' },
+  { value: 'news', label: '뉴스 알림', description: '뉴스 관련 알림' },
+  { value: 'candidate_updates', label: '후보자 업데이트', description: '후보자 정보 변경' },
+  { value: 'quiz', label: '퀴즈 알림', description: '퀴즈 관련 알림' },
+  { value: 'policy_match', label: '정책 매치', description: '정책 매치 관련 알림' },
+] as const;
+
+type NotificationType = typeof NOTIFICATION_TYPES[number]['value'];
+
 export function PushNotificationSender() {
   const { user } = useAuthContext();
   const [isOpen, setIsOpen] = useState(false);
@@ -45,6 +55,7 @@ export function PushNotificationSender() {
   const [isSending, setIsSending] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [notificationType, setNotificationType] = useState<NotificationType>('system');
   const [sendToAll, setSendToAll] = useState(true);
   const [logs, setLogs] = useState<NotificationLog[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
@@ -175,7 +186,8 @@ export function PushNotificationSender() {
           body: {
             title,
             body,
-            data: { type: 'admin_broadcast', url: '/' }
+            notification_type: notificationType,
+            data: { type: notificationType, url: '/' }
           }
         });
 
@@ -192,7 +204,8 @@ export function PushNotificationSender() {
                 title,
                 body,
                 user_id: userId,
-                data: { type: 'admin_direct', url: '/' }
+                notification_type: notificationType,
+                data: { type: notificationType, url: '/' }
               }
             });
 
@@ -214,6 +227,7 @@ export function PushNotificationSender() {
       // Reset form
       setTitle('');
       setBody('');
+      setNotificationType('system');
       setSelectedUsers([]);
       setActiveTab('history');
     } catch (error) {
@@ -282,6 +296,30 @@ export function PushNotificationSender() {
                     onChange={(e) => setBody(e.target.value)}
                     rows={3}
                   />
+                </div>
+
+                {/* Notification Type */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">알림 유형</label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    해당 유형을 끈 사용자에게는 알림이 전송되지 않습니다
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {NOTIFICATION_TYPES.map((type) => (
+                      <div
+                        key={type.value}
+                        onClick={() => setNotificationType(type.value)}
+                        className={`p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+                          notificationType === type.value 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <p className="text-sm font-medium">{type.label}</p>
+                        <p className="text-xs text-muted-foreground">{type.description}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Target Selection */}
