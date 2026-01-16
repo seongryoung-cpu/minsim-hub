@@ -33,7 +33,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   const [selectedResult, setSelectedResult] = useState<PolicyMatchResult | null>(null);
-  const { isAuthenticated, isLoading, profile, signOut, refreshProfile } = useAuthContext();
+  const { user, isAuthenticated, isLoading, profile, signOut, refreshProfile } = useAuthContext();
   const { isAdmin } = useAdmin();
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -92,11 +92,11 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
             <div className="flex items-center justify-center py-8">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : isAuthenticated && profile ? (
+          ) : isAuthenticated ? (
             <>
               <div className="flex items-center gap-4">
                 <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                  {profile.avatar_url ? (
+                  {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="프로필" className="w-full h-full object-cover" />
                   ) : (
                     <User size={32} className="text-primary" />
@@ -105,25 +105,25 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-foreground text-lg">
-                      {profile.display_name || '시민'} 님
+                      {profile?.display_name || user?.email?.split('@')[0] || '시민'} 님
                     </h2>
-                    <VerificationBadge level={profile.verification_level} size="sm" showLabel={false} />
+                    <VerificationBadge level={profile?.verification_level ?? 'social'} size="sm" showLabel={false} />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {profile.verification_level === 'identity' ? '본인 인증 완료' :
-                     profile.verification_level === 'phone' ? '휴대폰 인증 완료' :
+                    {profile?.verification_level === 'identity' ? '본인 인증 완료' :
+                     profile?.verification_level === 'phone' ? '휴대폰 인증 완료' :
                      '소셜 로그인 완료'}
                   </p>
                 </div>
               </div>
               
               {/* 인증 레벨 업그레이드 안내 */}
-              {profile.verification_level !== 'identity' && (
+              {(profile?.verification_level ?? 'social') !== 'identity' && (
                 <div className="mt-4 p-3 bg-secondary/50 rounded-xl">
                   <div className="flex items-center gap-2 text-sm">
                     <Shield size={16} className="text-primary" />
                     <span className="text-muted-foreground">
-                      {profile.verification_level === 'social' 
+                      {(profile?.verification_level ?? 'social') === 'social' 
                         ? '본인 인증을 완료하면 더 많은 기능을 이용할 수 있어요' 
                         : '본인 인증을 완료하면 투표 참여가 가능해요'}
                     </span>
