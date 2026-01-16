@@ -79,7 +79,7 @@ export function CandidateDetail() {
           </button>
           <h1 className="font-semibold">후보자 정보</h1>
           <FollowButton
-            candidateId={candidate.id}
+            candidateId={candidate.dbId || candidate.id}
             candidateName={candidate.name}
             partyColor={candidate.partyColor}
             variant="icon"
