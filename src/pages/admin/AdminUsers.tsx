@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Search, Shield, ShieldCheck, CheckCircle2, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Users, Search, Shield, ShieldOff, X, Save, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
@@ -9,14 +9,41 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import type { UserProfile, VerificationLevel } from '@/types/auth';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+interface UserWithRole extends UserProfile {
+  isAdmin?: boolean;
+  email?: string;
+}
 
 export function AdminUsers() {
   const navigate = useNavigate();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<UserWithRole[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterLevel, setFilterLevel] = useState<VerificationLevel | 'all'>('all');
+  const [editingUser, setEditingUser] = useState<UserWithRole | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Edit form state
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editVerificationLevel, setEditVerificationLevel] = useState<VerificationLevel>('social');
+  const [editRegionSido, setEditRegionSido] = useState('');
+  const [editRegionSigungu, setEditRegionSigungu] = useState('');
+  const [editIsAdmin, setEditIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -24,32 +51,46 @@ export function AdminUsers() {
     }
   }, [isAdmin, adminLoading, navigate]);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (!isAdmin) return;
+  const fetchUsers = async () => {
+    if (!isAdmin) return;
 
-      try {
-        let query = supabase
-          .from('profiles')
-          .select('*')
-          .order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        if (filterLevel !== 'all') {
-          query = query.eq('verification_level', filterLevel);
-        }
-
-        const { data, error } = await query;
-
-        if (error) throw error;
-        setUsers((data as UserProfile[]) || []);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-        toast.error('사용자 목록을 불러오지 못했습니다');
+      if (filterLevel !== 'all') {
+        query = query.eq('verification_level', filterLevel);
       }
-      
-      setIsLoading(false);
-    };
 
+      const { data: profilesData, error: profilesError } = await query;
+      if (profilesError) throw profilesError;
+
+      // Fetch admin roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('role', 'admin');
+
+      const adminUserIds = new Set(rolesData?.map(r => r.user_id) || []);
+
+      // Map users with admin status
+      const usersWithRoles: UserWithRole[] = (profilesData || []).map(profile => ({
+        ...profile,
+        isAdmin: adminUserIds.has(profile.user_id),
+      })) as UserWithRole[];
+
+      setUsers(usersWithRoles);
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      toast.error('사용자 목록을 불러오지 못했습니다');
+    }
+    
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
     fetchUsers();
   }, [isAdmin, filterLevel]);
 
@@ -58,22 +99,64 @@ export function AdminUsers() {
     const query = searchQuery.toLowerCase();
     return (
       user.display_name?.toLowerCase().includes(query) ||
-      user.phone_number?.includes(query)
+      user.phone_number?.includes(query) ||
+      user.region_sido?.toLowerCase().includes(query)
     );
   });
 
-  const handleGrantAdmin = async (userId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: 'admin' });
+  const openEditModal = (user: UserWithRole) => {
+    setEditingUser(user);
+    setEditDisplayName(user.display_name || '');
+    setEditVerificationLevel(user.verification_level);
+    setEditRegionSido(user.region_sido || '');
+    setEditRegionSigungu(user.region_sigungu || '');
+    setEditIsAdmin(user.isAdmin || false);
+  };
 
-      if (error) throw error;
-      toast.success('관리자 권한이 부여되었습니다');
+  const handleSave = async () => {
+    if (!editingUser) return;
+    setIsSaving(true);
+
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          display_name: editDisplayName || null,
+          verification_level: editVerificationLevel,
+          region_sido: editRegionSido || null,
+          region_sigungu: editRegionSigungu || null,
+        })
+        .eq('user_id', editingUser.user_id);
+
+      if (profileError) throw profileError;
+
+      // Handle admin role changes
+      if (editIsAdmin && !editingUser.isAdmin) {
+        // Grant admin
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: editingUser.user_id, role: 'admin' });
+        if (roleError && !roleError.message.includes('duplicate')) throw roleError;
+      } else if (!editIsAdmin && editingUser.isAdmin) {
+        // Revoke admin
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .delete()
+          .eq('user_id', editingUser.user_id)
+          .eq('role', 'admin');
+        if (roleError) throw roleError;
+      }
+
+      toast.success('사용자 정보가 수정되었습니다');
+      setEditingUser(null);
+      fetchUsers(); // Refresh list
     } catch (error) {
-      console.error('Failed to grant admin:', error);
-      toast.error('권한 부여에 실패했습니다');
+      console.error('Failed to update user:', error);
+      toast.error('수정에 실패했습니다');
     }
+
+    setIsSaving(false);
   };
 
   if (adminLoading || isLoading) {
@@ -110,7 +193,7 @@ export function AdminUsers() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
-            placeholder="이름 또는 전화번호 검색"
+            placeholder="이름, 전화번호, 지역 검색"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -159,6 +242,11 @@ export function AdminUsers() {
                     <div className="flex items-center gap-2">
                       <p className="font-medium">{user.display_name || '익명'}</p>
                       <VerificationBadge level={user.verification_level} size="sm" showLabel={false} />
+                      {user.isAdmin && (
+                        <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded-md font-medium">
+                          관리자
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {user.phone_number || '전화번호 미등록'}
@@ -168,9 +256,13 @@ export function AdminUsers() {
                     </p>
                   </div>
                 </div>
-                <button className="p-2 rounded-lg hover:bg-muted">
-                  <MoreVertical size={18} className="text-muted-foreground" />
-                </button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditModal(user)}
+                >
+                  수정
+                </Button>
               </div>
 
               {user.region_sido && (
@@ -191,6 +283,105 @@ export function AdminUsers() {
           )}
         </div>
       </main>
+
+      {/* Edit Modal */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>사용자 정보 수정</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Display Name */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">표시 이름</label>
+              <Input
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
+                placeholder="표시 이름 입력"
+              />
+            </div>
+
+            {/* Verification Level */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">인증 레벨</label>
+              <Select value={editVerificationLevel} onValueChange={(v) => setEditVerificationLevel(v as VerificationLevel)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="social">소셜 로그인</SelectItem>
+                  <SelectItem value="phone">휴대폰 인증</SelectItem>
+                  <SelectItem value="identity">본인 인증</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Region */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">시/도</label>
+                <Input
+                  value={editRegionSido}
+                  onChange={(e) => setEditRegionSido(e.target.value)}
+                  placeholder="서울특별시"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">시/군/구</label>
+                <Input
+                  value={editRegionSigungu}
+                  onChange={(e) => setEditRegionSigungu(e.target.value)}
+                  placeholder="강남구"
+                />
+              </div>
+            </div>
+
+            {/* Admin Role */}
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-xl">
+              <div className="flex items-center gap-2">
+                {editIsAdmin ? (
+                  <Shield size={18} className="text-primary" />
+                ) : (
+                  <ShieldOff size={18} className="text-muted-foreground" />
+                )}
+                <span className="font-medium">관리자 권한</span>
+              </div>
+              <Button
+                variant={editIsAdmin ? 'destructive' : 'default'}
+                size="sm"
+                onClick={() => setEditIsAdmin(!editIsAdmin)}
+              >
+                {editIsAdmin ? '권한 해제' : '권한 부여'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setEditingUser(null)}
+            >
+              취소
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Save size={16} className="mr-2" />
+                  저장
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
