@@ -5,6 +5,7 @@ export interface AppSettings {
   app_name: string;
   app_slogan: string;
   app_version: string;
+  logo_url: string;
   contact_email: string;
   contact_phone: string;
   social_x: string;
@@ -37,6 +38,7 @@ export function useAppSettings() {
           app_name: settingsMap.app_name || '민심잇다',
           app_slogan: settingsMap.app_slogan || '나의 목소리가 정치가 되는 곳',
           app_version: settingsMap.app_version || '1.0.0',
+          logo_url: settingsMap.logo_url || '',
           contact_email: settingsMap.contact_email || '',
           contact_phone: settingsMap.contact_phone || '',
           social_x: settingsMap.social_x || '',
