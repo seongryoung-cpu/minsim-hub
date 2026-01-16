@@ -279,6 +279,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          candidate_updates_enabled: boolean
+          created_at: string
+          id: string
+          news_enabled: boolean
+          policy_match_enabled: boolean
+          quiz_enabled: boolean
+          system_enabled: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          candidate_updates_enabled?: boolean
+          created_at?: string
+          id?: string
+          news_enabled?: boolean
+          policy_match_enabled?: boolean
+          quiz_enabled?: boolean
+          system_enabled?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          candidate_updates_enabled?: boolean
+          created_at?: string
+          id?: string
+          news_enabled?: boolean
+          policy_match_enabled?: boolean
+          quiz_enabled?: boolean
+          system_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string

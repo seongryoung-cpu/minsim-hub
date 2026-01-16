@@ -17,6 +17,7 @@ import { NewsFeed } from '@/pages/NewsFeed';
 import { CandidateCompare } from '@/pages/CandidateCompare';
 import { QuizPage } from '@/pages/QuizPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
+import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { AdminUsers } from '@/pages/admin/AdminUsers';
 import { AdminContent } from '@/pages/admin/AdminContent';
@@ -117,6 +118,7 @@ function Index() {
           <Route path="/compare" element={<CandidateCompare />} />
           <Route path="/quiz" element={<QuizPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/notification-settings" element={<NotificationSettingsPage />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboard />} />
