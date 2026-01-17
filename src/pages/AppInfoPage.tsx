@@ -1,5 +1,27 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, FileText, Smartphone, MapPin, Vote, MessageSquare, User, Sparkles, ChevronRight, Brain, Heart, BarChart3, Users, Bell, Share2, Newspaper, GitCompare, Filter, Trophy, Shield, Settings, Database } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, FileText, Smartphone, MapPin, Vote, MessageSquare, User, Sparkles, ChevronRight, Brain, Heart, BarChart3, Users, Bell, Share2, Newspaper, GitCompare, Filter, Trophy, Shield, Settings, Database, Camera, X } from 'lucide-react';
+
+// Screenshot imports
+import homeScreenshot from '@/assets/screenshots/home.png';
+import quizScreenshot from '@/assets/screenshots/quiz.png';
+import policyMatchScreenshot from '@/assets/screenshots/policy-match.png';
+import electionScreenshot from '@/assets/screenshots/election.png';
+import newsScreenshot from '@/assets/screenshots/news.png';
+import mypageScreenshot from '@/assets/screenshots/mypage.png';
+import leaderboardScreenshot from '@/assets/screenshots/leaderboard.png';
+import adminScreenshot from '@/assets/screenshots/admin.png';
+
+const screenshots = [
+  { name: '홈 대시보드', image: homeScreenshot, description: '선거 타임라인, 후보자 카드, 이벤트 목록' },
+  { name: '정치 퀴즈', image: quizScreenshot, description: 'PQ 테스트로 정치 상식 점검' },
+  { name: '정책 매칭', image: policyMatchScreenshot, description: '스와이프로 정책 성향 분석' },
+  { name: '선거 정보', image: electionScreenshot, description: '후보자 목록 및 비교' },
+  { name: '뉴스피드', image: newsScreenshot, description: '후보자별 뉴스 모아보기' },
+  { name: '마이페이지', image: mypageScreenshot, description: '프로필 및 설정 관리' },
+  { name: '리더보드', image: leaderboardScreenshot, description: '퀴즈 랭킹 및 통계' },
+  { name: '관리자', image: adminScreenshot, description: '콘텐츠 및 사용자 관리' },
+];
 import { useNavigate } from 'react-router-dom';
 
 const features = [
@@ -263,6 +285,7 @@ const dataModels = [
 
 export function AppInfoPage() {
   const navigate = useNavigate();
+  const [selectedScreenshot, setSelectedScreenshot] = useState<{ name: string; image: string } | null>(null);
 
   return (
     <motion.div
@@ -332,6 +355,71 @@ export function AppInfoPage() {
             <p className="text-xs text-muted-foreground">기술 스택</p>
           </div>
         </motion.div>
+
+        {/* Screenshots Gallery */}
+        <section>
+          <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+            <span className="w-1 h-5 bg-cyan-500 rounded-full" />
+            <Camera size={18} className="text-cyan-500" />
+            화면 미리보기
+          </h3>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-card rounded-2xl p-4 shadow-app-sm"
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {screenshots.map((screenshot, index) => (
+                <motion.button
+                  key={screenshot.name}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  onClick={() => setSelectedScreenshot(screenshot)}
+                  className="group relative overflow-hidden rounded-xl border border-border/50 hover:border-primary/50 transition-all"
+                >
+                  <div className="aspect-[9/16] overflow-hidden">
+                    <img 
+                      src={screenshot.image} 
+                      alt={screenshot.name}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3">
+                    <p className="text-xs font-medium text-white">{screenshot.name}</p>
+                    <p className="text-[10px] text-white/70 line-clamp-1">{screenshot.description}</p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Screenshot Modal */}
+        {selectedScreenshot && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setSelectedScreenshot(null)}
+          >
+            <button
+              onClick={() => setSelectedScreenshot(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              <X size={24} className="text-white" />
+            </button>
+            <div className="max-w-lg w-full max-h-[90vh] overflow-auto">
+              <img 
+                src={selectedScreenshot.image} 
+                alt={selectedScreenshot.name}
+                className="w-full rounded-xl"
+              />
+              <p className="text-center text-white font-medium mt-4">{selectedScreenshot.name}</p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Features */}
         <section>
