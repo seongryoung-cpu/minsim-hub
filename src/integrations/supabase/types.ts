@@ -492,6 +492,140 @@ export type Database = {
           },
         ]
       }
+      political_mbti_questions: {
+        Row: {
+          axis: string
+          created_at: string
+          id: string
+          is_active: boolean
+          left_axis_value: string
+          left_label: string
+          right_axis_value: string
+          right_label: string
+          sort_order: number
+          statement: string
+          updated_at: string
+        }
+        Insert: {
+          axis: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          left_axis_value: string
+          left_label: string
+          right_axis_value: string
+          right_label: string
+          sort_order?: number
+          statement: string
+          updated_at?: string
+        }
+        Update: {
+          axis?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          left_axis_value?: string
+          left_label?: string
+          right_axis_value?: string
+          right_label?: string
+          sort_order?: number
+          statement?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      political_mbti_results: {
+        Row: {
+          answers_json: Json
+          axis_scores: Json
+          created_at: string
+          from_policy_match: boolean
+          id: string
+          policy_match_result_id: string | null
+          type_code: string
+          user_id: string
+        }
+        Insert: {
+          answers_json?: Json
+          axis_scores?: Json
+          created_at?: string
+          from_policy_match?: boolean
+          id?: string
+          policy_match_result_id?: string | null
+          type_code: string
+          user_id: string
+        }
+        Update: {
+          answers_json?: Json
+          axis_scores?: Json
+          created_at?: string
+          from_policy_match?: boolean
+          id?: string
+          policy_match_result_id?: string | null
+          type_code?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "political_mbti_results_policy_match_result_id_fkey"
+            columns: ["policy_match_result_id"]
+            isOneToOne: false
+            referencedRelation: "policy_match_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      political_mbti_types: {
+        Row: {
+          color: string
+          compatible_types: string[] | null
+          created_at: string
+          description: string
+          famous_figures: string[] | null
+          icon: string | null
+          id: string
+          incompatible_types: string[] | null
+          keywords: string[]
+          name: string
+          strengths: string[] | null
+          type_code: string
+          updated_at: string
+          weaknesses: string[] | null
+        }
+        Insert: {
+          color?: string
+          compatible_types?: string[] | null
+          created_at?: string
+          description: string
+          famous_figures?: string[] | null
+          icon?: string | null
+          id?: string
+          incompatible_types?: string[] | null
+          keywords?: string[]
+          name: string
+          strengths?: string[] | null
+          type_code: string
+          updated_at?: string
+          weaknesses?: string[] | null
+        }
+        Update: {
+          color?: string
+          compatible_types?: string[] | null
+          created_at?: string
+          description?: string
+          famous_figures?: string[] | null
+          icon?: string | null
+          id?: string
+          incompatible_types?: string[] | null
+          keywords?: string[]
+          name?: string
+          strengths?: string[] | null
+          type_code?: string
+          updated_at?: string
+          weaknesses?: string[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
