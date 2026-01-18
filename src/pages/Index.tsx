@@ -25,6 +25,7 @@ import { AdminContent } from '@/pages/admin/AdminContent';
 import { AdminReports } from '@/pages/admin/AdminReports';
 import { AdminPolicyCards } from '@/pages/admin/AdminPolicyCards';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
+import { PoliticalMbtiPage } from '@/pages/PoliticalMbtiPage';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -115,6 +116,7 @@ function Index() {
           <Route path="/app-info" element={<AppInfoPage />} />
           <Route path="/candidate/:id" element={<CandidateDetail />} />
           <Route path="/policy-match" element={<PolicyMatchGame />} />
+          <Route path="/political-mbti" element={<PoliticalMbtiPage />} />
           <Route path="/news" element={<NewsFeed />} />
           <Route path="/compare" element={<CandidateCompare />} />
           <Route path="/quiz" element={<QuizPage />} />

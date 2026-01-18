@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { RefreshCw, Shield, Heart, Bell, Check, Share2, RotateCcw, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { RefreshCw, Shield, Heart, Bell, Check, Share2, RotateCcw, User, Brain } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import type { MatchResult, PreferredCandidate, SentimentChoice } from '@/types/policy';
 
 interface SentimentShiftScreenProps {
@@ -138,6 +138,27 @@ export function SentimentShiftScreen({
           >
             <Bell size={14} />
             <span>저장 시 당내경선, 본선 공약 업데이트 알림을 받습니다</span>
+          </motion.div>
+
+          {/* MBTI Link */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="w-full"
+          >
+            <Link
+              to="/political-mbti"
+              className="w-full bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 text-white rounded-2xl p-5 flex items-center gap-4 shadow-lg hover:opacity-90 transition-opacity"
+            >
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <Brain size={24} />
+              </div>
+              <div className="flex-1 text-left">
+                <h3 className="font-bold">나의 정치 MBTI는?</h3>
+                <p className="text-sm opacity-90">정치 성향 16유형 테스트 해보기</p>
+              </div>
+            </Link>
           </motion.div>
         </div>
 
