@@ -8,6 +8,7 @@ import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { DashboardSection, ExpandableSlot } from '@/components/dashboard/DashboardSection';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
+import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { getElectionStatus, getMetropolitanTitle } from '@/types/election';
@@ -160,6 +161,9 @@ export function Home({ region, onRegionChange }: HomeProps) {
           {/* Policy Match Banner */}
           <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
 
+          {/* MBTI Banner */}
+          <MbtiBanner onPress={() => navigate('/political-mbti')} />
+
           {/* Mobile Candidates Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -272,43 +276,43 @@ export function Home({ region, onRegionChange }: HomeProps) {
             {/* Quiz Banner */}
             <QuizBanner />
 
-            {/* Policy Match & Quick Actions - Desktop Grid */}
+            {/* Policy Match & MBTI Banners - Desktop Grid */}
             <div className="grid grid-cols-2 gap-5">
               <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
-              
-              {/* Quick Actions */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-card rounded-2xl p-5 shadow-sm border border-border/50 h-full"
-              >
-                <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <span>⚡</span>
-                  빠른 메뉴
-                </h3>
-                <div className="space-y-3">
-                  {quickActions.map((action) => (
-                    <motion.button
-                      key={action.id}
-                      whileHover={{ x: 4 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => navigate(action.path)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left group"
-                    >
-                      <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-sm`}>
-                        <action.icon size={18} className="text-white" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground text-sm">{action.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">{action.description}</p>
-                      </div>
-                      <ArrowRight size={16} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </motion.button>
-                  ))}
-                </div>
-              </motion.div>
+              <MbtiBanner onPress={() => navigate('/political-mbti')} />
             </div>
+
+            {/* Quick Actions */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-card rounded-2xl p-5 shadow-sm border border-border/50"
+            >
+              <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                <span>⚡</span>
+                빠른 메뉴
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                {quickActions.map((action) => (
+                  <motion.button
+                    key={action.id}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => navigate(action.path)}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-secondary/50 transition-colors text-center group"
+                  >
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-sm`}>
+                      <action.icon size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground text-sm">{action.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{action.description}</p>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
 
             {/* Desktop Candidates - Horizontal Cards */}
             <motion.div
