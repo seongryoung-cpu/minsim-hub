@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings, Sparkles } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings, Sparkles, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -84,6 +84,25 @@ export function AdminContent() {
             <div className="text-left">
               <span className="font-medium block">정책 매칭 카드 관리</span>
               <span className="text-xs text-muted-foreground">정책 질문 및 후보자 입장 설정</span>
+            </div>
+          </div>
+          <ChevronDown size={20} className="rotate-[-90deg]" />
+        </motion.button>
+
+        {/* Political MBTI Section */}
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => navigate('/admin/mbti')}
+          className="w-full bg-card rounded-xl shadow-app-md p-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center">
+              <Brain size={20} className="text-white" />
+            </div>
+            <div className="text-left">
+              <span className="font-medium block">정치 MBTI 관리</span>
+              <span className="text-xs text-muted-foreground">질문, 유형, 결과 통계 관리</span>
             </div>
           </div>
           <ChevronDown size={20} className="rotate-[-90deg]" />
