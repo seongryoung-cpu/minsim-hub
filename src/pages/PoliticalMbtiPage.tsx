@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2 } from 'lucide-react';
@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import { MbtiIntroScreen } from '@/components/political-mbti/MbtiIntroScreen';
 import { MbtiSwipeCard, MbtiSwipeControls } from '@/components/political-mbti/MbtiSwipeCard';
 import { MbtiResultScreen } from '@/components/political-mbti/MbtiResultScreen';
+import { MbtiRevealScreen } from '@/components/political-mbti/MbtiRevealScreen';
+import { MbtiProgressParticles, AxisProgressIndicator, SwipeSuccessFeedback } from '@/components/political-mbti/MbtiProgressParticles';
 import { useMbtiQuestions, useMbtiTypes, useSaveMbtiResult } from '@/hooks/usePoliticalMbti';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
@@ -17,7 +19,7 @@ import {
   calculateMbtiType 
 } from '@/types/political-mbti';
 
-type GameStep = 'intro' | 'swipe' | 'result';
+type GameStep = 'intro' | 'swipe' | 'reveal' | 'result';
 
 export function PoliticalMbtiPage() {
   const navigate = useNavigate();
@@ -29,6 +31,21 @@ export function PoliticalMbtiPage() {
   const [answers, setAnswers] = useState<MbtiAnswer[]>([]);
   const [axisScores, setAxisScores] = useState<AxisScores>(getInitialAxisScores());
   const [hasSaved, setHasSaved] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
+  const [lastSwipeDirection, setLastSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackLabel, setFeedbackLabel] = useState('');
+
+  // Axis progress tracking
+  const axisProgress = useMemo(() => {
+    const progress = { EI: 0, SN: 0, TF: 0, JP: 0 };
+    answers.forEach(a => {
+      if (a.axis in progress) {
+        progress[a.axis as keyof typeof progress]++;
+      }
+    });
+    return progress;
+  }, [answers]);
 
   // DB에서 질문과 유형 로드
   const { data: questions, isLoading: questionsLoading } = useMbtiQuestions();
@@ -52,6 +69,22 @@ export function PoliticalMbtiPage() {
     const axisValue = direction === 'left' 
       ? currentQuestion.leftAxisValue 
       : currentQuestion.rightAxisValue;
+
+    const label = direction === 'left' 
+      ? currentQuestion.leftLabel 
+      : currentQuestion.rightLabel;
+
+    // Show particles and feedback
+    setLastSwipeDirection(direction);
+    setShowParticles(true);
+    setFeedbackLabel(label);
+    setShowFeedback(true);
+
+    // Hide after animation
+    setTimeout(() => {
+      setShowParticles(false);
+      setShowFeedback(false);
+    }, 500);
 
     const newAnswer: MbtiAnswer = {
       questionId: currentQuestion.id,
@@ -79,10 +112,17 @@ export function PoliticalMbtiPage() {
     if (currentIndex < questions.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // 완료 → 결과 화면
-      handleComplete();
+      // 완료 → reveal 화면으로 전환
+      setTimeout(() => {
+        setCurrentStep('reveal');
+      }, 300);
     }
   }, [currentQuestion, currentIndex, questions]);
+
+  // Reveal 완료 후 결과 화면으로 전환
+  const handleRevealComplete = useCallback(() => {
+    handleComplete();
+  }, []);
 
   // 완료 처리
   const handleComplete = useCallback(async () => {
@@ -199,6 +239,16 @@ export function PoliticalMbtiPage() {
     return <MbtiIntroScreen onStart={handleStart} questionCount={questions.length} />;
   }
 
+  // Reveal 화면 (결과 공개 연출)
+  if (currentStep === 'reveal') {
+    return (
+      <MbtiRevealScreen 
+        axisScores={axisScores}
+        onComplete={handleRevealComplete}
+      />
+    );
+  }
+
   // 결과 화면
   if (currentStep === 'result' && resultType) {
     return (
@@ -231,16 +281,16 @@ export function PoliticalMbtiPage() {
           <div className="w-10" />
         </div>
 
-        {/* Progress Bar */}
-        <div className="h-1 bg-secondary/50">
-          <motion.div
-            className="h-full bg-gradient-to-r from-primary via-purple-500 to-pink-500"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.3 }}
-          />
-        </div>
       </header>
+
+      {/* Enhanced Progress */}
+      <div className="px-4 pt-3">
+        <AxisProgressIndicator 
+          currentIndex={currentIndex}
+          totalQuestions={questions.length}
+          axisProgress={axisProgress}
+        />
+      </div>
 
       {/* Card Counter */}
       <div className="px-4 py-3 flex justify-between items-center">
@@ -255,7 +305,19 @@ export function PoliticalMbtiPage() {
 
       {/* Card Stack */}
       <div className="flex-1 px-4 pb-2 relative">
+        {/* Swipe feedback */}
+        <SwipeSuccessFeedback 
+          show={showFeedback}
+          direction={lastSwipeDirection || 'right'}
+          label={feedbackLabel}
+        />
+
         <div className="relative h-[400px] sm:h-[450px] max-w-md mx-auto">
+          {/* Particles */}
+          <MbtiProgressParticles 
+            show={showParticles}
+            direction={lastSwipeDirection || 'right'}
+          />
           <AnimatePresence mode="popLayout">
             {/* Background cards */}
             {questions.slice(currentIndex + 1, currentIndex + 3).map((q, i) => (
