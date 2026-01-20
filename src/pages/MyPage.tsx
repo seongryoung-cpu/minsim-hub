@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, HelpCircle, ChevronRight, ChevronDown, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell } from 'lucide-react';
+import { User, HelpCircle, ChevronRight, ChevronDown, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell, Pencil } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
 import { IdentityVerificationModal } from '@/components/auth/IdentityVerificationModal';
+import { ProfileEditSheet } from '@/components/profile/ProfileEditSheet';
 
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -53,6 +54,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
   
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -146,13 +148,20 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           ) : isAuthenticated ? (
             <>
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                <button 
+                  onClick={() => setIsProfileEditOpen(true)}
+                  className="relative w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden group"
+                >
                   {profile?.avatar_url ? (
                     <img src={profile.avatar_url} alt="프로필" className="w-full h-full object-cover" />
                   ) : (
                     <User size={32} className="text-primary" />
                   )}
-                </div>
+                  {/* Edit overlay */}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Pencil size={16} className="text-white" />
+                  </div>
+                </button>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-foreground text-lg">
@@ -166,6 +175,13 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                      '소셜 로그인 완료'}
                   </p>
                 </div>
+                {/* Edit button */}
+                <button
+                  onClick={() => setIsProfileEditOpen(true)}
+                  className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center hover:bg-secondary/70 transition-colors"
+                >
+                  <Pencil size={16} className="text-muted-foreground" />
+                </button>
               </div>
               
               {/* 인증 레벨 업그레이드 안내 */}
@@ -515,6 +531,11 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           </p>
         </motion.div>
       </main>
+
+      <ProfileEditSheet
+        isOpen={isProfileEditOpen}
+        onClose={() => setIsProfileEditOpen(false)}
+      />
 
       <ShareSheet
         open={isShareOpen}
