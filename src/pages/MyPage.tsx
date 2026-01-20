@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, HelpCircle, ChevronRight, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell } from 'lucide-react';
+import { User, HelpCircle, ChevronRight, ChevronDown, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -471,18 +472,33 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
               개인정보처리방침
             </a>
           )}
-          {isAuthenticated && (
-            <>
-              <span className="text-muted-foreground/30">|</span>
-              <button
-                onClick={() => setIsDeleteDialogOpen(true)}
-                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors"
-              >
-                회원탈퇴
-              </button>
-            </>
-          )}
         </motion.div>
+
+        {/* Advanced Settings - Hidden Delete Account */}
+        {isAuthenticated && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.42 }}
+          >
+            <Collapsible>
+              <CollapsibleTrigger className="w-full flex items-center justify-center gap-1 py-2 text-[10px] text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors">
+                <span>고급 설정</span>
+                <ChevronDown size={10} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                    className="text-[10px] text-muted-foreground/30 hover:text-destructive/50 transition-colors"
+                  >
+                    회원탈퇴
+                  </button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </motion.div>
+        )}
 
         {/* App Info */}
         <motion.div
