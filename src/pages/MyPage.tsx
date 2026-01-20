@@ -206,12 +206,6 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                   <LogOut size={18} />
                   로그아웃
                 </button>
-                <button
-                  onClick={() => setIsDeleteDialogOpen(true)}
-                  className="py-3 px-4 bg-destructive/10 text-destructive rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors"
-                >
-                  <Trash2 size={18} />
-                </button>
               </div>
             </>
           ) : (
@@ -448,38 +442,47 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
         )}
 
         {/* Legal Links */}
-        {appSettings && (appSettings.link_privacy || appSettings.link_terms) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="flex items-center justify-center gap-4"
-          >
-            {appSettings.link_terms && (
-              <a
-                href={appSettings.link_terms}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="flex items-center justify-center gap-4 flex-wrap"
+        >
+          {appSettings?.link_terms && (
+            <a
+              href={appSettings.link_terms}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              이용약관
+            </a>
+          )}
+          {appSettings?.link_privacy && appSettings?.link_terms && (
+            <span className="text-muted-foreground/50">|</span>
+          )}
+          {appSettings?.link_privacy && (
+            <a
+              href={appSettings.link_privacy}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+            >
+              개인정보처리방침
+            </a>
+          )}
+          {isAuthenticated && (
+            <>
+              <span className="text-muted-foreground/30">|</span>
+              <button
+                onClick={() => setIsDeleteDialogOpen(true)}
+                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground/60 transition-colors"
               >
-                이용약관
-              </a>
-            )}
-            {appSettings.link_privacy && appSettings.link_terms && (
-              <span className="text-muted-foreground">|</span>
-            )}
-            {appSettings.link_privacy && (
-              <a
-                href={appSettings.link_privacy}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-              >
-                개인정보처리방침
-              </a>
-            )}
-          </motion.div>
-        )}
+                회원탈퇴
+              </button>
+            </>
+          )}
+        </motion.div>
 
         {/* App Info */}
         <motion.div
