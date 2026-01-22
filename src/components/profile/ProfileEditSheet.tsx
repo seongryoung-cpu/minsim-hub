@@ -47,8 +47,9 @@ export function ProfileEditSheet({ isOpen, onClose }: ProfileEditSheetProps) {
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `avatar-${Date.now()}.${fileExt}`;
+      // Path format: {user_id}/{filename} to match RLS policy
+      const filePath = `${user.id}/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
