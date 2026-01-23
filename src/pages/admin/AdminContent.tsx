@@ -168,6 +168,7 @@ function ContentSection({ icon: Icon, label, color, isExpanded, onToggle, childr
 
 // Candidates Manager
 function CandidatesManager() {
+  const navigate = useNavigate();
   const { data: candidates, isLoading } = useAllCandidatesAdmin();
   const createCandidate = useCreateCandidate();
   const updateCandidate = useUpdateCandidate();
@@ -189,8 +190,6 @@ function CandidatesManager() {
   if (isLoading) {
     return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
   }
-
-  const navigate = useNavigate();
 
   return (
     <div className="p-4 space-y-3">
