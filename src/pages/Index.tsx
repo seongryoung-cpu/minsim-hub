@@ -27,6 +27,7 @@ import { AdminPolicyCards } from '@/pages/admin/AdminPolicyCards';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
 import { AdminMbti } from '@/pages/admin/AdminMbti';
 import { PoliticalMbtiPage } from '@/pages/PoliticalMbtiPage';
+import AdminCandidateImport from '@/pages/admin/AdminCandidateImport';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -133,6 +134,7 @@ function Index() {
           <Route path="/admin/mbti" element={<AdminMbti />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
         </Routes>
       </AnimatePresence>
       {!isAdminRoute && <BottomTabBar />}
