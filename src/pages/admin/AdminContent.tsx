@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings, Sparkles, Brain } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings, Sparkles, Brain, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -190,11 +190,23 @@ function CandidatesManager() {
     return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
   }
 
+  const navigate = useNavigate();
+
   return (
     <div className="p-4 space-y-3">
-      <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-1 w-full">
-        <Plus size={16} /> 후보자 추가
-      </Button>
+      <div className="flex gap-2">
+        <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-1 flex-1">
+          <Plus size={16} /> 후보자 추가
+        </Button>
+        <Button 
+          onClick={() => navigate('/admin/candidate-import')} 
+          size="sm" 
+          variant="outline"
+          className="gap-1 flex-1"
+        >
+          <Wand2 size={16} /> AI 자동 추출
+        </Button>
+      </div>
 
       {candidates?.map(candidate => (
         <div key={candidate.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
