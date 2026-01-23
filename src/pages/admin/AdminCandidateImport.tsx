@@ -1,18 +1,32 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Link as LinkIcon, Loader2, CheckCircle, XCircle, UserPlus, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon, Loader2, CheckCircle, XCircle, UserPlus, Sparkles, AlertCircle, Edit, Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdmin } from '@/hooks/useAdmin';
-import { useCreateCandidate } from '@/hooks/useCandidates';
 import { PARTY_COLORS } from '@/types/election';
+
+interface Career {
+  period: string;
+  title: string;
+  organization: string;
+}
+
+interface Pledge {
+  title: string;
+  description: string;
+  category: string;
+}
 
 interface ExtractedCandidate {
   name: string;
@@ -22,8 +36,8 @@ interface ExtractedCandidate {
   age?: number;
   education?: string;
   slogan?: string;
-  careers?: { period: string; title: string; organization: string }[];
-  pledges?: { title: string; description: string; category: string }[];
+  careers?: Career[];
+  pledges?: Pledge[];
   selected?: boolean;
 }
 
@@ -33,17 +47,24 @@ const REGIONS = [
   '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'
 ];
 
+const PARTIES = [
+  '더불어민주당', '국민의힘', '조국혁신당', '개혁신당', '진보당', '기본소득당', '사회민주당', '무소속'
+];
+
+const PLEDGE_CATEGORIES = ['경제', '복지', '교육', '환경', '교통', '주거', '안전', '행정', '문화', '기타'];
+
 export default function AdminCandidateImport() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
-  const createCandidate = useCreateCandidate();
 
   const [url, setUrl] = useState('');
   const [regionName, setRegionName] = useState('');
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedCandidates, setExtractedCandidates] = useState<ExtractedCandidate[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   const handleExtract = async () => {
     if (!url) {
@@ -96,6 +117,52 @@ export default function AdminCandidateImport() {
     setExtractedCandidates(prev => prev.map(c => ({ ...c, selected })));
   };
 
+  const updateCandidate = (index: number, updates: Partial<ExtractedCandidate>) => {
+    setExtractedCandidates(prev => 
+      prev.map((c, i) => i === index ? { ...c, ...updates } : c)
+    );
+  };
+
+  const deleteCandidate = (index: number) => {
+    setExtractedCandidates(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const addCareer = (index: number) => {
+    const candidate = extractedCandidates[index];
+    const newCareers = [...(candidate.careers || []), { period: '', title: '', organization: '' }];
+    updateCandidate(index, { careers: newCareers });
+  };
+
+  const updateCareer = (candidateIndex: number, careerIndex: number, updates: Partial<Career>) => {
+    const candidate = extractedCandidates[candidateIndex];
+    const newCareers = candidate.careers?.map((c, i) => i === careerIndex ? { ...c, ...updates } : c);
+    updateCandidate(candidateIndex, { careers: newCareers });
+  };
+
+  const deleteCareer = (candidateIndex: number, careerIndex: number) => {
+    const candidate = extractedCandidates[candidateIndex];
+    const newCareers = candidate.careers?.filter((_, i) => i !== careerIndex);
+    updateCandidate(candidateIndex, { careers: newCareers });
+  };
+
+  const addPledge = (index: number) => {
+    const candidate = extractedCandidates[index];
+    const newPledges = [...(candidate.pledges || []), { title: '', description: '', category: '기타' }];
+    updateCandidate(index, { pledges: newPledges });
+  };
+
+  const updatePledge = (candidateIndex: number, pledgeIndex: number, updates: Partial<Pledge>) => {
+    const candidate = extractedCandidates[candidateIndex];
+    const newPledges = candidate.pledges?.map((p, i) => i === pledgeIndex ? { ...p, ...updates } : p);
+    updateCandidate(candidateIndex, { pledges: newPledges });
+  };
+
+  const deletePledge = (candidateIndex: number, pledgeIndex: number) => {
+    const candidate = extractedCandidates[candidateIndex];
+    const newPledges = candidate.pledges?.filter((_, i) => i !== pledgeIndex);
+    updateCandidate(candidateIndex, { pledges: newPledges });
+  };
+
   const generateSlug = (name: string, party: string, region: string) => {
     const cleanName = name.replace(/\s+/g, '-').toLowerCase();
     const cleanParty = party.replace(/\s+/g, '-').slice(0, 4).toLowerCase();
@@ -119,7 +186,6 @@ export default function AdminCandidateImport() {
         const slug = generateSlug(candidate.name, candidate.party, candidate.region_name);
         const partyColor = PARTY_COLORS[candidate.party] || '#808080';
 
-        // Create candidate
         const { data: newCandidate, error: candidateError } = await supabase
           .from('candidates')
           .insert({
@@ -145,30 +211,36 @@ export default function AdminCandidateImport() {
           continue;
         }
 
-        // Save careers if any
         if (candidate.careers && candidate.careers.length > 0) {
-          const careers = candidate.careers.map((c, idx) => ({
-            candidate_id: newCandidate.id,
-            period: c.period,
-            title: c.title,
-            organization: c.organization,
-            sort_order: idx
-          }));
+          const careers = candidate.careers
+            .filter(c => c.period || c.title || c.organization)
+            .map((c, idx) => ({
+              candidate_id: newCandidate.id,
+              period: c.period,
+              title: c.title,
+              organization: c.organization,
+              sort_order: idx
+            }));
 
-          await supabase.from('candidate_careers').insert(careers);
+          if (careers.length > 0) {
+            await supabase.from('candidate_careers').insert(careers);
+          }
         }
 
-        // Save pledges if any
         if (candidate.pledges && candidate.pledges.length > 0) {
-          const pledges = candidate.pledges.map((p, idx) => ({
-            candidate_id: newCandidate.id,
-            title: p.title,
-            description: p.description,
-            category: p.category,
-            sort_order: idx
-          }));
+          const pledges = candidate.pledges
+            .filter(p => p.title)
+            .map((p, idx) => ({
+              candidate_id: newCandidate.id,
+              title: p.title,
+              description: p.description,
+              category: p.category,
+              sort_order: idx
+            }));
 
-          await supabase.from('candidate_pledges').insert(pledges);
+          if (pledges.length > 0) {
+            await supabase.from('candidate_pledges').insert(pledges);
+          }
         }
 
         savedCount++;
@@ -179,7 +251,6 @@ export default function AdminCandidateImport() {
         description: `${savedCount}명의 후보자가 등록되었습니다.`
       });
 
-      // Clear form
       setExtractedCandidates([]);
       setUrl('');
     } catch (error) {
@@ -218,6 +289,7 @@ export default function AdminCandidateImport() {
   }
 
   const selectedCount = extractedCandidates.filter(c => c.selected).length;
+  const editingCandidate = editingIndex !== null ? extractedCandidates[editingIndex] : null;
 
   return (
     <motion.div
@@ -248,7 +320,6 @@ export default function AdminCandidateImport() {
             </CardTitle>
             <CardDescription>
               중앙선거관리위원회 또는 후보자 정보가 있는 페이지 URL을 입력하세요.
-              AI가 자동으로 후보자 정보를 추출합니다.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -338,56 +409,186 @@ export default function AdminCandidateImport() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {extractedCandidates.map((candidate, index) => (
-                    <motion.div
+                    <Collapsible
                       key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className={`flex items-start gap-3 p-4 rounded-lg border transition-colors ${
-                        candidate.selected ? 'bg-primary/5 border-primary/20' : 'bg-muted/50'
-                      }`}
+                      open={expandedIndex === index}
+                      onOpenChange={(open) => setExpandedIndex(open ? index : null)}
                     >
-                      <Checkbox
-                        checked={candidate.selected}
-                        onCheckedChange={() => toggleCandidate(index)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-lg">{candidate.name}</span>
-                          <Badge 
-                            style={{ 
-                              backgroundColor: PARTY_COLORS[candidate.party] || '#808080',
-                              color: 'white'
-                            }}
-                          >
-                            {candidate.party}
-                          </Badge>
-                          {candidate.region_name && (
-                            <Badge variant="outline">{candidate.region_name}</Badge>
-                          )}
+                      <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className={`rounded-lg border transition-colors ${
+                          candidate.selected ? 'bg-primary/5 border-primary/20' : 'bg-muted/50'
+                        }`}
+                      >
+                        {/* Candidate Header */}
+                        <div className="flex items-start gap-3 p-4">
+                          <Checkbox
+                            checked={candidate.selected}
+                            onCheckedChange={() => toggleCandidate(index)}
+                            className="mt-1"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-lg">{candidate.name}</span>
+                              <Badge 
+                                style={{ 
+                                  backgroundColor: PARTY_COLORS[candidate.party] || '#808080',
+                                  color: 'white'
+                                }}
+                              >
+                                {candidate.party}
+                              </Badge>
+                              {candidate.region_name && (
+                                <Badge variant="outline">{candidate.region_name}</Badge>
+                              )}
+                            </div>
+                            {candidate.position && (
+                              <p className="text-sm text-muted-foreground mt-1">{candidate.position}</p>
+                            )}
+                            {candidate.slogan && (
+                              <p className="text-sm mt-2 italic">"{candidate.slogan}"</p>
+                            )}
+                            <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                              {candidate.age && <span>나이: {candidate.age}세</span>}
+                              {candidate.education && <span>학력: {candidate.education}</span>}
+                              {candidate.careers && candidate.careers.length > 0 && (
+                                <span>경력: {candidate.careers.length}건</span>
+                              )}
+                              {candidate.pledges && candidate.pledges.length > 0 && (
+                                <span>공약: {candidate.pledges.length}건</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingIndex(index)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteCandidate(index)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                {expandedIndex === index ? (
+                                  <ChevronUp className="h-4 w-4" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </CollapsibleTrigger>
+                          </div>
                         </div>
-                        {candidate.position && (
-                          <p className="text-sm text-muted-foreground mt-1">{candidate.position}</p>
-                        )}
-                        {candidate.slogan && (
-                          <p className="text-sm mt-2 italic">"{candidate.slogan}"</p>
-                        )}
-                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                          {candidate.age && <span>나이: {candidate.age}세</span>}
-                          {candidate.education && <span>학력: {candidate.education}</span>}
-                          {candidate.careers && candidate.careers.length > 0 && (
-                            <span>경력: {candidate.careers.length}건</span>
-                          )}
-                          {candidate.pledges && candidate.pledges.length > 0 && (
-                            <span>공약: {candidate.pledges.length}건</span>
-                          )}
-                        </div>
-                      </div>
-                      {candidate.selected && (
-                        <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                      )}
-                    </motion.div>
+
+                        {/* Expanded Content - Careers & Pledges */}
+                        <CollapsibleContent>
+                          <div className="px-4 pb-4 pt-0 space-y-4 border-t">
+                            {/* Careers Section */}
+                            <div className="pt-4">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-sm">경력 ({candidate.careers?.length || 0})</h4>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addCareer(index)}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  추가
+                                </Button>
+                              </div>
+                              <div className="space-y-2">
+                                {candidate.careers?.map((career, ci) => (
+                                  <div key={ci} className="flex gap-2 items-start">
+                                    <Input
+                                      placeholder="기간"
+                                      value={career.period}
+                                      onChange={(e) => updateCareer(index, ci, { period: e.target.value })}
+                                      className="flex-1 h-8 text-sm"
+                                    />
+                                    <Input
+                                      placeholder="직책"
+                                      value={career.title}
+                                      onChange={(e) => updateCareer(index, ci, { title: e.target.value })}
+                                      className="flex-1 h-8 text-sm"
+                                    />
+                                    <Input
+                                      placeholder="소속"
+                                      value={career.organization}
+                                      onChange={(e) => updateCareer(index, ci, { organization: e.target.value })}
+                                      className="flex-1 h-8 text-sm"
+                                    />
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => deleteCareer(index, ci)}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Pledges Section */}
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-medium text-sm">공약 ({candidate.pledges?.length || 0})</h4>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addPledge(index)}
+                                >
+                                  <Plus className="h-3 w-3 mr-1" />
+                                  추가
+                                </Button>
+                              </div>
+                              <div className="space-y-2">
+                                {candidate.pledges?.map((pledge, pi) => (
+                                  <div key={pi} className="flex gap-2 items-start">
+                                    <Input
+                                      placeholder="공약명"
+                                      value={pledge.title}
+                                      onChange={(e) => updatePledge(index, pi, { title: e.target.value })}
+                                      className="flex-1 h-8 text-sm"
+                                    />
+                                    <Select
+                                      value={pledge.category}
+                                      onValueChange={(value) => updatePledge(index, pi, { category: value })}
+                                    >
+                                      <SelectTrigger className="w-24 h-8 text-sm">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {PLEDGE_CATEGORIES.map(cat => (
+                                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                      onClick={() => deletePledge(index, pi)}
+                                    >
+                                      <Trash2 className="h-3 w-3 text-destructive" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        </CollapsibleContent>
+                      </motion.div>
+                    </Collapsible>
                   ))}
                 </CardContent>
               </Card>
@@ -419,6 +620,95 @@ export default function AdminCandidateImport() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Edit Candidate Dialog */}
+      <Dialog open={editingIndex !== null} onOpenChange={(open) => !open && setEditingIndex(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>후보자 정보 수정</DialogTitle>
+          </DialogHeader>
+          {editingCandidate && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-1 block">이름 *</label>
+                <Input
+                  value={editingCandidate.name}
+                  onChange={(e) => updateCandidate(editingIndex!, { name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">정당 *</label>
+                <Select
+                  value={editingCandidate.party}
+                  onValueChange={(value) => updateCandidate(editingIndex!, { party: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PARTIES.map(party => (
+                      <SelectItem key={party} value={party}>{party}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">지역</label>
+                <Select
+                  value={editingCandidate.region_name}
+                  onValueChange={(value) => updateCandidate(editingIndex!, { region_name: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="지역 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REGIONS.map(region => (
+                      <SelectItem key={region} value={region}>{region}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">직위</label>
+                <Input
+                  value={editingCandidate.position || ''}
+                  onChange={(e) => updateCandidate(editingIndex!, { position: e.target.value })}
+                  placeholder="예: 서울시장 예비후보"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-sm font-medium mb-1 block">나이</label>
+                  <Input
+                    type="number"
+                    value={editingCandidate.age || ''}
+                    onChange={(e) => updateCandidate(editingIndex!, { age: parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-1 block">학력</label>
+                  <Input
+                    value={editingCandidate.education || ''}
+                    onChange={(e) => updateCandidate(editingIndex!, { education: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">슬로건</label>
+                <Textarea
+                  value={editingCandidate.slogan || ''}
+                  onChange={(e) => updateCandidate(editingIndex!, { slogan: e.target.value })}
+                  placeholder="선거 슬로건"
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingIndex(null)}>닫기</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
