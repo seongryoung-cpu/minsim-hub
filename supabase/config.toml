@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.extract-candidates]
 verify_jwt = false
+
+[functions.notify-admin-new-user]
+verify_jwt = false

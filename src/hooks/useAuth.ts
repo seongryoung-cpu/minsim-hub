@@ -144,6 +144,16 @@ export function useAuth() {
         activityType: 'signup',
         description: `새 계정 생성: ${email}`,
       });
+
+      // Notify admins about new user signup (fire and forget)
+      supabase.functions.invoke('notify-admin-new-user', {
+        body: {
+          user_id: data.user.id,
+          display_name: displayName || email.split('@')[0]
+        }
+      }).catch(err => {
+        console.error('Failed to notify admins:', err);
+      });
     }
     
     return { data, error };
