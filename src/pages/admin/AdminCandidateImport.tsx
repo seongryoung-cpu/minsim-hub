@@ -571,7 +571,7 @@ export default function AdminCandidateImport() {
                           />
                           
                           {/* Candidate Image */}
-                          <div className="flex-shrink-0">
+                          <div className="flex-shrink-0 relative group">
                             {candidate.image_url ? (
                               <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
                                 <img
@@ -582,6 +582,21 @@ export default function AdminCandidateImport() {
                                     (e.target as HTMLImageElement).src = '/placeholder.svg';
                                   }}
                                 />
+                                {/* Re-search overlay */}
+                                <button
+                                  onClick={() => fetchCandidateInfo(index)}
+                                  disabled={candidate.image_loading}
+                                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center disabled:cursor-not-allowed"
+                                >
+                                  {candidate.image_loading ? (
+                                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                                  ) : (
+                                    <>
+                                      <Search className="h-4 w-4 text-white" />
+                                      <span className="text-[9px] text-white mt-0.5">재검색</span>
+                                    </>
+                                  )}
+                                </button>
                               </div>
                             ) : (
                               <button
