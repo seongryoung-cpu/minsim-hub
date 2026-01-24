@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Link as LinkIcon, Loader2, CheckCircle, XCircle, UserPlus, Sparkles, AlertCircle, Edit, Trash2, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon, Loader2, CheckCircle, XCircle, UserPlus, Sparkles, AlertCircle, Edit, Trash2, Plus, ChevronDown, ChevronUp, ImageIcon, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,8 @@ interface ExtractedCandidate {
   careers?: Career[];
   pledges?: Pledge[];
   selected?: boolean;
+  image_url?: string;
+  image_loading?: boolean;
 }
 
 const REGIONS = [
@@ -65,6 +67,97 @@ export default function AdminCandidateImport() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+  const [fetchingAllImages, setFetchingAllImages] = useState(false);
+
+  // Fetch image for a single candidate from Namuwiki
+  const fetchCandidateImage = async (index: number) => {
+    const candidate = extractedCandidates[index];
+    if (!candidate.name) return;
+
+    // Set loading state
+    updateCandidate(index, { image_loading: true });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-candidate-image', {
+        body: { name: candidate.name, party: candidate.party }
+      });
+
+      if (error) throw error;
+
+      if (data.success && data.image_url) {
+        updateCandidate(index, { image_url: data.image_url, image_loading: false });
+        toast({
+          title: '사진 찾기 완료',
+          description: `${candidate.name}님의 사진을 찾았습니다.`
+        });
+      } else {
+        updateCandidate(index, { image_loading: false });
+        toast({
+          title: '사진을 찾을 수 없음',
+          description: data.error || '나무위키에서 사진을 찾을 수 없습니다.',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Image fetch error:', error);
+      updateCandidate(index, { image_loading: false });
+      toast({
+        title: '사진 검색 실패',
+        description: '사진 검색 중 오류가 발생했습니다.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Fetch images for all selected candidates
+  const fetchAllCandidateImages = async () => {
+    const selectedIndices = extractedCandidates
+      .map((c, i) => c.selected && !c.image_url ? i : -1)
+      .filter(i => i !== -1);
+
+    if (selectedIndices.length === 0) {
+      toast({
+        title: '사진이 없는 후보자가 없습니다',
+        description: '선택된 후보자 중 이미 사진이 있거나 선택되지 않았습니다.'
+      });
+      return;
+    }
+
+    setFetchingAllImages(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const index of selectedIndices) {
+      const candidate = extractedCandidates[index];
+      updateCandidate(index, { image_loading: true });
+
+      try {
+        const { data, error } = await supabase.functions.invoke('fetch-candidate-image', {
+          body: { name: candidate.name, party: candidate.party }
+        });
+
+        if (!error && data.success && data.image_url) {
+          updateCandidate(index, { image_url: data.image_url, image_loading: false });
+          successCount++;
+        } else {
+          updateCandidate(index, { image_loading: false });
+          failCount++;
+        }
+      } catch {
+        updateCandidate(index, { image_loading: false });
+        failCount++;
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    setFetchingAllImages(false);
+    toast({
+      title: '사진 일괄 검색 완료',
+      description: `성공: ${successCount}명, 실패: ${failCount}명`
+    });
+  };
 
   const handleExtract = async () => {
     if (!url) {
@@ -200,6 +293,7 @@ export default function AdminCandidateImport() {
             age: candidate.age || null,
             education: candidate.education || null,
             slogan: candidate.slogan || null,
+            image_url: candidate.image_url || null,
             is_active: true,
             sort_order: savedCount
           })
@@ -397,7 +491,20 @@ export default function AdminCandidateImport() {
                       <UserPlus className="h-5 w-5" />
                       추출된 후보자 ({extractedCandidates.length}명)
                     </CardTitle>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={fetchAllCandidateImages}
+                        disabled={fetchingAllImages}
+                      >
+                        {fetchingAllImages ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <ImageIcon className="h-4 w-4 mr-1" />
+                        )}
+                        사진 일괄 검색
+                      </Button>
                       <Button variant="outline" size="sm" onClick={() => toggleAll(true)}>
                         전체 선택
                       </Button>
@@ -429,6 +536,38 @@ export default function AdminCandidateImport() {
                             onCheckedChange={() => toggleCandidate(index)}
                             className="mt-1"
                           />
+                          
+                          {/* Candidate Image */}
+                          <div className="flex-shrink-0">
+                            {candidate.image_url ? (
+                              <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
+                                <img
+                                  src={candidate.image_url}
+                                  alt={candidate.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => fetchCandidateImage(index)}
+                                disabled={candidate.image_loading}
+                                className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center hover:border-primary hover:bg-muted/50 transition-colors disabled:opacity-50"
+                              >
+                                {candidate.image_loading ? (
+                                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                ) : (
+                                  <>
+                                    <Search className="h-4 w-4 text-muted-foreground" />
+                                    <span className="text-[10px] text-muted-foreground mt-1">사진검색</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                          
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-bold text-lg">{candidate.name}</span>
