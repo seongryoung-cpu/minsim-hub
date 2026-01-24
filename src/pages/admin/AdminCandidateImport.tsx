@@ -67,10 +67,10 @@ export default function AdminCandidateImport() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
-  const [fetchingAllImages, setFetchingAllImages] = useState(false);
+  const [fetchingAllInfo, setFetchingAllInfo] = useState(false);
 
-  // Fetch image for a single candidate from Namuwiki
-  const fetchCandidateImage = async (index: number) => {
+  // Fetch full info (image + careers + bio) for a single candidate from Namuwiki
+  const fetchCandidateInfo = async (index: number) => {
     const candidate = extractedCandidates[index];
     if (!candidate.name) return;
 
@@ -78,52 +78,76 @@ export default function AdminCandidateImport() {
     updateCandidate(index, { image_loading: true });
 
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-candidate-image', {
+      const { data, error } = await supabase.functions.invoke('fetch-candidate-info', {
         body: { name: candidate.name, party: candidate.party }
       });
 
       if (error) throw error;
 
-      if (data.success && data.image_url) {
-        updateCandidate(index, { image_url: data.image_url, image_loading: false });
+      if (data.success) {
+        const updates: Partial<ExtractedCandidate> = { image_loading: false };
+        
+        if (data.image_url) {
+          updates.image_url = data.image_url;
+        }
+        if (data.age) {
+          updates.age = data.age;
+        }
+        if (data.education) {
+          updates.education = data.education;
+        }
+        if (data.careers && data.careers.length > 0) {
+          // Merge with existing careers, prioritizing new ones
+          updates.careers = data.careers;
+        }
+        
+        updateCandidate(index, updates);
+        
+        const foundItems = [];
+        if (data.image_url) foundItems.push('사진');
+        if (data.careers?.length) foundItems.push(`경력 ${data.careers.length}건`);
+        if (data.education) foundItems.push('학력');
+        
         toast({
-          title: '사진 찾기 완료',
-          description: `${candidate.name}님의 사진을 찾았습니다.`
+          title: '정보 검색 완료',
+          description: foundItems.length > 0 
+            ? `${candidate.name}님: ${foundItems.join(', ')} 발견`
+            : '추가 정보를 찾을 수 없습니다.'
         });
       } else {
         updateCandidate(index, { image_loading: false });
         toast({
-          title: '사진을 찾을 수 없음',
-          description: data.error || '나무위키에서 사진을 찾을 수 없습니다.',
+          title: '정보를 찾을 수 없음',
+          description: data.error || '나무위키에서 정보를 찾을 수 없습니다.',
           variant: 'destructive'
         });
       }
     } catch (error) {
-      console.error('Image fetch error:', error);
+      console.error('Info fetch error:', error);
       updateCandidate(index, { image_loading: false });
       toast({
-        title: '사진 검색 실패',
-        description: '사진 검색 중 오류가 발생했습니다.',
+        title: '정보 검색 실패',
+        description: '정보 검색 중 오류가 발생했습니다.',
         variant: 'destructive'
       });
     }
   };
 
-  // Fetch images for all selected candidates
-  const fetchAllCandidateImages = async () => {
+  // Fetch info for all selected candidates
+  const fetchAllCandidateInfo = async () => {
     const selectedIndices = extractedCandidates
-      .map((c, i) => c.selected && !c.image_url ? i : -1)
+      .map((c, i) => c.selected ? i : -1)
       .filter(i => i !== -1);
 
     if (selectedIndices.length === 0) {
       toast({
-        title: '사진이 없는 후보자가 없습니다',
-        description: '선택된 후보자 중 이미 사진이 있거나 선택되지 않았습니다.'
+        title: '선택된 후보자가 없습니다',
+        variant: 'destructive'
       });
       return;
     }
 
-    setFetchingAllImages(true);
+    setFetchingAllInfo(true);
     let successCount = 0;
     let failCount = 0;
 
@@ -132,12 +156,21 @@ export default function AdminCandidateImport() {
       updateCandidate(index, { image_loading: true });
 
       try {
-        const { data, error } = await supabase.functions.invoke('fetch-candidate-image', {
+        const { data, error } = await supabase.functions.invoke('fetch-candidate-info', {
           body: { name: candidate.name, party: candidate.party }
         });
 
-        if (!error && data.success && data.image_url) {
-          updateCandidate(index, { image_url: data.image_url, image_loading: false });
+        if (!error && data.success) {
+          const updates: Partial<ExtractedCandidate> = { image_loading: false };
+          
+          if (data.image_url) updates.image_url = data.image_url;
+          if (data.age) updates.age = data.age;
+          if (data.education) updates.education = data.education;
+          if (data.careers && data.careers.length > 0) {
+            updates.careers = data.careers;
+          }
+          
+          updateCandidate(index, updates);
           successCount++;
         } else {
           updateCandidate(index, { image_loading: false });
@@ -148,13 +181,13 @@ export default function AdminCandidateImport() {
         failCount++;
       }
 
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 800));
     }
 
-    setFetchingAllImages(false);
+    setFetchingAllInfo(false);
     toast({
-      title: '사진 일괄 검색 완료',
+      title: '나무위키 정보 일괄 검색 완료',
       description: `성공: ${successCount}명, 실패: ${failCount}명`
     });
   };
@@ -495,15 +528,15 @@ export default function AdminCandidateImport() {
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={fetchAllCandidateImages}
-                        disabled={fetchingAllImages}
+                        onClick={fetchAllCandidateInfo}
+                        disabled={fetchingAllInfo}
                       >
-                        {fetchingAllImages ? (
+                        {fetchingAllInfo ? (
                           <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                         ) : (
-                          <ImageIcon className="h-4 w-4 mr-1" />
+                          <Search className="h-4 w-4 mr-1" />
                         )}
-                        사진 일괄 검색
+                        나무위키 정보 검색
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => toggleAll(true)}>
                         전체 선택
@@ -552,7 +585,7 @@ export default function AdminCandidateImport() {
                               </div>
                             ) : (
                               <button
-                                onClick={() => fetchCandidateImage(index)}
+                                onClick={() => fetchCandidateInfo(index)}
                                 disabled={candidate.image_loading}
                                 className="w-16 h-16 rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center hover:border-primary hover:bg-muted/50 transition-colors disabled:opacity-50"
                               >
@@ -561,7 +594,7 @@ export default function AdminCandidateImport() {
                                 ) : (
                                   <>
                                     <Search className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-[10px] text-muted-foreground mt-1">사진검색</span>
+                                    <span className="text-[10px] text-muted-foreground mt-1">정보검색</span>
                                   </>
                                 )}
                               </button>
