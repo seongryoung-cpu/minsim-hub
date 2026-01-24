@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Link as LinkIcon, Loader2, CheckCircle, XCircle, UserPlus, Sparkles, AlertCircle, Edit, Trash2, Plus, ChevronDown, ChevronUp, ImageIcon, Search } from 'lucide-react';
+import { ArrowLeft, Link as LinkIcon, Loader2, CheckCircle, XCircle, UserPlus, Sparkles, AlertCircle, Edit, Trash2, Plus, ChevronDown, ChevronUp, ImageIcon, Search, Images, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -28,6 +28,12 @@ interface Pledge {
   category: string;
 }
 
+interface ImageOption {
+  url: string;
+  source: string;
+  source_url?: string;
+}
+
 interface ExtractedCandidate {
   name: string;
   party: string;
@@ -41,6 +47,8 @@ interface ExtractedCandidate {
   selected?: boolean;
   image_url?: string;
   image_loading?: boolean;
+  image_options?: ImageOption[];
+  showImagePicker?: boolean;
 }
 
 const REGIONS = [
@@ -90,6 +98,13 @@ export default function AdminCandidateImport() {
         if (data.image_url) {
           updates.image_url = data.image_url;
         }
+        if (data.image_options && data.image_options.length > 0) {
+          updates.image_options = data.image_options;
+          // Show image picker if multiple options available
+          if (data.image_options.length > 1) {
+            updates.showImagePicker = true;
+          }
+        }
         if (data.age) {
           updates.age = data.age;
         }
@@ -97,14 +112,13 @@ export default function AdminCandidateImport() {
           updates.education = data.education;
         }
         if (data.careers && data.careers.length > 0) {
-          // Merge with existing careers, prioritizing new ones
           updates.careers = data.careers;
         }
         
         updateCandidate(index, updates);
         
         const foundItems = [];
-        if (data.image_url) foundItems.push('사진');
+        if (data.image_options?.length) foundItems.push(`사진 ${data.image_options.length}개`);
         if (data.careers?.length) foundItems.push(`경력 ${data.careers.length}건`);
         if (data.education) foundItems.push('학력');
         
@@ -573,30 +587,41 @@ export default function AdminCandidateImport() {
                           {/* Candidate Image */}
                           <div className="flex-shrink-0 relative group">
                             {candidate.image_url ? (
-                              <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
-                                <img
-                                  src={candidate.image_url}
-                                  alt={candidate.name}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                                  }}
-                                />
-                                {/* Re-search overlay */}
-                                <button
-                                  onClick={() => fetchCandidateInfo(index)}
-                                  disabled={candidate.image_loading}
-                                  className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center disabled:cursor-not-allowed"
-                                >
-                                  {candidate.image_loading ? (
-                                    <Loader2 className="h-5 w-5 animate-spin text-white" />
-                                  ) : (
-                                    <>
-                                      <Search className="h-4 w-4 text-white" />
-                                      <span className="text-[9px] text-white mt-0.5">재검색</span>
-                                    </>
-                                  )}
-                                </button>
+                              <div className="relative">
+                                <div className="relative w-16 h-16 rounded-lg overflow-hidden border">
+                                  <img
+                                    src={candidate.image_url}
+                                    alt={candidate.name}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                    }}
+                                  />
+                                  {/* Re-search overlay */}
+                                  <button
+                                    onClick={() => fetchCandidateInfo(index)}
+                                    disabled={candidate.image_loading}
+                                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center disabled:cursor-not-allowed"
+                                  >
+                                    {candidate.image_loading ? (
+                                      <Loader2 className="h-5 w-5 animate-spin text-white" />
+                                    ) : (
+                                      <>
+                                        <Search className="h-4 w-4 text-white" />
+                                        <span className="text-[9px] text-white mt-0.5">재검색</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                                {/* Show image picker button if options available */}
+                                {candidate.image_options && candidate.image_options.length > 1 && (
+                                  <button
+                                    onClick={() => updateCandidate(index, { showImagePicker: !candidate.showImagePicker })}
+                                    className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shadow-md"
+                                  >
+                                    {candidate.image_options.length}
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               <button
@@ -613,6 +638,51 @@ export default function AdminCandidateImport() {
                                   </>
                                 )}
                               </button>
+                            )}
+                            
+                            {/* Image Picker Dropdown */}
+                            {candidate.showImagePicker && candidate.image_options && candidate.image_options.length > 0 && (
+                              <div className="absolute top-0 left-20 z-20 bg-card border rounded-lg shadow-lg p-2 w-64">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-medium">사진 선택 ({candidate.image_options.length}개)</span>
+                                  <button 
+                                    onClick={() => updateCandidate(index, { showImagePicker: false })}
+                                    className="p-1 hover:bg-muted rounded"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto">
+                                  {candidate.image_options.map((option, imgIdx) => (
+                                    <button
+                                      key={imgIdx}
+                                      onClick={() => {
+                                        updateCandidate(index, { 
+                                          image_url: option.url, 
+                                          showImagePicker: false 
+                                        });
+                                      }}
+                                      className={`relative aspect-square rounded overflow-hidden border-2 transition-all ${
+                                        candidate.image_url === option.url 
+                                          ? 'border-primary ring-2 ring-primary/30' 
+                                          : 'border-transparent hover:border-muted-foreground/50'
+                                      }`}
+                                    >
+                                      <img
+                                        src={option.url}
+                                        alt={`옵션 ${imgIdx + 1}`}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                                        }}
+                                      />
+                                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
+                                        <span className="text-[8px] text-white truncate block">{option.source}</span>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
                             )}
                           </div>
                           

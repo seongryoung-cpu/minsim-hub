@@ -5,14 +5,135 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface ImageOption {
+  url: string;
+  source: string;
+  source_url?: string;
+}
+
 interface CandidateInfo {
   image_url?: string;
+  image_options?: ImageOption[];
   birth_date?: string;
   age?: number;
   education?: string;
   careers?: { period: string; title: string; organization: string }[];
   summary?: string;
   namuwiki_url?: string;
+}
+
+async function searchImages(query: string, apiKey: string): Promise<ImageOption[]> {
+  const images: ImageOption[] = [];
+  
+  try {
+    // Search Google Images via Firecrawl search
+    const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        query: `${query} 사진`,
+        limit: 10,
+        lang: 'ko',
+        country: 'KR',
+      }),
+    });
+
+    const searchData = await searchResponse.json();
+    
+    if (searchResponse.ok && searchData.success && searchData.data) {
+      // Extract image URLs from search results
+      for (const result of searchData.data) {
+        const url = result.url || '';
+        const title = result.title || '';
+        
+        // Skip non-relevant pages
+        if (url.includes('youtube.com') || url.includes('twitter.com') || url.includes('facebook.com')) {
+          continue;
+        }
+        
+        // Determine source name
+        let sourceName = '웹';
+        if (url.includes('namu.wiki')) sourceName = '나무위키';
+        else if (url.includes('wikipedia.org')) sourceName = '위키피디아';
+        else if (url.includes('naver.com')) sourceName = '네이버';
+        else if (url.includes('daum.net')) sourceName = '다음';
+        else if (url.includes('.go.kr')) sourceName = '공공기관';
+        
+        // Try to scrape for images
+        try {
+          const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: url,
+              formats: ['html'],
+              onlyMainContent: true,
+            }),
+          });
+
+          const scrapeData = await scrapeResponse.json();
+          
+          if (scrapeResponse.ok && scrapeData.success) {
+            const html = scrapeData.data?.html || '';
+            
+            // Extract image URLs from HTML
+            const imagePatterns = [
+              /https?:\/\/i\.namu\.wiki\/i\/[^"'\s<>]+\.(jpg|jpeg|png|gif|webp)/gi,
+              /https?:\/\/w\.namu\.la\/s\/[^"'\s<>]+\.(jpg|jpeg|png|gif|webp)/gi,
+              /https?:\/\/upload\.wikimedia\.org\/[^"'\s<>]+\.(jpg|jpeg|png|gif|webp)/gi,
+              /https?:\/\/[^"'\s<>]+\.pstatic\.net\/[^"'\s<>]+\.(jpg|jpeg|png|gif|webp)/gi,
+              /https?:\/\/[^"'\s<>]+\.(jpg|jpeg|png|webp)(?:\?[^"'\s<>]*)?/gi,
+            ];
+
+            for (const pattern of imagePatterns) {
+              const matches = html.match(pattern);
+              if (matches) {
+                for (const imgUrl of matches) {
+                  // Filter out small/icon images
+                  if (
+                    !imgUrl.includes('icon') && 
+                    !imgUrl.includes('logo') && 
+                    !imgUrl.includes('favicon') &&
+                    !imgUrl.includes('20px') &&
+                    !imgUrl.includes('16px') &&
+                    !imgUrl.includes('thumb/') &&
+                    imgUrl.length > 50 &&
+                    !images.some(img => img.url === imgUrl)
+                  ) {
+                    images.push({
+                      url: imgUrl,
+                      source: sourceName,
+                      source_url: url
+                    });
+                    
+                    // Limit images per source
+                    if (images.filter(img => img.source === sourceName).length >= 3) {
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.log('Error scraping:', url, e);
+        }
+        
+        // Limit total images
+        if (images.length >= 8) break;
+      }
+    }
+  } catch (e) {
+    console.error('Error searching images:', e);
+  }
+  
+  return images;
 }
 
 serve(async (req) => {
@@ -49,9 +170,16 @@ serve(async (req) => {
       );
     }
 
-    // Search for candidate on Namuwiki
-    const searchQuery = party ? `${name} ${party} 정치인 site:namu.wiki` : `${name} 정치인 site:namu.wiki`;
-    console.log('Searching for:', searchQuery);
+    // Search for images from multiple sources
+    const searchQuery = party ? `${name} ${party} 정치인` : `${name} 정치인`;
+    console.log('Searching images for:', searchQuery);
+    
+    const imageOptions = await searchImages(searchQuery, FIRECRAWL_API_KEY);
+    console.log('Found image options:', imageOptions.length);
+
+    // Search for candidate on Namuwiki for bio info
+    const namuwikiQuery = `${searchQuery} site:namu.wiki`;
+    console.log('Searching Namuwiki for:', namuwikiQuery);
 
     const searchResponse = await fetch('https://api.firecrawl.dev/v1/search', {
       method: 'POST',
@@ -60,7 +188,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        query: searchQuery,
+        query: namuwikiQuery,
         limit: 5,
         lang: 'ko',
         country: 'KR',
@@ -69,215 +197,144 @@ serve(async (req) => {
 
     const searchData = await searchResponse.json();
 
-    if (!searchResponse.ok || !searchData.success) {
-      console.error('Search API error:', searchData);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Search failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    let extractedInfo: CandidateInfo = {
+      image_options: imageOptions,
+      image_url: imageOptions.length > 0 ? imageOptions[0].url : undefined
+    };
 
-    // Find direct Namuwiki page for the person (not a list page)
-    const namuwikiResult = searchData.data?.find((result: any) => {
-      const url = result.url || '';
-      // Prefer direct person pages, avoid list/category pages
-      return url.includes('namu.wiki/w/') && 
-             !url.includes('%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%EC%9E%A5') && // 서울특별시장
-             !url.includes('/분류:') &&
-             !url.includes('/역대');
-    });
+    if (searchResponse.ok && searchData.success) {
+      // Find direct Namuwiki page for the person
+      const namuwikiResult = searchData.data?.find((result: any) => {
+        const url = result.url || '';
+        return url.includes('namu.wiki/w/') && 
+               !url.includes('%EC%84%9C%EC%9A%B8%ED%8A%B9%EB%B3%84%EC%8B%9C%EC%9E%A5') &&
+               !url.includes('/분류:') &&
+               !url.includes('/역대');
+      });
 
-    if (!namuwikiResult) {
-      console.log('No direct Namuwiki result found');
-      return new Response(
-        JSON.stringify({ success: false, error: 'No Namuwiki page found for this candidate' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+      if (namuwikiResult) {
+        console.log('Found Namuwiki URL:', namuwikiResult.url);
+        extractedInfo.namuwiki_url = namuwikiResult.url;
 
-    console.log('Found Namuwiki URL:', namuwikiResult.url);
+        // Scrape for bio info
+        const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: namuwikiResult.url,
+            formats: ['markdown'],
+            onlyMainContent: true,
+          }),
+        });
 
-    // Scrape the Namuwiki page to get content
-    const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: namuwikiResult.url,
-        formats: ['markdown', 'html'],
-        onlyMainContent: true,
-      }),
-    });
+        const scrapeData = await scrapeResponse.json();
 
-    const scrapeData = await scrapeResponse.json();
+        if (scrapeResponse.ok && scrapeData.success) {
+          const markdown = scrapeData.data?.markdown || '';
+          console.log('Markdown length:', markdown.length);
 
-    if (!scrapeResponse.ok || !scrapeData.success) {
-      console.error('Scrape API error:', scrapeData);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Failed to scrape page' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const html = scrapeData.data?.html || '';
-    const markdown = scrapeData.data?.markdown || '';
-
-    // Extract image URL from HTML
-    const imagePatterns = [
-      /https?:\/\/i\.namu\.wiki\/i\/[^"'\s<>]+\.(jpg|jpeg|png|gif|webp)/gi,
-      /https?:\/\/w\.namu\.la\/s\/[^"'\s<>]+\.(jpg|jpeg|png|gif|webp)/gi,
-    ];
-
-    let imageUrl: string | null = null;
-    for (const pattern of imagePatterns) {
-      const matches = html.match(pattern);
-      if (matches && matches.length > 0) {
-        const validImage = matches.find((url: string) => 
-          !url.includes('icon') && 
-          !url.includes('logo') && 
-          !url.includes('favicon') &&
-          !url.includes('20px') &&
-          !url.includes('16px') &&
-          url.length > 50
-        );
-        if (validImage) {
-          imageUrl = validImage;
-          break;
-        }
-      }
-    }
-
-    console.log('Found image:', imageUrl ? 'yes' : 'no');
-    console.log('Markdown length:', markdown.length);
-
-    // Use AI to extract structured information from the markdown
-    const systemPrompt = `당신은 나무위키 문서에서 정치인 정보를 추출하는 전문가입니다.
+          // Use AI to extract structured information
+          const systemPrompt = `당신은 나무위키 문서에서 정치인 정보를 추출하는 전문가입니다.
 주어진 문서 내용에서 다음 정보를 정확하게 추출해주세요:
 
-1. birth_date: 생년월일 (YYYY-MM-DD 형식, 예: 1961-04-18)
+1. birth_date: 생년월일 (YYYY-MM-DD 형식)
 2. age: 현재 나이 (숫자만, 만 나이 기준)
-3. education: 최종 학력 (예: 서울대학교 법학과 졸업)
+3. education: 최종 학력
 4. careers: 주요 경력 배열 (최대 10개)
    - period: 기간 (예: "2006~2011", "2021~현재")
-   - title: 직책 (예: "서울특별시장", "국회의원")
-   - organization: 소속 (예: "서울특별시", "국민의힘")
+   - title: 직책
+   - organization: 소속
 5. summary: 인물 요약 (2-3문장)
 
-중요 규칙:
-- 실제로 문서에 있는 정보만 추출하세요
-- 추측하지 마세요. 정보가 없으면 null을 반환하세요
-- 경력은 정치/공직 경력 위주로 추출하세요
-- 기간이 명확하지 않은 경력은 빈 문자열로 처리하세요`;
+중요: 실제 문서 정보만 추출, 없으면 null 반환`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `다음 나무위키 문서에서 "${name}" 정치인의 정보를 추출해주세요:\n\n${markdown.substring(0, 25000)}` }
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'extract_politician_info',
-              description: '나무위키 문서에서 추출한 정치인 정보',
-              parameters: {
-                type: 'object',
-                properties: {
-                  birth_date: { type: 'string', description: '생년월일 (YYYY-MM-DD)' },
-                  age: { type: 'number', description: '현재 나이' },
-                  education: { type: 'string', description: '최종 학력' },
-                  careers: {
-                    type: 'array',
-                    items: {
+          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'google/gemini-2.5-flash',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `"${name}" 정치인 정보 추출:\n\n${markdown.substring(0, 25000)}` }
+              ],
+              tools: [
+                {
+                  type: 'function',
+                  function: {
+                    name: 'extract_politician_info',
+                    description: '정치인 정보 추출',
+                    parameters: {
                       type: 'object',
                       properties: {
-                        period: { type: 'string' },
-                        title: { type: 'string' },
-                        organization: { type: 'string' }
-                      },
-                      required: ['period', 'title', 'organization']
+                        birth_date: { type: 'string' },
+                        age: { type: 'number' },
+                        education: { type: 'string' },
+                        careers: {
+                          type: 'array',
+                          items: {
+                            type: 'object',
+                            properties: {
+                              period: { type: 'string' },
+                              title: { type: 'string' },
+                              organization: { type: 'string' }
+                            },
+                            required: ['period', 'title', 'organization']
+                          }
+                        },
+                        summary: { type: 'string' }
+                      }
                     }
-                  },
-                  summary: { type: 'string', description: '인물 요약' }
+                  }
+                }
+              ],
+              tool_choice: { type: 'function', function: { name: 'extract_politician_info' } }
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            const toolCalls = aiData.choices?.[0]?.message?.tool_calls;
+            
+            if (toolCalls && toolCalls.length > 0) {
+              const functionArgs = toolCalls[0].function?.arguments;
+              if (functionArgs) {
+                try {
+                  const parsed = JSON.parse(functionArgs);
+                  extractedInfo = {
+                    ...extractedInfo,
+                    birth_date: parsed.birth_date,
+                    age: parsed.age,
+                    education: parsed.education,
+                    careers: parsed.careers,
+                    summary: parsed.summary,
+                  };
+                } catch (e) {
+                  console.error('Failed to parse AI response:', e);
                 }
               }
             }
           }
-        ],
-        tool_choice: { type: 'function', function: { name: 'extract_politician_info' } }
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      console.error('AI gateway error:', aiResponse.status);
-      // Still return image even if AI fails
-      if (imageUrl) {
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            image_url: imageUrl,
-            namuwiki_url: namuwikiResult.url,
-            source: 'namuwiki'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      return new Response(
-        JSON.stringify({ success: false, error: 'AI extraction failed' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const aiData = await aiResponse.json();
-    console.log('AI extraction complete');
-
-    // Parse tool call response
-    let extractedInfo: CandidateInfo = {
-      image_url: imageUrl || undefined,
-      namuwiki_url: namuwikiResult.url
-    };
-
-    const toolCalls = aiData.choices?.[0]?.message?.tool_calls;
-    if (toolCalls && toolCalls.length > 0) {
-      const functionArgs = toolCalls[0].function?.arguments;
-      if (functionArgs) {
-        try {
-          const parsed = JSON.parse(functionArgs);
-          extractedInfo = {
-            ...extractedInfo,
-            birth_date: parsed.birth_date || undefined,
-            age: parsed.age || undefined,
-            education: parsed.education || undefined,
-            careers: parsed.careers || undefined,
-            summary: parsed.summary || undefined,
-          };
-        } catch (e) {
-          console.error('Failed to parse AI response:', e);
         }
       }
     }
 
-    console.log('Extracted info:', JSON.stringify({
-      has_image: !!extractedInfo.image_url,
+    console.log('Final result:', JSON.stringify({
+      has_image_options: extractedInfo.image_options?.length || 0,
       has_careers: extractedInfo.careers?.length || 0,
-      has_education: !!extractedInfo.education,
-      has_age: !!extractedInfo.age
+      has_education: !!extractedInfo.education
     }));
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         ...extractedInfo,
-        source: 'namuwiki'
+        source: 'multi'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
