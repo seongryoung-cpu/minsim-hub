@@ -123,7 +123,9 @@ export function CandidateCompare() {
           </div>
 
           {/* Candidates grouped by position */}
-          {Object.entries(candidatesByRegion).map(([position, candidates]) => (
+          {Object.entries(candidatesByRegion)
+            .filter(([region]) => !selectedRegion || region === selectedRegion)
+            .map(([position, candidates]) => (
             <div key={position} className="mb-4 last:mb-0">
               <p className="text-xs text-muted-foreground mb-2">{position}</p>
               <div className="flex flex-wrap gap-2">
