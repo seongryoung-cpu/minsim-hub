@@ -29,6 +29,13 @@ export function CandidateCompare() {
     return selectedIds.map(id => allCandidates.find(c => c.id === id)).filter(Boolean) as Candidate[];
   }, [selectedIds, allCandidates]);
 
+  // 선택된 후보의 position (첫 번째 선택된 후보 기준)
+  const selectedPosition = useMemo(() => {
+    if (selectedIds.length === 0) return null;
+    const firstCandidate = allCandidates.find(c => c.id === selectedIds[0]);
+    return firstCandidate?.position || null;
+  }, [selectedIds, allCandidates]);
+
   const toggleCandidate = (id: string) => {
     setSelectedIds(prev => {
       if (prev.includes(id)) {
@@ -43,6 +50,12 @@ export function CandidateCompare() {
 
   const clearSelection = () => {
     setSelectedIds([]);
+  };
+
+  // 후보자가 선택 가능한지 확인 (같은 position만 선택 가능)
+  const canSelectCandidate = (candidate: Candidate) => {
+    if (selectedIds.length === 0) return true;
+    return candidate.position === selectedPosition;
   };
 
   // Get all unique pledge categories
@@ -115,7 +128,8 @@ export function CandidateCompare() {
               <div className="flex flex-wrap gap-2">
                 {candidates.map(candidate => {
                   const isSelected = selectedIds.includes(candidate.id);
-                  const isDisabled = !isSelected && selectedIds.length >= 4;
+                  const isDisabled = !isSelected && (selectedIds.length >= 4 || !canSelectCandidate(candidate));
+                  const isDifferentPosition = !isSelected && selectedPosition && candidate.position !== selectedPosition;
                   return (
                     <motion.button
                       key={candidate.id}
@@ -133,6 +147,7 @@ export function CandidateCompare() {
                         borderColor: isSelected ? candidate.partyColor : undefined,
                         ['--tw-ring-color' as string]: candidate.partyColor,
                       }}
+                      title={isDifferentPosition ? `${selectedPosition} 후보만 비교할 수 있습니다` : undefined}
                     >
                       {candidate.image ? (
                         <img 
