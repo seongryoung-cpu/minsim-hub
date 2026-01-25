@@ -120,7 +120,7 @@ function Index() {
           <Route path="/policy-match" element={<PolicyMatchGame />} />
           <Route path="/political-mbti" element={<PoliticalMbtiPage />} />
           <Route path="/news" element={<NewsFeed />} />
-          <Route path="/compare" element={<CandidateCompare />} />
+          <Route path="/compare" element={<CandidateCompare region={currentRegion} />} />
           <Route path="/quiz" element={<QuizPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/notification-settings" element={<NotificationSettingsPage />} />
