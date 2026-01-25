@@ -14,13 +14,14 @@ export function CandidateCompare() {
   // Fetch all candidates from DB
   const { data: allCandidates = [], isLoading } = useCandidates();
 
-  // Group candidates by region
+  // Group candidates by region_name (DB에서 가져온 실제 지역명 사용)
   const candidatesByRegion = useMemo(() => {
     const grouped: Record<string, Candidate[]> = {};
     allCandidates.forEach(c => {
-      const region = c.position || '기타';
-      if (!grouped[region]) grouped[region] = [];
-      grouped[region].push(c);
+      // region_name이 없으면 position에서 추출 시도
+      const regionKey = (c as any).regionName || c.position?.split(' ')[0] || '기타';
+      if (!grouped[regionKey]) grouped[regionKey] = [];
+      grouped[regionKey].push(c);
     });
     return grouped;
   }, [allCandidates]);
@@ -29,11 +30,11 @@ export function CandidateCompare() {
     return selectedIds.map(id => allCandidates.find(c => c.id === id)).filter(Boolean) as Candidate[];
   }, [selectedIds, allCandidates]);
 
-  // 선택된 후보의 position (첫 번째 선택된 후보 기준)
-  const selectedPosition = useMemo(() => {
+  // 선택된 후보의 지역명 (첫 번째 선택된 후보 기준)
+  const selectedRegion = useMemo(() => {
     if (selectedIds.length === 0) return null;
     const firstCandidate = allCandidates.find(c => c.id === selectedIds[0]);
-    return firstCandidate?.position || null;
+    return (firstCandidate as any)?.regionName || null;
   }, [selectedIds, allCandidates]);
 
   const toggleCandidate = (id: string) => {
@@ -52,10 +53,10 @@ export function CandidateCompare() {
     setSelectedIds([]);
   };
 
-  // 후보자가 선택 가능한지 확인 (같은 position만 선택 가능)
+  // 후보자가 선택 가능한지 확인 (같은 지역만 선택 가능)
   const canSelectCandidate = (candidate: Candidate) => {
     if (selectedIds.length === 0) return true;
-    return candidate.position === selectedPosition;
+    return (candidate as any).regionName === selectedRegion;
   };
 
   // Get all unique pledge categories
@@ -129,7 +130,7 @@ export function CandidateCompare() {
                 {candidates.map(candidate => {
                   const isSelected = selectedIds.includes(candidate.id);
                   const isDisabled = !isSelected && (selectedIds.length >= 4 || !canSelectCandidate(candidate));
-                  const isDifferentPosition = !isSelected && selectedPosition && candidate.position !== selectedPosition;
+                  const isDifferentRegion = !isSelected && selectedRegion && (candidate as any).regionName !== selectedRegion;
                   return (
                     <motion.button
                       key={candidate.id}
@@ -147,7 +148,7 @@ export function CandidateCompare() {
                         borderColor: isSelected ? candidate.partyColor : undefined,
                         ['--tw-ring-color' as string]: candidate.partyColor,
                       }}
-                      title={isDifferentPosition ? `${selectedPosition} 후보만 비교할 수 있습니다` : undefined}
+                      title={isDifferentRegion ? `${selectedRegion} 후보만 비교할 수 있습니다` : undefined}
                     >
                       {candidate.image ? (
                         <img 

@@ -42,7 +42,7 @@ function transformToCandidate(
   db: DBCandidate, 
   pledges: DBCandidatePledge[] = [],
   careers: DBCandidateCareer[] = []
-): Candidate {
+): Candidate & { regionName: string } {
   return {
     id: db.slug, // for URL routing
     dbId: db.id, // actual UUID for DB operations like follow
@@ -52,6 +52,7 @@ function transformToCandidate(
     image: db.image_url || undefined,
     summary: db.summary,
     position: db.position,
+    regionName: db.region_name, // 지역명 추가
     age: db.age || undefined,
     education: db.education || undefined,
     slogan: db.slogan || undefined,
