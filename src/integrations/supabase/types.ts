@@ -830,6 +830,104 @@ export type Database = {
         }
         Relationships: []
       }
+      spectrum_answers: {
+        Row: {
+          answer_value: number
+          created_at: string
+          id: string
+          information_gain: number | null
+          question_id: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          answer_value: number
+          created_at?: string
+          id?: string
+          information_gain?: number | null
+          question_id: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          answer_value?: number
+          created_at?: string
+          id?: string
+          information_gain?: number | null
+          question_id?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spectrum_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "spectrum_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spectrum_questions: {
+        Row: {
+          category: string | null
+          created_at: string
+          difficulty: number
+          discrimination: number
+          id: string
+          is_active: boolean
+          left_label: string
+          right_label: string
+          sort_order: number
+          statement: string
+          target_dimension: string
+          updated_at: string
+          weight_economy: number
+          weight_fairness: number
+          weight_future: number
+          weight_gender: number
+          weight_security: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          difficulty?: number
+          discrimination?: number
+          id?: string
+          is_active?: boolean
+          left_label: string
+          right_label: string
+          sort_order?: number
+          statement: string
+          target_dimension: string
+          updated_at?: string
+          weight_economy?: number
+          weight_fairness?: number
+          weight_future?: number
+          weight_gender?: number
+          weight_security?: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          difficulty?: number
+          discrimination?: number
+          id?: string
+          is_active?: boolean
+          left_label?: string
+          right_label?: string
+          sort_order?: number
+          statement?: string
+          target_dimension?: string
+          updated_at?: string
+          weight_economy?: number
+          weight_fairness?: number
+          weight_future?: number
+          weight_gender?: number
+          weight_security?: number
+        }
+        Relationships: []
+      }
       user_followed_candidates: {
         Row: {
           candidate_id: string
@@ -868,6 +966,63 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_spectrums: {
+        Row: {
+          created_at: string
+          economy_score: number
+          economy_uncertainty: number
+          fairness_score: number
+          fairness_uncertainty: number
+          future_score: number
+          future_uncertainty: number
+          gender_score: number
+          gender_uncertainty: number
+          id: string
+          security_score: number
+          security_uncertainty: number
+          session_id: string | null
+          total_answers: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          economy_score?: number
+          economy_uncertainty?: number
+          fairness_score?: number
+          fairness_uncertainty?: number
+          future_score?: number
+          future_uncertainty?: number
+          gender_score?: number
+          gender_uncertainty?: number
+          id?: string
+          security_score?: number
+          security_uncertainty?: number
+          session_id?: string | null
+          total_answers?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          economy_score?: number
+          economy_uncertainty?: number
+          fairness_score?: number
+          fairness_uncertainty?: number
+          future_score?: number
+          future_uncertainty?: number
+          gender_score?: number
+          gender_uncertainty?: number
+          id?: string
+          security_score?: number
+          security_uncertainty?: number
+          session_id?: string | null
+          total_answers?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
