@@ -8,6 +8,7 @@ export type ActivityType =
   | 'quiz_complete'
   | 'policy_match_complete'
   | 'mbti_complete'
+  | 'spectrum_complete'
   | 'candidate_follow'
   | 'candidate_unfollow'
   | 'profile_update'

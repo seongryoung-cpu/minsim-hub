@@ -27,6 +27,7 @@ import { AdminPolicyCards } from '@/pages/admin/AdminPolicyCards';
 import { AdminSettings } from '@/pages/admin/AdminSettings';
 import { AdminMbti } from '@/pages/admin/AdminMbti';
 import { PoliticalMbtiPage } from '@/pages/PoliticalMbtiPage';
+import { SpectrumTestPage } from '@/pages/SpectrumTestPage';
 import AdminCandidateImport from '@/pages/admin/AdminCandidateImport';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -119,6 +120,7 @@ function Index() {
           <Route path="/candidate/:id" element={<CandidateDetail />} />
           <Route path="/policy-match" element={<PolicyMatchGame />} />
           <Route path="/political-mbti" element={<PoliticalMbtiPage />} />
+          <Route path="/spectrum" element={<SpectrumTestPage />} />
           <Route path="/news" element={<NewsFeed />} />
           <Route path="/compare" element={<CandidateCompare region={currentRegion} />} />
           <Route path="/quiz" element={<QuizPage />} />
