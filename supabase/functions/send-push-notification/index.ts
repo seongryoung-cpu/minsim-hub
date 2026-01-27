@@ -1,18 +1,25 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface PushPayload {
-  title: string;
-  body: string;
-  data?: Record<string, unknown>;
-  user_id?: string;
-  notification_type?: 'news' | 'candidate_updates' | 'quiz' | 'policy_match' | 'system';
-}
+// UUID regex pattern
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Input validation schema
+const pushPayloadSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
+  body: z.string().min(1, 'Body is required').max(1000, 'Body too long'),
+  data: z.record(z.unknown()).optional(),
+  user_id: z.string().regex(uuidRegex, 'Invalid user_id format').optional(),
+  notification_type: z.enum(['news', 'candidate_updates', 'quiz', 'policy_match', 'system']).optional(),
+});
+
+type PushPayload = z.infer<typeof pushPayloadSchema>;
 
 // Map notification_type to preference column name
 function getPreferenceColumn(type: string | undefined): string | null {
@@ -125,15 +132,27 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const payload: PushPayload = await req.json();
-    const { title, body, data, user_id, notification_type } = payload;
-
-    if (!title || !body) {
+    // Parse and validate input
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch {
       return new Response(
-        JSON.stringify({ error: 'Title and body are required' }),
+        JSON.stringify({ error: 'Invalid JSON payload' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const parseResult = pushPayloadSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const errorMessages = parseResult.error.errors.map(e => e.message).join(', ');
+      return new Response(
+        JSON.stringify({ error: errorMessages }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { title, body, data, user_id, notification_type } = parseResult.data;
 
     // Get push subscriptions
     let query = supabase.from('push_subscriptions').select('*');

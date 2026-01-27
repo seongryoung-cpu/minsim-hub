@@ -1,15 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface NewUserPayload {
-  user_id: string;
-  display_name?: string;
-}
+// UUID regex pattern
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// Input validation schema
+const newUserPayloadSchema = z.object({
+  user_id: z.string().regex(uuidRegex, 'Invalid user_id format'),
+  display_name: z.string().max(100, 'Display name too long').optional(),
+});
+
+type NewUserPayload = z.infer<typeof newUserPayloadSchema>;
 
 // Web Push implementation
 async function generateVapidSignature(
@@ -105,15 +112,27 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const payload: NewUserPayload = await req.json();
-    const { user_id, display_name } = payload;
-
-    if (!user_id) {
+    // Parse and validate input
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch {
       return new Response(
-        JSON.stringify({ error: 'user_id is required' }),
+        JSON.stringify({ error: 'Invalid JSON payload' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const parseResult = newUserPayloadSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const errorMessages = parseResult.error.errors.map(e => e.message).join(', ');
+      return new Response(
+        JSON.stringify({ error: errorMessages }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { user_id, display_name } = parseResult.data;
 
     const userName = display_name || '새 사용자';
 
