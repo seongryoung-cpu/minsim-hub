@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
 import { PolicyMatchHistory, PolicyMatchResultModal } from '@/components/policy-match/PolicyMatchHistory';
 import { FollowedCandidatesList } from '@/components/candidate/FollowedCandidatesList';
+import { SpectrumSummaryCard } from '@/components/political-mbti/SpectrumSummaryCard';
 import { ShareSheet } from '@/components/share/ShareSheet';
 import { Switch } from '@/components/ui/switch';
 import { AuthModal } from '@/components/auth/AuthModal';
@@ -248,6 +249,9 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
 
         {/* Followed Candidates */}
         <FollowedCandidatesList />
+
+        {/* Spectrum Summary - 5D Political Orientation */}
+        {isAuthenticated && <SpectrumSummaryCard />}
 
         {/* Policy Match History */}
         <PolicyMatchHistory onViewResult={(result) => setSelectedResult(result)} />
