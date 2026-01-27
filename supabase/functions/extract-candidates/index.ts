@@ -1,10 +1,40 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// SSRF-safe URL validation schema
+const extractCandidatesSchema = z.object({
+  url: z.string()
+    .min(1, 'URL is required')
+    .max(2048, 'URL too long')
+    .refine((url) => {
+      try {
+        const u = new URL(url.startsWith('http') ? url : `https://${url}`);
+        // Block internal/private IPs
+        const hostname = u.hostname.toLowerCase();
+        const blockedHosts = ['localhost', '127.0.0.1', '0.0.0.0', '::1'];
+        const blockedPrefixes = ['192.168.', '10.', '172.16.', '172.17.', '172.18.', '172.19.', 
+          '172.20.', '172.21.', '172.22.', '172.23.', '172.24.', '172.25.', '172.26.', 
+          '172.27.', '172.28.', '172.29.', '172.30.', '172.31.', '169.254.', 'fc00:', 'fe80:'];
+        
+        if (blockedHosts.includes(hostname)) return false;
+        for (const prefix of blockedPrefixes) {
+          if (hostname.startsWith(prefix)) return false;
+        }
+        // Only allow http(s) protocols
+        if (!['http:', 'https:'].includes(u.protocol)) return false;
+        return true;
+      } catch {
+        return false;
+      }
+    }, 'Invalid or blocked URL'),
+  region_name: z.string().max(100, 'Region name too long').optional(),
+});
 
 interface ExtractedCandidate {
   name: string;
@@ -24,14 +54,27 @@ serve(async (req) => {
   }
 
   try {
-    const { url, region_name } = await req.json();
-
-    if (!url) {
+    // Parse and validate input
+    let rawBody: unknown;
+    try {
+      rawBody = await req.json();
+    } catch {
       return new Response(
-        JSON.stringify({ success: false, error: 'URL is required' }),
+        JSON.stringify({ success: false, error: 'Invalid JSON payload' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const parseResult = extractCandidatesSchema.safeParse(rawBody);
+    if (!parseResult.success) {
+      const errorMessages = parseResult.error.errors.map(e => e.message).join(', ');
+      return new Response(
+        JSON.stringify({ success: false, error: errorMessages }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { url, region_name } = parseResult.data;
 
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
