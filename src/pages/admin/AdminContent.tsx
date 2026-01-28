@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PledgeCareerManager } from '@/components/admin/PledgeCareerManager';
 import { CandidateImageUpload } from '@/components/admin/CandidateImageUpload';
+import { NewsArticleDialog } from '@/components/admin/NewsArticleDialog';
 
 type ContentTab = 'candidates' | 'news' | 'quiz';
 
@@ -365,6 +366,10 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
 // News Manager
 function NewsManager() {
   const queryClient = useQueryClient();
+  const [editingArticle, setEditingArticle] = useState<any | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const { data: candidates } = useAllCandidatesAdmin();
+
   const { data: news, isLoading } = useQuery({
     queryKey: ['news-admin'],
     queryFn: async () => {
@@ -372,6 +377,22 @@ function NewsManager() {
       if (error) throw error;
       return data;
     },
+  });
+
+  const createNews = useMutation({
+    mutationFn: async (data: any) => {
+      const { error } = await supabase.from('news_articles').insert(data);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['news-admin'] }),
+  });
+
+  const updateNews = useMutation({
+    mutationFn: async ({ id, ...data }: any) => {
+      const { error } = await supabase.from('news_articles').update(data).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['news-admin'] }),
   });
 
   const deleteNews = useMutation({
@@ -382,6 +403,22 @@ function NewsManager() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['news-admin'] }),
   });
 
+  const handleSave = async (data: any) => {
+    try {
+      if (editingArticle) {
+        await updateNews.mutateAsync({ id: editingArticle.id, ...data });
+        toast.success('수정되었습니다');
+      } else {
+        await createNews.mutateAsync(data);
+        toast.success('추가되었습니다');
+      }
+      setEditingArticle(null);
+      setIsCreateOpen(false);
+    } catch (error) {
+      toast.error('저장 실패');
+    }
+  };
+
   const handleDelete = async (id: string, title: string) => {
     if (!confirm(`"${title}" 뉴스를 삭제하시겠습니까?`)) return;
     try {
@@ -390,22 +427,52 @@ function NewsManager() {
     } catch { toast.error('삭제 실패'); }
   };
 
+  const getCandidateName = (candidateSlug: string | null) => {
+    if (!candidateSlug || !candidates) return null;
+    const candidate = candidates.find(c => c.slug === candidateSlug);
+    return candidate ? candidate.name : candidateSlug;
+  };
+
   if (isLoading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="p-4 space-y-3">
-      <p className="text-xs text-muted-foreground">{news?.length || 0}개의 뉴스</p>
-      {news?.slice(0, 10).map(article => (
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">{news?.length || 0}개의 뉴스</p>
+        <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-1">
+          <Plus size={16} /> 뉴스 추가
+        </Button>
+      </div>
+
+      {news?.slice(0, 20).map(article => (
         <div key={article.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm truncate">{article.title}</p>
-            <p className="text-xs text-muted-foreground">{article.source} · {new Date(article.published_at).toLocaleDateString('ko-KR')}</p>
+            <p className="text-xs text-muted-foreground">
+              {article.source} · {new Date(article.published_at).toLocaleDateString('ko-KR')}
+              {article.candidate_id && (
+                <span className="ml-1 text-primary">· {getCandidateName(article.candidate_id)}</span>
+              )}
+            </p>
           </div>
-          <Button size="icon" variant="ghost" onClick={() => handleDelete(article.id, article.title)}>
-            <Trash2 size={16} className="text-destructive" />
-          </Button>
+          <div className="flex gap-1">
+            <Button size="icon" variant="ghost" onClick={() => setEditingArticle(article)}>
+              <Edit size={16} />
+            </Button>
+            <Button size="icon" variant="ghost" onClick={() => handleDelete(article.id, article.title)}>
+              <Trash2 size={16} className="text-destructive" />
+            </Button>
+          </div>
         </div>
       ))}
+
+      <NewsArticleDialog
+        article={editingArticle}
+        isOpen={!!editingArticle || isCreateOpen}
+        onClose={() => { setEditingArticle(null); setIsCreateOpen(false); }}
+        onSave={handleSave}
+        isSaving={createNews.isPending || updateNews.isPending}
+      />
     </div>
   );
 }
