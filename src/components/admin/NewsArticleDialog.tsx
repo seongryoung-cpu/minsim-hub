@@ -184,7 +184,7 @@ export function NewsArticleDialog({ article, isOpen, onClose, onSave, isSaving }
               </SelectTrigger>
               <SelectContent className="bg-background z-50">
                 <SelectItem value="none">없음</SelectItem>
-                {candidates?.map(candidate => (
+                {candidates?.filter(c => c.slug && c.slug.trim() !== '').map(candidate => (
                   <SelectItem key={candidate.id} value={candidate.slug}>
                     {candidate.name} ({candidate.party})
                   </SelectItem>
