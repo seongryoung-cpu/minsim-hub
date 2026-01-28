@@ -364,10 +364,19 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
 }
 
 // News Manager
+const NEWS_CATEGORIES = [
+  { value: 'all', label: '전체' },
+  { value: 'policy', label: '정책' },
+  { value: 'campaign', label: '캠페인' },
+  { value: 'interview', label: '인터뷰' },
+  { value: 'general', label: '일반' },
+];
+
 function NewsManager() {
   const queryClient = useQueryClient();
   const [editingArticle, setEditingArticle] = useState<any | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const { data: candidates } = useAllCandidatesAdmin();
 
   const { data: news, isLoading } = useQuery({
@@ -433,38 +442,79 @@ function NewsManager() {
     return candidate ? candidate.name : candidateSlug;
   };
 
+  const getCategoryLabel = (category: string) => {
+    const cat = NEWS_CATEGORIES.find(c => c.value === category);
+    return cat ? cat.label : category;
+  };
+
+  const filteredNews = news?.filter(article => 
+    categoryFilter === 'all' || article.category === categoryFilter
+  ) || [];
+
   if (isLoading) return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
 
   return (
     <div className="p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">{news?.length || 0}개의 뉴스</p>
-        <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-1">
-          <Plus size={16} /> 뉴스 추가
-        </Button>
+      {/* 헤더: 카테고리 필터 + 추가 버튼 */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            {categoryFilter === 'all' ? `전체 ${news?.length || 0}개` : `${getCategoryLabel(categoryFilter)} ${filteredNews.length}개`}
+          </p>
+          <Button onClick={() => setIsCreateOpen(true)} size="sm" className="gap-1">
+            <Plus size={16} /> 뉴스 추가
+          </Button>
+        </div>
+        
+        {/* 카테고리 필터 탭 */}
+        <div className="flex flex-wrap gap-1">
+          {NEWS_CATEGORIES.map(cat => (
+            <Button
+              key={cat.value}
+              size="sm"
+              variant={categoryFilter === cat.value ? 'default' : 'outline'}
+              onClick={() => setCategoryFilter(cat.value)}
+              className="text-xs h-7 px-2"
+            >
+              {cat.label}
+            </Button>
+          ))}
+        </div>
       </div>
 
-      {news?.slice(0, 20).map(article => (
-        <div key={article.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{article.title}</p>
-            <p className="text-xs text-muted-foreground">
-              {article.source} · {new Date(article.published_at).toLocaleDateString('ko-KR')}
-              {article.candidate_id && (
-                <span className="ml-1 text-primary">· {getCandidateName(article.candidate_id)}</span>
-              )}
-            </p>
+      {/* 뉴스 목록 */}
+      {filteredNews.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8 text-sm">
+          {categoryFilter === 'all' ? '등록된 뉴스가 없습니다' : `${getCategoryLabel(categoryFilter)} 카테고리에 뉴스가 없습니다`}
+        </p>
+      ) : (
+        filteredNews.slice(0, 30).map(article => (
+          <div key={article.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                  {getCategoryLabel(article.category)}
+                </span>
+              </div>
+              <p className="font-medium text-sm truncate">{article.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {article.source} · {new Date(article.published_at).toLocaleDateString('ko-KR')}
+                {article.candidate_id && (
+                  <span className="ml-1 text-primary">· {getCandidateName(article.candidate_id)}</span>
+                )}
+              </p>
+            </div>
+            <div className="flex gap-1">
+              <Button size="icon" variant="ghost" onClick={() => setEditingArticle(article)}>
+                <Edit size={16} />
+              </Button>
+              <Button size="icon" variant="ghost" onClick={() => handleDelete(article.id, article.title)}>
+                <Trash2 size={16} className="text-destructive" />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-1">
-            <Button size="icon" variant="ghost" onClick={() => setEditingArticle(article)}>
-              <Edit size={16} />
-            </Button>
-            <Button size="icon" variant="ghost" onClick={() => handleDelete(article.id, article.title)}>
-              <Trash2 size={16} className="text-destructive" />
-            </Button>
-          </div>
-        </div>
-      ))}
+        ))
+      )}
 
       <NewsArticleDialog
         article={editingArticle}
