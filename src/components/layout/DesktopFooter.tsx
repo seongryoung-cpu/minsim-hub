@@ -13,11 +13,11 @@ export function DesktopFooter() {
           <div className="col-span-1">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center overflow-hidden">
-                {settings?.logo_url ? (
-                  <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
-                ) : (
-                  <span className="text-xl">🗳️</span>
-                )}
+                <img 
+                  src={settings?.logo_url || 'https://zdgpxmtapbviwrpcleqi.supabase.co/storage/v1/object/public/app-assets/logos/logo-1768900705056.jpg'} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain" 
+                />
               </div>
               <div>
                 <h2 className="font-bold text-lg text-foreground">

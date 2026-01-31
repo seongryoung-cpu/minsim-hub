@@ -47,15 +47,11 @@ export function BottomTabBar() {
               >
                 {isLogoTab ? (
                   <div className="w-6 h-6 rounded-md overflow-hidden flex items-center justify-center bg-primary/10">
-                    {settings?.logo_url ? (
-                      <img src={settings.logo_url} alt="Logo" className="w-full h-full object-contain" />
-                    ) : (
-                      <Home
-                        size={20}
-                        className={`transition-colors ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`}
-                        strokeWidth={active ? 2.5 : 2}
-                      />
-                    )}
+                    <img 
+                      src={settings?.logo_url || 'https://zdgpxmtapbviwrpcleqi.supabase.co/storage/v1/object/public/app-assets/logos/logo-1768900705056.jpg'} 
+                      alt="Logo" 
+                      className="w-full h-full object-contain" 
+                    />
                   </div>
                 ) : (
                   (() => {
