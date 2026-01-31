@@ -71,9 +71,9 @@ export function FollowedCandidatesList() {
         <div className="flex items-center gap-2">
           <Heart size={20} className="text-red-500 fill-red-500" />
           <h3 className="font-semibold text-foreground">관심 후보</h3>
-          {followCount > 0 && (
+          {candidates && candidates.length > 0 && (
             <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
-              {followCount}명
+              {candidates.length}명
             </span>
           )}
         </div>
