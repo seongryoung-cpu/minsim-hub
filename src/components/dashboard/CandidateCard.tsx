@@ -25,7 +25,9 @@ export function CandidateCard({
   const { isFollowing, toggleFollow } = useFollowedCandidates();
   const { settings } = useAppSettings();
   const { toast } = useToast();
-  const following = isFollowing(candidate.id);
+  // Use dbId (UUID) for follow operations, id (slug) is for URL routing
+  const candidateDbId = candidate.dbId || candidate.id;
+  const following = isFollowing(candidateDbId);
   const enableHover = settings?.enable_hover_animation !== false;
 
   const handleClick = () => {
@@ -37,7 +39,7 @@ export function CandidateCard({
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleFollow(candidate.id);
+    toggleFollow(candidateDbId);
     
     if (!following) {
       toast({
