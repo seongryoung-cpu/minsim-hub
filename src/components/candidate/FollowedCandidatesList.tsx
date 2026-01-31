@@ -19,28 +19,23 @@ export function FollowedCandidatesList() {
   const navigate = useNavigate();
   const { followedIds, isLoaded, followCount } = useFollowedCandidates();
 
-  // Fetch candidate details for followed IDs
-  // followedIds can be either UUIDs (from DB) or slugs (from localStorage)
+  // Fetch candidate details for followed IDs (always UUIDs now)
   const { data: candidates, isLoading } = useQuery({
     queryKey: ['followed-candidates-details', followedIds],
     queryFn: async () => {
       if (followedIds.length === 0) return [];
       
-      // Check if the first ID looks like a UUID
-      const isUuid = followedIds[0]?.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      // Filter only valid UUIDs
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validUuids = followedIds.filter(id => uuidRegex.test(id));
       
-      let query = supabase
-        .from('candidates')
-        .select('id, slug, name, party, party_color, position, image_url');
-      
-      if (isUuid) {
-        query = query.in('id', followedIds);
-      } else {
-        // Legacy: followedIds might be slugs from localStorage
-        query = query.in('slug', followedIds);
-      }
+      if (validUuids.length === 0) return [];
 
-      const { data, error } = await query;
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('id, slug, name, party, party_color, position, image_url')
+        .in('id', validUuids)
+        .eq('is_active', true);
 
       if (error) throw error;
       return (data || []) as FollowedCandidate[];

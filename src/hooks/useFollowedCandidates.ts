@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useQueryClient } from '@tanstack/react-query';
 
 const STORAGE_KEY = 'followed-candidates';
 
 export function useFollowedCandidates() {
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -138,6 +140,8 @@ export function useFollowedCandidates() {
           if (error) throw error;
           setFollowedIds(prev => [...prev, candidateId]);
         }
+        // Invalidate query cache to refresh UI
+        queryClient.invalidateQueries({ queryKey: ['followed-candidates-details'] });
       } catch (e) {
         console.error('Failed to toggle follow:', e);
       }
@@ -151,7 +155,7 @@ export function useFollowedCandidates() {
         }
       });
     }
-  }, [followedIds, isAuthenticated, user]);
+  }, [followedIds, isAuthenticated, user, queryClient]);
 
   const follow = useCallback(async (candidateId: string) => {
     if (followedIds.includes(candidateId)) return;
