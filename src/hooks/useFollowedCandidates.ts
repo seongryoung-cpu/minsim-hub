@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 
 const STORAGE_KEY = 'followed-candidates';
 
 export function useFollowedCandidates() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuthContext();
   const queryClient = useQueryClient();
   const [followedIds, setFollowedIds] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
