@@ -42,46 +42,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
         >
           {/* Logo Icon */}
           <div className="w-20 h-20 bg-white/20 backdrop-blur-sm rounded-3xl flex items-center justify-center overflow-hidden">
-            {settings?.logo_url ? (
-              <img 
-                src={settings.logo_url} 
-                alt="Logo" 
-                className="w-14 h-14 object-contain"
-              />
-            ) : (
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4z"
-                  fill="white"
-                  fillOpacity="0.2"
-                />
-                <path
-                  d="M24 8c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16S32.837 8 24 8z"
-                  fill="white"
-                  fillOpacity="0.3"
-                />
-                <path
-                  d="M16 20h16M16 24h12M16 28h8"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="36" cy="32" r="6" fill="white" />
-                <path
-                  d="M34 32l2 2 3-3"
-                  stroke="hsl(220 70% 50%)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
+            <img 
+              src={settings?.logo_url || 'https://zdgpxmtapbviwrpcleqi.supabase.co/storage/v1/object/public/app-assets/logos/logo-1768900705056.jpg'} 
+              alt="Logo" 
+              className="w-14 h-14 object-contain"
+            />
           </div>
         </motion.div>
 

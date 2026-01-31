@@ -49,30 +49,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center overflow-hidden"
             style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
           >
-            {settings?.logo_url ? (
-              <img 
-                src={settings.logo_url} 
-                alt="Logo" 
-                className="w-10 h-10 object-contain"
-              />
-            ) : (
-              <svg width="32" height="32" viewBox="0 0 48 48" fill="none">
-                <path
-                  d="M16 20h16M16 24h12M16 28h8"
-                  stroke="white"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="36" cy="32" r="6" fill="white" />
-                <path
-                  d="M34 32l2 2 3-3"
-                  stroke="hsl(220 70% 50%)"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
+            <img 
+              src={settings?.logo_url || 'https://zdgpxmtapbviwrpcleqi.supabase.co/storage/v1/object/public/app-assets/logos/logo-1768900705056.jpg'} 
+              alt="Logo" 
+              className="w-10 h-10 object-contain"
+            />
           </motion.div>
 
           <h1 className="text-3xl font-bold text-foreground mb-3">
