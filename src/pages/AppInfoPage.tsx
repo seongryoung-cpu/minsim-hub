@@ -90,8 +90,47 @@ const features = [
       '↳ AI 인사이트: 불일치 지점 텍스트 코멘트',
       '[Step 4] 표심 변화 확인: "정책이 더 중요해요" vs "인물과 정당을 믿어요"',
       '↳ 관심 후보 저장 + 알림 받기 유도',
-      '결과 저장: Supabase에 매칭 결과 영구 저장',
+      '결과 저장: 백엔드에 매칭 결과 영구 저장',
       '히스토리: 마이탭에서 이전 매칭 결과 확인',
+    ],
+  },
+  {
+    category: '정치 MBTI 테스트',
+    icon: Heart,
+    color: 'text-pink-500',
+    bgColor: 'bg-pink-500/10',
+    items: [
+      '4개 축 기반 성향 분석: 경제/사회/정치/외교',
+      '↳ 경제: 시장주의(M) vs 개입주의(I)',
+      '↳ 사회: 자유주의(L) vs 보수주의(C)',
+      '↳ 정치: 중앙집권(N) vs 지방분권(D)',
+      '↳ 외교: 국제협력(G) vs 자국우선(P)',
+      '틴더 스타일 스와이프 UI: 좌/우로 성향 선택',
+      '16가지 정치 유형 결과: 유형별 상세 설명',
+      '↳ 유형 아이콘, 색상, 키워드 시각화',
+      '↳ 강점/약점, 유명인 예시',
+      '↳ 호환/비호환 유형 안내',
+      '결과 공유: SNS 공유 및 저장',
+    ],
+  },
+  {
+    category: '정치 스펙트럼 분석 (5차원)',
+    icon: BarChart3,
+    color: 'text-teal-500',
+    bgColor: 'bg-teal-500/10',
+    items: [
+      '5개 차원 정밀 분석: 경제/공정/안보/미래/젠더',
+      '↳ 경제: 성장 vs 분배',
+      '↳ 공정: 능력 vs 평등',
+      '↳ 안보: 안보 vs 평화',
+      '↳ 미래: 전통 vs 혁신',
+      '↳ 젠더: 젠더감수성 축',
+      'IRT 알고리즘 기반 적응형 질문',
+      '↳ 문항별 난이도/변별도 파라미터',
+      '↳ 정보이득 기반 다음 질문 선정',
+      '레이더 차트: 5차원 성향 시각화',
+      '불확실성 표시: 응답 수에 따른 신뢰도',
+      '결과 저장 및 히스토리 관리',
     ],
   },
   {
@@ -267,9 +306,17 @@ const designPrinciples = [
 const dataModels = [
   { name: 'profiles', description: '사용자 프로필 (인증 레벨, 지역 정보)' },
   { name: 'candidates', description: '후보자 정보 (프로필, 공약, 경력)' },
+  { name: 'candidate_pledges', description: '후보자 공약 (카테고리별 분류)' },
+  { name: 'candidate_careers', description: '후보자 경력 (타임라인)' },
   { name: 'policy_cards', description: '정책 질문 및 좌/우 라벨' },
   { name: 'policy_candidate_alignments', description: '정책별 후보자 성향 점수' },
   { name: 'policy_match_results', description: '사용자별 정책 매칭 결과' },
+  { name: 'political_mbti_questions', description: '정치 MBTI 질문 (4축)' },
+  { name: 'political_mbti_results', description: '정치 MBTI 결과' },
+  { name: 'political_mbti_types', description: '정치 MBTI 유형 정의 (16종)' },
+  { name: 'spectrum_questions', description: '스펙트럼 테스트 질문 (5차원)' },
+  { name: 'spectrum_answers', description: '스펙트럼 테스트 응답' },
+  { name: 'user_spectrums', description: '사용자 정치 스펙트럼 결과' },
   { name: 'user_followed_candidates', description: '팔로우한 후보자 목록' },
   { name: 'news_articles', description: '뉴스 기사 (후보자 연동)' },
   { name: 'quiz_questions', description: '퀴즈 문제 (난이도, 점수)' },
@@ -278,9 +325,10 @@ const dataModels = [
   { name: 'notification_preferences', description: '알림 유형별 설정' },
   { name: 'push_subscriptions', description: '푸시 알림 구독 정보' },
   { name: 'notification_logs', description: '푸시 알림 발송 기록' },
-  { name: 'user_roles', description: '사용자 역할 (admin/user)' },
+  { name: 'reports', description: '사용자 신고/문의' },
+  { name: 'user_roles', description: '사용자 역할 (admin/moderator/user)' },
   { name: 'activity_logs', description: '활동 로그' },
-  { name: 'app_settings', description: '앱 설정 (이름, 로고 등)' },
+  { name: 'app_settings', description: '앱 설정 (이름, 로고, 소셜 링크 등)' },
 ];
 
 export function AppInfoPage() {
@@ -329,8 +377,8 @@ export function AppInfoPage() {
             정책 매칭 게임을 통해 자신의 성향과 맞는 후보를 찾고, 퀴즈로 정치 상식을 테스트하며, 후보자 정보를 한눈에 비교할 수 있습니다.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            <span className="px-2 py-1 bg-background/50 rounded-full">v2.0.0</span>
-            <span className="px-2 py-1 bg-green-500/20 text-green-600 dark:text-green-400 rounded-full font-medium">Phase 10 완료</span>
+            <span className="px-2 py-1 bg-background/50 rounded-full">v2.5.0</span>
+            <span className="px-2 py-1 bg-green-500/20 text-green-600 dark:text-green-400 rounded-full font-medium">Phase 11 완료</span>
             <span className="px-2 py-1 bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full font-medium">Full-Stack</span>
           </div>
         </motion.div>
@@ -343,11 +391,11 @@ export function AppInfoPage() {
           className="grid grid-cols-3 gap-3"
         >
           <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
-            <p className="text-2xl font-bold text-primary">13</p>
+            <p className="text-2xl font-bold text-primary">15</p>
             <p className="text-xs text-muted-foreground">주요 기능</p>
           </div>
           <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
-            <p className="text-2xl font-bold text-accent">16</p>
+            <p className="text-2xl font-bold text-accent">26</p>
             <p className="text-xs text-muted-foreground">데이터 모델</p>
           </div>
           <div className="bg-card rounded-xl p-3 text-center shadow-app-sm">
@@ -564,13 +612,17 @@ export function AppInfoPage() {
               <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
               <span className="text-sm text-foreground">Phase 10: 알림 시스템 (인앱 + 푸시)</span>
             </div>
-            <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
-              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">예정</span>
-              <span className="text-sm text-muted-foreground">Phase 11: 실시간 토론 및 투표</span>
+            <div className="flex items-center gap-3 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+              <span className="text-xs font-medium text-green-600 dark:text-green-400 px-2 py-0.5 bg-green-500/20 rounded-full">완료</span>
+              <span className="text-sm text-foreground">Phase 11: 정치 MBTI 및 스펙트럼 분석</span>
             </div>
             <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
               <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">예정</span>
-              <span className="text-sm text-muted-foreground">Phase 12: 네이티브 앱 전환 (PWA)</span>
+              <span className="text-sm text-muted-foreground">Phase 12: 실시간 토론 및 투표</span>
+            </div>
+            <div className="flex items-center gap-3 p-3 bg-secondary/50 rounded-xl">
+              <span className="text-xs font-medium text-muted-foreground px-2 py-0.5 bg-secondary rounded-full">예정</span>
+              <span className="text-sm text-muted-foreground">Phase 13: 네이티브 앱 전환 (PWA)</span>
             </div>
           </motion.div>
         </section>
@@ -583,7 +635,7 @@ export function AppInfoPage() {
           className="text-center pt-4"
         >
           <p className="text-xs text-muted-foreground">
-            마지막 업데이트: 2026년 1월 16일
+            마지막 업데이트: 2026년 2월 1일
           </p>
         </motion.div>
       </main>
