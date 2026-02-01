@@ -8,7 +8,6 @@ import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { Home } from '@/pages/Home';
 import { Election } from '@/pages/Election';
-import { Discussion } from '@/pages/Discussion';
 import { MyPage } from '@/pages/MyPage';
 import { AppInfoPage } from '@/pages/AppInfoPage';
 import { CandidateDetail } from '@/pages/CandidateDetail';
@@ -108,7 +107,6 @@ function Index() {
             }
           />
           <Route path="/election" element={<Election />} />
-          <Route path="/discussion" element={<Discussion />} />
           <Route
             path="/my"
             element={

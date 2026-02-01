@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Users, Scale, Newspaper, MessageSquare, Heart } from 'lucide-react';
+import { ArrowRight, Users, Scale, Newspaper, Heart } from 'lucide-react';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
@@ -83,14 +83,6 @@ export function Home({ region, onRegionChange }: HomeProps) {
       description: '후보자 관련 최신 소식',
       color: 'from-accent to-accent/70',
       path: '/news',
-    },
-    {
-      id: 'discussion',
-      icon: MessageSquare,
-      title: '토론장',
-      description: '주민들과 의견을 나눠보세요',
-      color: 'from-emerald-500 to-emerald-400',
-      path: '/discussion',
     },
   ];
 
@@ -244,12 +236,6 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 description="관심 후보자의 최신 뉴스를 확인하세요"
                 icon="📰"
                 onPress={() => navigate('/news')}
-              />
-              <ExpandableSlot
-                title="오늘의 담론"
-                description="지역 주민들과 함께 토론해보세요"
-                icon="💬"
-                comingSoon
               />
             </div>
           </DashboardSection>

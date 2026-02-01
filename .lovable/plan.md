@@ -1,142 +1,71 @@
 
 # 앱 완성도 향상 종합 계획
 
-## 1. 미완성 기능 정리
+## 1. 미완성 기능 정리 ✅ 완료
 
-### 1.1 토론장(Discussion) 메뉴 숨김
-**현재 상태**: 하드코딩된 목업 데이터로 토론장 페이지 존재
-**개선 내용**:
+### 1.1 토론장(Discussion) 메뉴 숨김 ✅
 - BottomTabBar에서 토론 탭 제거
 - DesktopNavbar에서 토론 메뉴 제거
 - 홈화면 quickActions에서 토론장 항목 제거
 - Index.tsx 라우터에서 /discussion 경로 제거
 
-### 1.2 "Coming Soon" 표시 제거
-**현재 상태**: Home.tsx에 "오늘의 담론" 항목이 `comingSoon` 플래그로 표시됨
-**개선 내용**:
+### 1.2 "Coming Soon" 표시 제거 ✅
 - "더 알아보기" 섹션에서 comingSoon 표시된 항목 제거
 
 ---
 
-## 2. UI/UX 일관성 개선
+## 2. UI/UX 일관성 개선 ✅ 완료
 
-### 2.1 빈 상태(Empty State) UI 통일
-**대상 페이지**:
-- 뉴스 피드 (관련 뉴스 없음)
-- 후보자 상세 (공약/경력 없음)
-- 관심 후보 목록 (팔로우 없음)
-- 정책 매칭 히스토리 (결과 없음)
+### 2.1 빈 상태(Empty State) UI 통일 ✅
+- `EmptyState` 공통 컴포넌트 생성 (`src/components/ui/empty-state.tsx`)
+- 뉴스 피드, 후보자 상세 페이지에 적용
 
-**개선 내용**:
-- 일관된 아이콘 크기 (48px)
-- 동일한 텍스트 스타일 적용
-- 적절한 CTA 버튼 추가
-
-### 2.2 로딩 상태 통일
-**개선 내용**:
-- 모든 페이지에 일관된 Skeleton UI 또는 Spinner 적용
-- 로딩 시간이 긴 경우 진행 표시 추가
-
-### 2.3 헤더 스타일 통일
-**현재 상태**: 페이지마다 헤더 높이/스타일이 조금씩 다름
-**개선 내용**:
-- 모든 페이지 헤더 높이 14(56px) 통일
-- backdrop-blur, border 스타일 일관성 확보
+### 2.2 로딩/에러 상태 통일 ✅
+- `LoadingSpinner`, `PageLoading`, `CardSkeleton` 공통 컴포넌트 생성
+- `ErrorState` 공통 컴포넌트 생성 (재시도 버튼 포함)
 
 ---
 
-## 3. 안정성 강화
+## 3. 기능 완성도 향상 ✅ 완료
 
-### 3.1 에러 처리 개선
-**개선 내용**:
-- API 호출 실패 시 사용자 친화적 에러 메시지 표시
-- 재시도 버튼 추가
-- 네트워크 오류 시 오프라인 안내
+### 3.1 공유 기능 강화 ✅
+- Web Share API 연동 구현
+- 클립보드 복사 폴백 구현
+- 공유 성공/실패 토스트 메시지 추가
 
-### 3.2 데이터 유효성 검증
-**개선 내용**:
-- 후보자 ID 매칭 로직 강화 (dbId 우선 사용)
-- 뉴스 필터링 시 존재하지 않는 후보자 ID 처리
-- null/undefined 값 안전 처리
-
-### 3.3 선거 날짜 관련 안정성
-**현재 상태**: 선거일(2026-06-03) 하드코딩
-**개선 내용**:
-- app_settings 또는 별도 테이블에서 선거일 관리
-- D-Day 계산 로직 중앙화
+### 3.2 뉴스 피드 필터 개선 ✅
+- 하드코딩된 후보자 목록 → DB에서 가져온 후보자 목록으로 변경
+- 에러 상태 처리 및 재시도 버튼 추가
+- 빈 상태 UI 통일
 
 ---
 
-## 4. 기능 완성도 향상
+## 생성된 공통 컴포넌트
 
-### 4.1 공유 기능 강화
-**현재 상태**: 후보자 상세 페이지 공유 버튼은 있으나 동작 미구현
-**개선 내용**:
-- Web Share API 연동
-- 클립보드 복사 폴백
-- 공유 성공/실패 토스트 메시지
-
-### 4.2 뉴스 피드 필터 개선
-**현재 상태**: 하드코딩된 후보자 목록으로 필터링
-**개선 내용**:
-- DB에서 가져온 후보자 목록으로 필터 연동
-- 필터된 후보자가 없을 때 안내 메시지
-
-### 4.3 PWA 오프라인 경험
-**개선 내용**:
-- Service Worker 캐싱 전략 최적화
-- 오프라인 시 캐시된 데이터 표시
-- 연결 복구 시 자동 새로고침
+| 파일 | 설명 |
+|------|------|
+| `src/components/ui/empty-state.tsx` | 빈 상태 UI 컴포넌트 |
+| `src/components/ui/error-state.tsx` | 에러 상태 UI 컴포넌트 (재시도 버튼 포함) |
+| `src/components/ui/loading-state.tsx` | 로딩 관련 컴포넌트들 |
 
 ---
 
-## 5. 성능 최적화
+## 수정된 파일
 
-### 5.1 이미지 최적화
-**개선 내용**:
-- 후보자 이미지 lazy loading
-- 플레이스홀더 이미지 적용
-- 이미지 로드 실패 시 폴백 아바타
-
-### 5.2 데이터 페칭 최적화
-**개선 내용**:
-- React Query staleTime/cacheTime 조정
-- 중복 요청 방지
-- 필요한 데이터만 선택적 로드
+| 파일 | 변경 내용 |
+|------|----------|
+| `BottomTabBar.tsx` | 토론 탭 제거 |
+| `DesktopNavbar.tsx` | 토론 메뉴 제거 |
+| `Home.tsx` | 토론장 퀵액션 제거, Coming Soon 항목 제거 |
+| `Index.tsx` | /discussion 라우트 제거 |
+| `CandidateDetail.tsx` | 공유 기능 구현, 공통 컴포넌트 적용 |
+| `NewsFeed.tsx` | DB 기반 필터, 공통 컴포넌트 적용 |
 
 ---
 
-## 구현 순서
+## 향후 추가 개선 가능 항목
 
-| 단계 | 작업 | 파일 |
-|------|------|------|
-| 1단계 | 토론장 메뉴 숨김 | `BottomTabBar.tsx`, `DesktopNavbar.tsx`, `Home.tsx`, `Index.tsx` |
-| 2단계 | Coming Soon 항목 제거 | `Home.tsx` |
-| 3단계 | 빈 상태 UI 통일 | 각 컴포넌트 |
-| 4단계 | 공유 기능 구현 | `CandidateDetail.tsx` |
-| 5단계 | 뉴스 필터 DB 연동 | `NewsFeed.tsx` |
-| 6단계 | 에러 처리 강화 | 각 페이지 |
-| 7단계 | 이미지 최적화 | `CandidateCard.tsx` 등 |
-
----
-
-## 기술적 세부사항
-
-### 삭제할 파일
-- `src/pages/Discussion.tsx` (선택적 - 나중을 위해 보관 가능)
-
-### 수정할 주요 파일
-- `src/components/layout/BottomTabBar.tsx` - 토론 탭 제거
-- `src/components/layout/DesktopNavbar.tsx` - 토론 메뉴 제거
-- `src/pages/Home.tsx` - quickActions에서 토론장 제거, comingSoon 항목 제거
-- `src/pages/Index.tsx` - /discussion 라우트 제거
-- `src/pages/CandidateDetail.tsx` - 공유 버튼 기능 구현
-- `src/pages/NewsFeed.tsx` - 필터 로직 개선
-
----
-
-## 예상 결과
-1. 미완성 기능이 노출되지 않아 사용자 혼란 방지
-2. 전체적으로 일관된 UI/UX 경험 제공
-3. 에러 발생 시 적절한 안내로 사용자 경험 향상
-4. 공유, 필터 등 핵심 기능 완성으로 앱 활용도 증가
+- PWA 오프라인 경험 개선
+- 이미지 최적화 (lazy loading)
+- 선거일 DB 관리 중앙화
+- React Query staleTime/cacheTime 최적화

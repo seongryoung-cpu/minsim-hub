@@ -1,14 +1,15 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Newspaper, Bell, UserPlus, Sparkles, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Newspaper, Bell, UserPlus, Sparkles, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
 import { useNews } from '@/hooks/useNews';
-import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES } from '@/types/election';
+import { useCandidates } from '@/hooks/useCandidates';
 import { NewsCard, NewsCardSkeleton } from '@/components/news/NewsCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const ALL_CANDIDATES = [...SEOUL_MAYOR_CANDIDATES, ...GYEONGGI_GOVERNOR_CANDIDATES];
+import { EmptyState } from '@/components/ui/empty-state';
+import { ErrorState } from '@/components/ui/error-state';
+import { LoadingSpinner } from '@/components/ui/loading-state';
 
 export function NewsFeed() {
   const navigate = useNavigate();
@@ -16,21 +17,25 @@ export function NewsFeed() {
   const [activeTab, setActiveTab] = useState<'personalized' | 'all'>('personalized');
   const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
 
+  // Fetch candidates from DB instead of hardcoded list
+  const { data: dbCandidates = [], isLoading: isCandidatesLoading } = useCandidates();
+
   // Fetch all news from DB
-  const { data: allNews, isLoading: isAllNewsLoading } = useNews();
+  const { data: allNews, isLoading: isAllNewsLoading, error: allNewsError, refetch: refetchAllNews } = useNews();
   
   // Fetch personalized news based on followed candidates
   const targetIds = useMemo(() => {
     return selectedFilters.length > 0 ? selectedFilters : followedIds;
   }, [selectedFilters, followedIds]);
   
-  const { data: personalizedNews, isLoading: isPersonalizedLoading } = useNews(
+  const { data: personalizedNews, isLoading: isPersonalizedLoading, error: personalizedError, refetch: refetchPersonalized } = useNews(
     targetIds.length > 0 ? targetIds : undefined
   );
 
+  // Map followed IDs to actual candidate data from DB
   const followedCandidates = useMemo(() => {
-    return ALL_CANDIDATES.filter(c => followedIds.includes(c.id));
-  }, [followedIds]);
+    return dbCandidates.filter(c => followedIds.includes(c.id));
+  }, [dbCandidates, followedIds]);
 
   const toggleFilter = (candidateId: string) => {
     setSelectedFilters(prev => {
@@ -167,42 +172,31 @@ export function NewsFeed() {
           <AnimatePresence mode="wait">
             {/* Personalized Feed */}
             <TabsContent value="personalized" className="mt-4">
-              {!isLoaded || isPersonalizedLoading ? (
+              {!isLoaded || isPersonalizedLoading || isCandidatesLoading ? (
                 <div className="space-y-3">
                   {[...Array(3)].map((_, i) => (
                     <NewsCardSkeleton key={i} />
                   ))}
                 </div>
+              ) : personalizedError ? (
+                <ErrorState
+                  onRetry={() => refetchPersonalized()}
+                  description="뉴스를 불러오는 중 오류가 발생했습니다"
+                />
               ) : followedIds.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-card rounded-2xl p-8 text-center shadow-[var(--shadow-md)]"
-                >
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                    <UserPlus size={32} className="text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">관심 후보자를 팔로우하세요</h3>
-                  <p className="text-muted-foreground text-sm mb-4">
-                    후보자를 팔로우하면 관련 뉴스를<br />
-                    모아서 볼 수 있어요
-                  </p>
-                  <button
-                    onClick={() => navigate('/election')}
-                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl font-medium"
-                  >
-                    후보자 둘러보기
-                  </button>
-                </motion.div>
+                <EmptyState
+                  icon={UserPlus}
+                  title="관심 후보자를 팔로우하세요"
+                  description="후보자를 팔로우하면 관련 뉴스를 모아서 볼 수 있어요"
+                  actionLabel="후보자 둘러보기"
+                  onAction={() => navigate('/election')}
+                />
               ) : displayedPersonalizedNews.length === 0 ? (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-12"
-                >
-                  <Newspaper size={48} className="mx-auto mb-4 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">관련 뉴스가 없습니다</p>
-                </motion.div>
+                <EmptyState
+                  icon={Newspaper}
+                  title="관련 뉴스가 없습니다"
+                  description="선택한 후보자에 대한 뉴스가 아직 없습니다"
+                />
               ) : (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -219,9 +213,18 @@ export function NewsFeed() {
             {/* All News Feed */}
             <TabsContent value="all" className="mt-4">
               {isAllNewsLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="animate-spin text-muted-foreground" size={24} />
-                </div>
+                <LoadingSpinner />
+              ) : allNewsError ? (
+                <ErrorState 
+                  onRetry={() => refetchAllNews()}
+                  description="뉴스를 불러오는 중 오류가 발생했습니다"
+                />
+              ) : (allNews || []).length === 0 ? (
+                <EmptyState
+                  icon={Newspaper}
+                  title="뉴스가 없습니다"
+                  description="아직 등록된 뉴스가 없습니다"
+                />
               ) : (
                 <motion.div
                   initial={{ opacity: 0 }}
