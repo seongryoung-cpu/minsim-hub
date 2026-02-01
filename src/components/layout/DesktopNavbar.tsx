@@ -1,4 +1,4 @@
-import { Home, Vote, MessageSquare, User, FileText, Bell, MapPin, ChevronDown } from 'lucide-react';
+import { Home, Vote, User, FileText, Bell, ChevronDown } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -15,7 +15,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'home', label: '홈', icon: Home, path: '/' },
   { id: 'election', label: '선거', icon: Vote, path: '/election' },
-  { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion' },
   { id: 'my', label: '마이페이지', icon: User, path: '/my' },
 ];
 

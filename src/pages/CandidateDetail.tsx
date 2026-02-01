@@ -1,12 +1,15 @@
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, User, Share2, Briefcase, FileText, GraduationCap, Calendar, Building2, Newspaper, Loader2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowLeft, User, Share2, Briefcase, FileText, GraduationCap, Calendar, Building2, Newspaper } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FollowButton } from '@/components/candidate/FollowButton';
 import { NewsCard } from '@/components/news/NewsCard';
 import { useCandidateBySlug } from '@/hooks/useCandidates';
 import { useNewsForCandidate } from '@/hooks/useNews';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageLoading } from '@/components/ui/loading-state';
+import { toast } from 'sonner';
 
 export function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -29,12 +32,44 @@ export function CandidateDetail() {
     }
   }, [searchParams]);
 
+  // Share handler
+  const handleShare = useCallback(async () => {
+    const shareUrl = window.location.href;
+    const shareTitle = `${candidate?.name} - ${candidate?.party} | 민심잇다`;
+    const shareText = candidate?.slogan || candidate?.summary || `${candidate?.name} 후보자 정보를 확인해보세요`;
+
+    // Try Web Share API first
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+        toast.success('공유되었습니다');
+      } catch (error) {
+        // User cancelled or share failed - try clipboard fallback
+        if ((error as Error).name !== 'AbortError') {
+          await copyToClipboard(shareUrl);
+        }
+      }
+    } else {
+      // Fallback to clipboard
+      await copyToClipboard(shareUrl);
+    }
+  }, [candidate]);
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success('링크가 복사되었습니다');
+    } catch {
+      toast.error('복사에 실패했습니다');
+    }
+  };
+
   if (isCandidateLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={32} />
-      </div>
-    );
+    return <PageLoading />;
   }
 
   if (!candidate) {
@@ -262,10 +297,11 @@ export function CandidateDetail() {
                     </motion.div>
                   ))
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <FileText size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>등록된 공약이 없습니다</p>
-                  </div>
+                  <EmptyState
+                    icon={FileText}
+                    title="등록된 공약이 없습니다"
+                    description="아직 공약이 등록되지 않았습니다"
+                  />
                 )}
               </motion.div>
             </TabsContent>
@@ -312,10 +348,11 @@ export function CandidateDetail() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Briefcase size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>등록된 경력이 없습니다</p>
-                  </div>
+                  <EmptyState
+                    icon={Briefcase}
+                    title="등록된 경력이 없습니다"
+                    description="아직 경력이 등록되지 않았습니다"
+                  />
                 )}
               </motion.div>
             </TabsContent>
@@ -330,7 +367,7 @@ export function CandidateDetail() {
               >
                 {isNewsLoading ? (
                   <div className="flex justify-center py-8">
-                    <Loader2 className="animate-spin text-muted-foreground" size={24} />
+                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent" />
                   </div>
                 ) : news && news.length > 0 ? (
                   news.map((article, index) => (
@@ -342,10 +379,11 @@ export function CandidateDetail() {
                     />
                   ))
                 ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Newspaper size={48} className="mx-auto mb-4 opacity-50" />
-                    <p>관련 뉴스가 없습니다</p>
-                  </div>
+                  <EmptyState
+                    icon={Newspaper}
+                    title="관련 뉴스가 없습니다"
+                    description="아직 등록된 뉴스가 없습니다"
+                  />
                 )}
               </motion.div>
             </TabsContent>
@@ -359,7 +397,8 @@ export function CandidateDetail() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="w-full max-w-md mx-auto flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-white shadow-lg"
+          onClick={handleShare}
+          className="w-full max-w-md mx-auto flex items-center justify-center gap-2 py-4 rounded-2xl font-semibold text-white shadow-lg active:scale-[0.98] transition-transform"
           style={{ backgroundColor: candidate.partyColor }}
         >
           <Share2 size={18} />

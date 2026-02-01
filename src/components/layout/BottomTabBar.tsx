@@ -1,4 +1,4 @@
-import { Home, Vote, MessageSquare, User } from 'lucide-react';
+import { Home, Vote, User } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
@@ -18,7 +18,6 @@ export function BottomTabBar() {
   const tabs: TabItem[] = [
     { id: 'home', label: settings?.app_name || '홈', icon: 'logo', path: '/' },
     { id: 'election', label: '선거', icon: Vote, path: '/election' },
-    { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion' },
     { id: 'my', label: '마이', icon: User, path: '/my' },
   ];
 
