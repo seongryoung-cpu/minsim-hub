@@ -1,25 +1,32 @@
-import { Home, Vote, User } from 'lucide-react';
+import { Home, Vote, User, MessageSquare } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useAdmin } from '@/hooks/useAdmin';
 
 interface TabItem {
   id: string;
   label: string;
   icon: typeof Home | 'logo';
   path: string;
+  adminOnly?: boolean;
 }
 
 export function BottomTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useAppSettings();
+  const { isAdmin } = useAdmin();
 
-  const tabs: TabItem[] = [
+  const allTabs: TabItem[] = [
     { id: 'home', label: settings?.app_name || '홈', icon: 'logo', path: '/' },
     { id: 'election', label: '선거', icon: Vote, path: '/election' },
+    { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion', adminOnly: true },
     { id: 'my', label: '마이', icon: User, path: '/my' },
   ];
+
+  // Filter tabs based on admin status
+  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdmin);
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';

@@ -8,6 +8,7 @@ import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { Home } from '@/pages/Home';
 import { Election } from '@/pages/Election';
+import { Discussion } from '@/pages/Discussion';
 import { MyPage } from '@/pages/MyPage';
 import { AppInfoPage } from '@/pages/AppInfoPage';
 import { CandidateDetail } from '@/pages/CandidateDetail';
@@ -29,6 +30,7 @@ import { PoliticalMbtiPage } from '@/pages/PoliticalMbtiPage';
 import AdminCandidateImport from '@/pages/admin/AdminCandidateImport';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAdmin } from '@/hooks/useAdmin';
 import type { Region } from '@/types/region';
 
 type AppPhase = 'splash' | 'onboarding' | 'main';
@@ -36,6 +38,7 @@ type AppPhase = 'splash' | 'onboarding' | 'main';
 function Index() {
   const { region, setRegion, isLoaded, hasRegion } = useRegion();
   const isMobile = useIsMobile();
+  const { isAdmin } = useAdmin();
   const [phase, setPhase] = useState<AppPhase>('splash');
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
   const location = useLocation();
@@ -107,6 +110,7 @@ function Index() {
             }
           />
           <Route path="/election" element={<Election />} />
+          {isAdmin && <Route path="/discussion" element={<Discussion />} />}
           <Route
             path="/my"
             element={
