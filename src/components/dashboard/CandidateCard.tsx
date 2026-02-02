@@ -1,10 +1,66 @@
 import { motion } from 'framer-motion';
+import { useState, useCallback } from 'react';
 import { User, ChevronRight, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useToast } from '@/hooks/use-toast';
 import type { Candidate } from '@/types/election';
+
+// Reusable CandidateImage component with lazy loading and fallback
+interface CandidateImageProps {
+  src?: string;
+  alt: string;
+  partyColor: string;
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
+}
+
+function CandidateImage({ src, alt, partyColor, size = 'md', className = '' }: CandidateImageProps) {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleError = useCallback(() => {
+    setHasError(true);
+    setIsLoading(false);
+  }, []);
+
+  const handleLoad = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
+  const sizeConfig = {
+    sm: { icon: 16, container: 'w-10 h-10' },
+    md: { icon: 24, container: 'w-14 h-14' },
+    lg: { icon: 40, container: 'w-24 h-28' },
+  };
+
+  const config = sizeConfig[size];
+
+  if (!src || hasError) {
+    return (
+      <div className={`flex items-center justify-center ${className}`}>
+        <User size={config.icon} style={{ color: partyColor }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={`relative ${className}`}>
+      {isLoading && (
+        <div className="absolute inset-0 bg-secondary animate-pulse" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onError={handleError}
+        onLoad={handleLoad}
+        className={`w-full h-full object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+      />
+    </div>
+  );
+}
 
 interface CandidateCardProps {
   candidate: Candidate;
@@ -68,21 +124,19 @@ export function CandidateCard({
       >
         {/* Avatar */}
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
           style={{
             background: `linear-gradient(135deg, ${candidate.partyColor}30, ${candidate.partyColor}10)`,
             boxShadow: `0 0 0 2px var(--card), 0 0 0 4px ${candidate.partyColor}`,
           }}
         >
-          {candidate.image ? (
-            <img
-              src={candidate.image}
-              alt={candidate.name}
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <User size={16} style={{ color: candidate.partyColor }} />
-          )}
+          <CandidateImage
+            src={candidate.image}
+            alt={candidate.name}
+            partyColor={candidate.partyColor}
+            size="sm"
+            className="w-full h-full rounded-full"
+          />
         </div>
 
         {/* Info */}
@@ -144,15 +198,13 @@ export function CandidateCard({
               border: `2px solid ${candidate.partyColor}30`,
             }}
           >
-            {candidate.image ? (
-              <img
-                src={candidate.image}
-                alt={candidate.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <User size={24} style={{ color: candidate.partyColor }} />
-            )}
+            <CandidateImage
+              src={candidate.image}
+              alt={candidate.name}
+              partyColor={candidate.partyColor}
+              size="md"
+              className="w-full h-full"
+            />
           </div>
 
           {/* Content */}
@@ -226,15 +278,13 @@ export function CandidateCard({
             background: `linear-gradient(145deg, ${candidate.partyColor}25, ${candidate.partyColor}10)`,
           }}
         >
-          {candidate.image ? (
-            <img
-              src={candidate.image}
-              alt={candidate.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <User size={40} style={{ color: candidate.partyColor }} />
-          )}
+          <CandidateImage
+            src={candidate.image}
+            alt={candidate.name}
+            partyColor={candidate.partyColor}
+            size="lg"
+            className="w-full h-full"
+          />
           {/* Party color indicator */}
           <div 
             className="absolute bottom-0 left-0 right-0 h-1"
