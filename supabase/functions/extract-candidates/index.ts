@@ -77,7 +77,7 @@ serve(async (req) => {
     const { url, region_name } = parseResult.data;
 
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GOOGLE_GEMINI_API_KEY = Deno.env.get('GOOGLE_GEMINI_API_KEY');
 
     if (!FIRECRAWL_API_KEY) {
       console.error('FIRECRAWL_API_KEY not configured');
@@ -87,10 +87,10 @@ serve(async (req) => {
       );
     }
 
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY not configured');
+    if (!GOOGLE_GEMINI_API_KEY) {
+      console.error('GOOGLE_GEMINI_API_KEY not configured');
       return new Response(
-        JSON.stringify({ success: false, error: 'AI gateway not configured' }),
+        JSON.stringify({ success: false, error: 'Google Gemini API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -137,8 +137,8 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Use AI to extract candidate information
-    const systemPrompt = `당신은 한국 정치 후보자 정보를 추출하는 전문 AI입니다.
+    // Step 2: Use Google Gemini API to extract candidate information
+    const prompt = `당신은 한국 정치 후보자 정보를 추출하는 전문 AI입니다.
 주어진 웹페이지 내용에서 정치 후보자 정보를 정확하게 추출해주세요.
 
 추출해야 할 정보:
@@ -154,94 +154,95 @@ serve(async (req) => {
 
 중요: 
 - 실제 데이터만 추출하고, 없는 정보는 null로 반환하세요.
-- 여러 후보자가 있으면 모두 추출하세요.`;
+- 여러 후보자가 있으면 모두 추출하세요.
+- 반드시 JSON 형식으로 응답하세요.
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `다음 웹페이지에서 후보자 정보를 추출해주세요:\n\n${pageContent.substring(0, 30000)}` }
-        ],
-        tools: [
-          {
-            type: 'function',
-            function: {
-              name: 'extract_candidates',
-              description: '웹페이지에서 추출한 후보자 정보 목록',
-              parameters: {
-                type: 'object',
-                properties: {
-                  candidates: {
-                    type: 'array',
-                    items: {
-                      type: 'object',
-                      properties: {
-                        name: { type: 'string', description: '후보자 이름' },
-                        party: { type: 'string', description: '소속 정당' },
-                        region_name: { type: 'string', description: '출마 지역' },
-                        position: { type: 'string', description: '직책/직위' },
-                        age: { type: 'number', description: '나이' },
-                        education: { type: 'string', description: '학력' },
-                        slogan: { type: 'string', description: '선거 슬로건' },
-                        careers: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            properties: {
-                              period: { type: 'string' },
-                              title: { type: 'string' },
-                              organization: { type: 'string' }
-                            },
-                            required: ['period', 'title', 'organization']
-                          }
-                        },
-                        pledges: {
-                          type: 'array',
-                          items: {
-                            type: 'object',
-                            properties: {
-                              title: { type: 'string' },
-                              description: { type: 'string' },
-                              category: { type: 'string' }
-                            },
-                            required: ['title', 'description', 'category']
-                          }
+다음 웹페이지에서 후보자 정보를 추출해주세요:
+
+${pageContent.substring(0, 30000)}`;
+
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: prompt }]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: 'object',
+              properties: {
+                candidates: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', description: '후보자 이름' },
+                      party: { type: 'string', description: '소속 정당' },
+                      region_name: { type: 'string', description: '출마 지역' },
+                      position: { type: 'string', description: '직책/직위' },
+                      age: { type: 'number', description: '나이' },
+                      education: { type: 'string', description: '학력' },
+                      slogan: { type: 'string', description: '선거 슬로건' },
+                      careers: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            period: { type: 'string' },
+                            title: { type: 'string' },
+                            organization: { type: 'string' }
+                          },
+                          required: ['period', 'title', 'organization']
                         }
                       },
-                      required: ['name', 'party']
-                    }
+                      pledges: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            title: { type: 'string' },
+                            description: { type: 'string' },
+                            category: { type: 'string' }
+                          },
+                          required: ['title', 'description', 'category']
+                        }
+                      }
+                    },
+                    required: ['name', 'party']
                   }
-                },
-                required: ['candidates']
-              }
+                }
+              },
+              required: ['candidates']
             }
           }
-        ],
-        tool_choice: { type: 'function', function: { name: 'extract_candidates' } }
-      }),
-    });
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ success: false, error: 'AI 요청 한도 초과. 잠시 후 다시 시도해주세요.' }),
+          JSON.stringify({ success: false, error: 'Google API 요청 한도 초과. 잠시 후 다시 시도해주세요.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (aiResponse.status === 402) {
+      if (aiResponse.status === 403) {
         return new Response(
-          JSON.stringify({ success: false, error: 'AI 크레딧이 부족합니다.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: false, error: 'Google API 키가 유효하지 않습니다.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       const errorText = await aiResponse.text();
-      console.error('AI gateway error:', aiResponse.status, errorText);
+      console.error('Google Gemini API error:', aiResponse.status, errorText);
       return new Response(
         JSON.stringify({ success: false, error: 'AI 추출 실패' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -249,21 +250,18 @@ serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI response:', JSON.stringify(aiData));
+    console.log('Gemini API response:', JSON.stringify(aiData));
 
-    // Parse tool call response
+    // Parse Google Gemini API response
     let extractedCandidates: ExtractedCandidate[] = [];
-    const toolCalls = aiData.choices?.[0]?.message?.tool_calls;
+    const textContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (toolCalls && toolCalls.length > 0) {
-      const functionArgs = toolCalls[0].function?.arguments;
-      if (functionArgs) {
-        try {
-          const parsed = JSON.parse(functionArgs);
-          extractedCandidates = parsed.candidates || [];
-        } catch (e) {
-          console.error('Failed to parse AI response:', e);
-        }
+    if (textContent) {
+      try {
+        const parsed = JSON.parse(textContent);
+        extractedCandidates = parsed.candidates || [];
+      } catch (e) {
+        console.error('Failed to parse Gemini response:', e);
       }
     }
 
