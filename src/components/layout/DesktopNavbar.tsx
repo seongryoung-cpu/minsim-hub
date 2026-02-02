@@ -1,8 +1,9 @@
-import { Home, Vote, User, FileText, Bell, ChevronDown } from 'lucide-react';
+import { Home, Vote, User, FileText, Bell, ChevronDown, MessageSquare } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAdmin } from '@/hooks/useAdmin';
 import type { Region } from '@/types/region';
 
 interface NavItem {
@@ -10,11 +11,13 @@ interface NavItem {
   label: string;
   icon: typeof Home;
   path: string;
+  adminOnly?: boolean;
 }
 
-const navItems: NavItem[] = [
+const allNavItems: NavItem[] = [
   { id: 'home', label: '홈', icon: Home, path: '/' },
   { id: 'election', label: '선거', icon: Vote, path: '/election' },
+  { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion', adminOnly: true },
   { id: 'my', label: '마이페이지', icon: User, path: '/my' },
 ];
 
@@ -49,6 +52,10 @@ export function DesktopNavbar({ region, onRegionClick }: DesktopNavbarProps) {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
   const { unreadCount } = useNotifications();
+  const { isAdmin } = useAdmin();
+
+  // Filter nav items based on admin status
+  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
 
   const sidoEmoji = region ? SIDO_EMOJI[region.sido] || '📍' : '📍';
 
