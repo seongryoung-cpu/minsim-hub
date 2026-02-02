@@ -137,7 +137,8 @@ serve(async (req) => {
       );
     }
 
-    // Step 2: Use Google Gemini API to extract candidate information
+    // Step 2: Use AI to extract candidate information
+    // Try Google Gemini API first, fallback to Lovable AI Gateway if rate limited
     const prompt = `당신은 한국 정치 후보자 정보를 추출하는 전문 AI입니다.
 주어진 웹페이지 내용에서 정치 후보자 정보를 정확하게 추출해주세요.
 
@@ -161,108 +162,260 @@ serve(async (req) => {
 
 ${pageContent.substring(0, 30000)}`;
 
-    const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }]
-            }
-          ],
-          generationConfig: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: 'object',
-              properties: {
-                candidates: {
-                  type: 'array',
-                  items: {
+    let extractedCandidates: ExtractedCandidate[] = [];
+    let aiSuccess = false;
+    
+    // Helper function to call Google Gemini API with retry
+    async function callGoogleGemini(retryCount = 0): Promise<{ success: boolean; candidates?: ExtractedCandidate[]; shouldFallback?: boolean }> {
+      const maxRetries = 2;
+      const retryDelay = 2000; // 2 seconds
+
+      try {
+        const aiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GOOGLE_GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [{ text: prompt }]
+                }
+              ],
+              generationConfig: {
+                responseMimeType: 'application/json',
+                responseSchema: {
+                  type: 'object',
+                  properties: {
+                    candidates: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          name: { type: 'string', description: '후보자 이름' },
+                          party: { type: 'string', description: '소속 정당' },
+                          region_name: { type: 'string', description: '출마 지역' },
+                          position: { type: 'string', description: '직책/직위' },
+                          age: { type: 'number', description: '나이' },
+                          education: { type: 'string', description: '학력' },
+                          slogan: { type: 'string', description: '선거 슬로건' },
+                          careers: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                period: { type: 'string' },
+                                title: { type: 'string' },
+                                organization: { type: 'string' }
+                              },
+                              required: ['period', 'title', 'organization']
+                            }
+                          },
+                          pledges: {
+                            type: 'array',
+                            items: {
+                              type: 'object',
+                              properties: {
+                                title: { type: 'string' },
+                                description: { type: 'string' },
+                                category: { type: 'string' }
+                              },
+                              required: ['title', 'description', 'category']
+                            }
+                          }
+                        },
+                        required: ['name', 'party']
+                      }
+                    }
+                  },
+                  required: ['candidates']
+                }
+              }
+            }),
+          }
+        );
+
+        if (aiResponse.status === 429) {
+          console.log(`Google Gemini rate limited (attempt ${retryCount + 1}/${maxRetries + 1})`);
+          if (retryCount < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay * (retryCount + 1)));
+            return callGoogleGemini(retryCount + 1);
+          }
+          // Max retries reached, fallback to Lovable AI
+          return { success: false, shouldFallback: true };
+        }
+
+        if (aiResponse.status === 403) {
+          console.error('Google Gemini API key invalid');
+          return { success: false, shouldFallback: true };
+        }
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('Google Gemini API error:', aiResponse.status, errorText);
+          return { success: false, shouldFallback: true };
+        }
+
+        const aiData = await aiResponse.json();
+        const textContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (textContent) {
+          try {
+            const parsed = JSON.parse(textContent);
+            return { success: true, candidates: parsed.candidates || [] };
+          } catch (e) {
+            console.error('Failed to parse Gemini response:', e);
+            return { success: false, shouldFallback: true };
+          }
+        }
+        
+        return { success: false, shouldFallback: true };
+      } catch (e) {
+        console.error('Google Gemini API exception:', e);
+        return { success: false, shouldFallback: true };
+      }
+    }
+
+    // Helper function to call Lovable AI Gateway as fallback
+    async function callLovableAI(): Promise<{ success: boolean; candidates?: ExtractedCandidate[] }> {
+      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+      if (!LOVABLE_API_KEY) {
+        console.error('LOVABLE_API_KEY not configured for fallback');
+        return { success: false };
+      }
+
+      console.log('Falling back to Lovable AI Gateway...');
+      
+      try {
+        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-3-flash-preview',
+            messages: [
+              { role: 'system', content: '당신은 한국 정치 후보자 정보를 추출하는 전문 AI입니다. 반드시 요청된 JSON 형식으로 응답하세요.' },
+              { role: 'user', content: prompt }
+            ],
+            tools: [
+              {
+                type: 'function',
+                function: {
+                  name: 'extract_candidates',
+                  description: '후보자 정보 추출',
+                  parameters: {
                     type: 'object',
                     properties: {
-                      name: { type: 'string', description: '후보자 이름' },
-                      party: { type: 'string', description: '소속 정당' },
-                      region_name: { type: 'string', description: '출마 지역' },
-                      position: { type: 'string', description: '직책/직위' },
-                      age: { type: 'number', description: '나이' },
-                      education: { type: 'string', description: '학력' },
-                      slogan: { type: 'string', description: '선거 슬로건' },
-                      careers: {
+                      candidates: {
                         type: 'array',
                         items: {
                           type: 'object',
                           properties: {
-                            period: { type: 'string' },
-                            title: { type: 'string' },
-                            organization: { type: 'string' }
+                            name: { type: 'string' },
+                            party: { type: 'string' },
+                            region_name: { type: 'string' },
+                            position: { type: 'string' },
+                            age: { type: 'number' },
+                            education: { type: 'string' },
+                            slogan: { type: 'string' },
+                            careers: {
+                              type: 'array',
+                              items: {
+                                type: 'object',
+                                properties: {
+                                  period: { type: 'string' },
+                                  title: { type: 'string' },
+                                  organization: { type: 'string' }
+                                },
+                                required: ['period', 'title', 'organization']
+                              }
+                            },
+                            pledges: {
+                              type: 'array',
+                              items: {
+                                type: 'object',
+                                properties: {
+                                  title: { type: 'string' },
+                                  description: { type: 'string' },
+                                  category: { type: 'string' }
+                                },
+                                required: ['title', 'description', 'category']
+                              }
+                            }
                           },
-                          required: ['period', 'title', 'organization']
-                        }
-                      },
-                      pledges: {
-                        type: 'array',
-                        items: {
-                          type: 'object',
-                          properties: {
-                            title: { type: 'string' },
-                            description: { type: 'string' },
-                            category: { type: 'string' }
-                          },
-                          required: ['title', 'description', 'category']
+                          required: ['name', 'party']
                         }
                       }
                     },
-                    required: ['name', 'party']
+                    required: ['candidates']
                   }
                 }
-              },
-              required: ['candidates']
+              }
+            ],
+            tool_choice: { type: 'function', function: { name: 'extract_candidates' } }
+          }),
+        });
+
+        if (aiResponse.status === 429) {
+          console.error('Lovable AI Gateway also rate limited');
+          return { success: false };
+        }
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error('Lovable AI Gateway error:', aiResponse.status, errorText);
+          return { success: false };
+        }
+
+        const aiData = await aiResponse.json();
+        const toolCalls = aiData.choices?.[0]?.message?.tool_calls;
+        
+        if (toolCalls && toolCalls.length > 0) {
+          const functionArgs = toolCalls[0].function?.arguments;
+          if (functionArgs) {
+            try {
+              const parsed = JSON.parse(functionArgs);
+              return { success: true, candidates: parsed.candidates || [] };
+            } catch (e) {
+              console.error('Failed to parse Lovable AI response:', e);
             }
           }
-        }),
+        }
+        
+        return { success: false };
+      } catch (e) {
+        console.error('Lovable AI Gateway exception:', e);
+        return { success: false };
       }
-    );
-
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Google API 요청 한도 초과. 잠시 후 다시 시도해주세요.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (aiResponse.status === 403) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Google API 키가 유효하지 않습니다.' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const errorText = await aiResponse.text();
-      console.error('Google Gemini API error:', aiResponse.status, errorText);
-      return new Response(
-        JSON.stringify({ success: false, error: 'AI 추출 실패' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
 
-    const aiData = await aiResponse.json();
-    console.log('Gemini API response:', JSON.stringify(aiData));
-
-    // Parse Google Gemini API response
-    let extractedCandidates: ExtractedCandidate[] = [];
-    const textContent = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Try Google Gemini first
+    const geminiResult = await callGoogleGemini();
     
-    if (textContent) {
-      try {
-        const parsed = JSON.parse(textContent);
-        extractedCandidates = parsed.candidates || [];
-      } catch (e) {
-        console.error('Failed to parse Gemini response:', e);
+    if (geminiResult.success && geminiResult.candidates) {
+      extractedCandidates = geminiResult.candidates;
+      aiSuccess = true;
+      console.log('Used Google Gemini API successfully');
+    } else if (geminiResult.shouldFallback) {
+      // Fallback to Lovable AI Gateway
+      const lovableResult = await callLovableAI();
+      if (lovableResult.success && lovableResult.candidates) {
+        extractedCandidates = lovableResult.candidates;
+        aiSuccess = true;
+        console.log('Used Lovable AI Gateway as fallback');
       }
+    }
+
+    if (!aiSuccess) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'AI 추출에 실패했습니다. 잠시 후 다시 시도해주세요.' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Apply region_name if provided
