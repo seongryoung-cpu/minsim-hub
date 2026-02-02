@@ -1,14 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Browser-like headers for fetching images
+const browserHeaders = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+  'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+};
+
 interface ImageOption {
   url: string;
   source: string;
   source_url?: string;
+  storage_url?: string;
 }
 
 interface CandidateInfo {
@@ -20,6 +29,96 @@ interface CandidateInfo {
   careers?: { period: string; title: string; organization: string }[];
   summary?: string;
   namuwiki_url?: string;
+}
+
+// Determine referer based on image source
+function getRefererForUrl(imageUrl: string): string {
+  if (imageUrl.includes('namu.wiki') || imageUrl.includes('namu.la')) {
+    return 'https://namu.wiki/';
+  }
+  if (imageUrl.includes('wikipedia.org') || imageUrl.includes('wikimedia.org')) {
+    return 'https://ko.wikipedia.org/';
+  }
+  if (imageUrl.includes('naver.com') || imageUrl.includes('pstatic.net')) {
+    return 'https://www.naver.com/';
+  }
+  try {
+    const url = new URL(imageUrl);
+    return url.origin + '/';
+  } catch {
+    return 'https://www.google.com/';
+  }
+}
+
+// Get file extension from content-type or URL
+function getExtension(contentType: string | null, imageUrl: string): string {
+  if (contentType) {
+    if (contentType.includes('png')) return 'png';
+    if (contentType.includes('jpeg') || contentType.includes('jpg')) return 'jpg';
+    if (contentType.includes('gif')) return 'gif';
+    if (contentType.includes('webp')) return 'webp';
+  }
+  const urlLower = imageUrl.toLowerCase();
+  if (urlLower.includes('.png')) return 'png';
+  if (urlLower.includes('.jpg') || urlLower.includes('.jpeg')) return 'jpg';
+  if (urlLower.includes('.gif')) return 'gif';
+  return 'webp';
+}
+
+// Proxy image to Supabase Storage
+async function proxyImageToStorage(
+  imageUrl: string, 
+  candidateName: string,
+  supabase: any
+): Promise<{ success: boolean; storageUrl?: string; error?: string }> {
+  try {
+    console.log('Proxying image to storage:', imageUrl);
+    
+    const referer = getRefererForUrl(imageUrl);
+    const fetchResponse = await fetch(imageUrl, {
+      headers: {
+        ...browserHeaders,
+        'Referer': referer,
+      },
+    });
+
+    if (!fetchResponse.ok) {
+      console.error('Failed to fetch image:', fetchResponse.status);
+      return { success: false, error: `Fetch failed: ${fetchResponse.status}` };
+    }
+
+    const imageBuffer = await fetchResponse.arrayBuffer();
+    const contentType = fetchResponse.headers.get('content-type') || 'image/webp';
+    const extension = getExtension(contentType, imageUrl);
+
+    const timestamp = Date.now();
+    const safeFileName = candidateName
+      .replace(/[^a-zA-Z0-9가-힣]/g, '_')
+      .substring(0, 50);
+    const fileName = `candidates/${safeFileName}-${timestamp}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('candidate-images')
+      .upload(fileName, imageBuffer, {
+        contentType,
+        upsert: true
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      return { success: false, error: uploadError.message };
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('candidate-images')
+      .getPublicUrl(fileName);
+
+    console.log('Image proxied successfully:', publicUrl);
+    return { success: true, storageUrl: publicUrl };
+  } catch (error) {
+    console.error('Proxy error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
 }
 
 async function searchImages(query: string, apiKey: string): Promise<ImageOption[]> {
@@ -170,12 +269,31 @@ serve(async (req) => {
       );
     }
 
+    // Initialize Supabase admin client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Search for images from multiple sources
     const searchQuery = party ? `${name} ${party} 정치인` : `${name} 정치인`;
     console.log('Searching images for:', searchQuery);
     
     const imageOptions = await searchImages(searchQuery, FIRECRAWL_API_KEY);
     console.log('Found image options:', imageOptions.length);
+
+    // Try to proxy the first image to storage to avoid hotlinking issues
+    let storageImageUrl: string | undefined;
+    if (imageOptions.length > 0) {
+      console.log('Proxying first image to storage...');
+      const proxyResult = await proxyImageToStorage(imageOptions[0].url, name, supabase);
+      if (proxyResult.success && proxyResult.storageUrl) {
+        storageImageUrl = proxyResult.storageUrl;
+        imageOptions[0].storage_url = proxyResult.storageUrl;
+        console.log('Image proxied successfully:', storageImageUrl);
+      } else {
+        console.log('Image proxy failed, using original URL:', proxyResult.error);
+      }
+    }
 
     // Search for candidate on Namuwiki for bio info
     const namuwikiQuery = `${searchQuery} site:namu.wiki`;
@@ -199,7 +317,8 @@ serve(async (req) => {
 
     let extractedInfo: CandidateInfo = {
       image_options: imageOptions,
-      image_url: imageOptions.length > 0 ? imageOptions[0].url : undefined
+      // Prefer storage URL over original URL
+      image_url: storageImageUrl || (imageOptions.length > 0 ? imageOptions[0].url : undefined)
     };
 
     if (searchResponse.ok && searchData.success) {

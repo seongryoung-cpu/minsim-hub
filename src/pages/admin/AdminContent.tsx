@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings, Sparkles, Brain, Wand2 } from 'lucide-react';
+import { ArrowLeft, FileText, Users, Newspaper, HelpCircle, Plus, Edit, Trash2, Loader2, ChevronDown, ChevronUp, Settings, Sparkles, Brain, Wand2, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { PledgeCareerManager } from '@/components/admin/PledgeCareerManager';
 import { CandidateImageUpload } from '@/components/admin/CandidateImageUpload';
 import { NewsArticleDialog } from '@/components/admin/NewsArticleDialog';
+import { ImageMigrationTool } from '@/components/admin/ImageMigrationTool';
 
 type ContentTab = 'candidates' | 'news' | 'quiz';
 
@@ -108,6 +109,19 @@ export function AdminContent() {
           </div>
           <ChevronDown size={20} className="rotate-[-90deg]" />
         </motion.button>
+
+        {/* Image Migration Section */}
+        <ContentSection
+          icon={ImageIcon}
+          label="이미지 마이그레이션"
+          color="bg-orange-500"
+          isExpanded={expandedSection === 'images' as any}
+          onToggle={() => setExpandedSection(expandedSection === 'images' as any ? null : 'images' as any)}
+        >
+          <div className="p-4">
+            <ImageMigrationTool />
+          </div>
+        </ContentSection>
 
         {/* Quiz Section */}
         <ContentSection
