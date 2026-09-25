@@ -1,4 +1,5 @@
 import { createContext, useContext, ReactNode } from 'react';
+import type { AuthError } from '@supabase/supabase-js';
 import { useAuth } from '@/hooks/useAuth';
 
 type AuthContextType = ReturnType<typeof useAuth>;
@@ -15,6 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuthContext() {
   const context = useContext(AuthContext);
   if (!context) {
@@ -24,11 +26,11 @@ export function useAuthContext() {
       profile: null,
       isLoading: true,
       isAuthenticated: false,
-      signInWithEmail: async () => ({ data: null, error: new Error('Not initialized') as any }),
-      signUpWithEmail: async () => ({ data: null, error: new Error('Not initialized') as any }),
-      signInWithSocial: async () => ({ data: null, error: new Error('Not initialized') as any }),
-      signOut: async () => ({ error: new Error('Not initialized') as any }),
-      updateProfile: async () => ({ error: new Error('Not initialized') as any }),
+      signInWithEmail: async () => ({ data: null, error: new Error('Not initialized') as unknown as AuthError }),
+      signUpWithEmail: async () => ({ data: null, error: new Error('Not initialized') as unknown as AuthError }),
+      signInWithSocial: async () => ({ data: null, error: new Error('Not initialized') as unknown as AuthError }),
+      signOut: async () => ({ error: new Error('Not initialized') as unknown as AuthError }),
+      updateProfile: async () => ({ error: new Error('Not initialized') as unknown as AuthError }),
       upgradeVerificationLevel: async () => ({ error: new Error('Not initialized') }),
       refreshProfile: async () => null,
     } as ReturnType<typeof useAuth>;

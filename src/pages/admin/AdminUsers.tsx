@@ -104,6 +104,7 @@ export function AdminUsers() {
 
   useEffect(() => {
     fetchUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, filterLevel]);
 
   const filteredUsers = users.filter(user => {

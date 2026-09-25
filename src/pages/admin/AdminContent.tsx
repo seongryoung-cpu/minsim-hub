@@ -16,7 +16,7 @@ import { CandidateImageUpload } from '@/components/admin/CandidateImageUpload';
 import { NewsArticleDialog } from '@/components/admin/NewsArticleDialog';
 import { ImageMigrationTool } from '@/components/admin/ImageMigrationTool';
 
-type ContentTab = 'candidates' | 'news' | 'quiz';
+type ContentTab = 'candidates' | 'news' | 'quiz' | 'images';
 
 export function AdminContent() {
   const navigate = useNavigate();
@@ -115,8 +115,8 @@ export function AdminContent() {
           icon={ImageIcon}
           label="이미지 마이그레이션"
           color="bg-orange-500"
-          isExpanded={expandedSection === 'images' as any}
-          onToggle={() => setExpandedSection(expandedSection === 'images' as any ? null : 'images' as any)}
+          isExpanded={expandedSection === 'images'}
+          onToggle={() => setExpandedSection(expandedSection === 'images' ? null : 'images')}
         >
           <div className="p-4">
             <ImageMigrationTool />
@@ -271,7 +271,7 @@ function CandidatesManager() {
               await updateCandidate.mutateAsync({ id: editingCandidate.id, ...data });
               toast.success('수정되었습니다');
             } else {
-              await createCandidate.mutateAsync(data as any);
+              await createCandidate.mutateAsync(data as Omit<DBCandidate, 'id'>);
               toast.success('추가되었습니다');
             }
             setEditingCandidate(null);
@@ -386,9 +386,24 @@ const NEWS_CATEGORIES = [
   { value: 'general', label: '일반' },
 ];
 
+type NewsArticle = {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string | null;
+  category: string | null;
+  source_url: string | null;
+  image_url: string | null;
+  published_at: string | null;
+  candidate_id: string | null;
+  [key: string]: unknown;
+};
+
+type NewsArticleInput = Omit<NewsArticle, 'id'>;
+
 function NewsManager() {
   const queryClient = useQueryClient();
-  const [editingArticle, setEditingArticle] = useState<any | null>(null);
+  const [editingArticle, setEditingArticle] = useState<NewsArticle | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const { data: candidates } = useAllCandidatesAdmin();
@@ -398,12 +413,12 @@ function NewsManager() {
     queryFn: async () => {
       const { data, error } = await supabase.from('news_articles').select('*').order('published_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return data as NewsArticle[];
     },
   });
 
   const createNews = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: NewsArticleInput) => {
       const { error } = await supabase.from('news_articles').insert(data);
       if (error) throw error;
     },
@@ -411,7 +426,7 @@ function NewsManager() {
   });
 
   const updateNews = useMutation({
-    mutationFn: async ({ id, ...data }: any) => {
+    mutationFn: async ({ id, ...data }: NewsArticle) => {
       const { error } = await supabase.from('news_articles').update(data).eq('id', id);
       if (error) throw error;
     },
@@ -426,7 +441,7 @@ function NewsManager() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['news-admin'] }),
   });
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: NewsArticleInput) => {
     try {
       if (editingArticle) {
         await updateNews.mutateAsync({ id: editingArticle.id, ...data });

@@ -107,6 +107,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchProfile]);
 
   // 이메일 로그인

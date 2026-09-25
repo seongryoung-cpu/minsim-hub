@@ -17,7 +17,7 @@ export function SpectrumSwipeCard({ question, onSwipe, cardNumber, totalCards }:
   const leftOpacity = useTransform(x, [-150, 0], [1, 0]);
   const rightOpacity = useTransform(x, [0, 150], [0, 1]);
   
-  const handleDragEnd = useCallback((_: any, info: PanInfo) => {
+  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const threshold = 100;
     if (info.offset.x > threshold) {
       onSwipe(1); // 오른쪽 = 동의하지 않음 (반대)

@@ -54,6 +54,7 @@ export function PoliticalMbtiPage() {
         handleComplete();
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, questions, answeredIds, uncertainty]);
 
   // 스와이프 핸들러

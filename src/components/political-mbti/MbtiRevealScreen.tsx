@@ -39,6 +39,7 @@ export function MbtiRevealScreen({ axisScores, onComplete }: MbtiRevealScreenPro
 
       return () => axisTimers.forEach(t => clearTimeout(t));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, axes.length]);
 
   useEffect(() => {

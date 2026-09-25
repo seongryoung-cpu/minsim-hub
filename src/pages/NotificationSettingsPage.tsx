@@ -67,6 +67,7 @@ export function NotificationSettingsPage() {
     if (user) {
       fetchNotificationCounts();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchNotificationCounts = async () => {
