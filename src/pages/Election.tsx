@@ -9,8 +9,13 @@ import { useRegion } from '@/hooks/useRegion';
 import { useCandidates } from '@/hooks/useCandidates';
 import { 
   calculateDDay, 
-  PRELIMINARY_PHASE_MILESTONES,
-  getMetropolitanTitle 
+  calculateDDayTo,
+  formatDDay,
+  getElectionMilestones,
+  getCurrentPhase,
+  getMetropolitanTitle,
+  CURRENT_ELECTION,
+  NEXT_ELECTION,
 } from '@/types/election';
 
 export function Election() {
@@ -31,10 +36,12 @@ export function Election() {
       regionName,
       electionType: '지방선거' as const,
       electionLevel: 'metropolitan' as const,
-      currentPhase: 'preliminary' as const,
-      electionDate: '2026-06-03',
+      currentPhase: getCurrentPhase(),
+      electionDate: CURRENT_ELECTION.date,
       dDay,
-      milestones: PRELIMINARY_PHASE_MILESTONES,
+      isOver: dDay < 0,
+      nextDDay: calculateDDayTo(NEXT_ELECTION.date),
+      milestones: getElectionMilestones(),
       candidates: candidates || [],
       title: getMetropolitanTitle(regionName),
     };
@@ -87,11 +94,26 @@ export function Election() {
             <Calendar size={32} className="text-primary" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-1">
-            2026 {electionStatus.electionType}
+            {CURRENT_ELECTION.name}{electionStatus.isOver && ' 종료'}
           </h2>
-          <p className="text-2xl font-bold text-primary mb-4">
-            D-{electionStatus.dDay}
-          </p>
+          {electionStatus.isOver ? (
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-2">
+                {CURRENT_ELECTION.date.replace(/-/g, '.')} 선거가 마무리되었습니다
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10">
+                <span className="text-sm text-foreground">다음 선거 · {NEXT_ELECTION.name}</span>
+                <span className="text-lg font-bold text-primary">{formatDDay(electionStatus.nextDDay)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                {NEXT_ELECTION.fullName} · {NEXT_ELECTION.date.replace(/-/g, '.')}
+              </p>
+            </div>
+          ) : (
+            <p className="text-2xl font-bold text-primary mb-4">
+              {formatDDay(electionStatus.dDay)}
+            </p>
+          )}
           <div className="bg-secondary rounded-xl p-4 text-center">
             <Users size={24} className="text-primary mx-auto mb-2" />
             <p className="text-xs text-muted-foreground">등록 후보</p>

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { CheckCircle2, Lock } from 'lucide-react';
 import type { ElectionMilestone, ElectionPhase } from '@/types/election';
+import { CURRENT_ELECTION } from '@/types/election';
 
 interface ElectionTimelineProps {
   milestones: ElectionMilestone[];
@@ -9,12 +10,16 @@ interface ElectionTimelineProps {
 
 export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineProps) {
   const currentIndex = milestones.findIndex(m => m.isCurrent);
+  const allComplete = milestones.length > 0 && milestones.every(m => m.isComplete);
+  const progressIndex = allComplete ? milestones.length - 1 : currentIndex;
   
   return (
     <div className="bg-card rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-[var(--shadow-md)]">
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <h3 className="text-sm sm:text-base font-semibold text-foreground">선거 진행 단계</h3>
-        <span className="text-xs sm:text-sm text-muted-foreground">2026 지방선거</span>
+        <span className="text-xs sm:text-sm text-muted-foreground">
+          {CURRENT_ELECTION.name}{allComplete && ' · 종료'}
+        </span>
       </div>
 
       <div className="relative">
@@ -26,7 +31,7 @@ export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineP
           className="absolute top-4 left-0 h-0.5 bg-primary"
           initial={{ width: '0%' }}
           animate={{
-            width: currentIndex >= 0 ? `${(currentIndex / (milestones.length - 1)) * 100}%` : '0%',
+            width: progressIndex >= 0 ? `${(progressIndex / (milestones.length - 1)) * 100}%` : '0%',
           }}
           transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
         />

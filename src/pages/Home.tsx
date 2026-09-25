@@ -11,7 +11,7 @@ import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
-import { getElectionStatus, getMetropolitanTitle } from '@/types/election';
+import { getElectionStatus, getMetropolitanTitle, formatDDay } from '@/types/election';
 import { useCandidates } from '@/hooks/useCandidates';
 import type { Region } from '@/types/region';
 
@@ -138,7 +138,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
           <DashboardSection
             title={`${metropolitanTitle} 선거 진행 현황`}
             icon="🗳️"
-            badge={`D-${electionStatus.dDay}`}
+            badge={formatDDay(electionStatus.dDay)}
             delay={0.1}
           >
             <ElectionTimeline
@@ -250,7 +250,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             <DashboardSection
               title={`${metropolitanTitle} 선거 진행 현황`}
               icon="🗳️"
-              badge={`D-${electionStatus.dDay}`}
+              badge={formatDDay(electionStatus.dDay)}
               delay={0.1}
             >
               <ElectionTimeline

@@ -55,13 +55,33 @@ export interface ElectionStatus {
   candidates: Candidate[];
 }
 
-// D-Day 계산 함수 (2026년 6월 3일 선거일 기준)
-export const calculateDDay = (): number => {
-  const electionDate = new Date('2026-06-03');
-  const today = new Date();
-  const diffTime = electionDate.getTime() - today.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
+// 현재 추적 중인 선거(2026 지방선거)와 다음 예정 선거
+export const CURRENT_ELECTION = { name: '2026 지방선거', date: '2026-06-03' } as const;
+export const NEXT_ELECTION = { name: '2028 총선', fullName: '제23대 국회의원 선거', date: '2028-04-12' } as const;
+
+// 'YYYY-MM-DD'를 사용자 현지 날짜 기준 자정으로 변환 (UTC 파싱으로 하루 밀리는 문제 방지)
+const toLocalDate = (ymd: string): Date => {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
+// 특정 날짜까지 남은 일수 (오늘 = 0, 지난 날짜는 음수)
+export const calculateDDayTo = (ymd: string): number => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return Math.round((toLocalDate(ymd).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// D-Day 계산 함수 (현재 추적 중인 선거 기준)
+export const calculateDDay = (): number => calculateDDayTo(CURRENT_ELECTION.date);
+
+export const isCurrentElectionOver = (): boolean => calculateDDay() < 0;
+
+// D-Day 표기: D-12 / D-DAY / 종료
+export const formatDDay = (dDay: number): string => {
+  if (dDay > 0) return `D-${dDay}`;
+  if (dDay === 0) return 'D-DAY';
+  return '종료';
 };
 
 // 정당 색상 맵
@@ -76,13 +96,39 @@ export const PARTY_COLORS: Record<string, string> = {
   '무소속': '#808080',
 };
 
-// 예비후보 시기 마일스톤 (현재 1단계 진행중, 나머지 잠금)
-export const PRELIMINARY_PHASE_MILESTONES: ElectionMilestone[] = [
-  { id: 'preliminary', label: '예비후보 등록', shortLabel: '예비후보', date: '2026-03-01', isComplete: false, isCurrent: true, isLocked: false },
-  { id: 'primary', label: '당내 경선', shortLabel: '당내경선', date: '2026-04-15', isComplete: false, isCurrent: false, isLocked: true },
-  { id: 'general', label: '본선 대결', shortLabel: '본선대결', date: '2026-05-20', isComplete: false, isCurrent: false, isLocked: true },
-  { id: 'confirmed', label: '당선 확정', shortLabel: '당선확정', date: '2026-06-03', isComplete: false, isCurrent: false, isLocked: true },
+// 선거 진행 마일스톤 원본 (날짜 = 해당 단계 시작일)
+const BASE_MILESTONES: Omit<ElectionMilestone, 'isComplete' | 'isCurrent' | 'isLocked'>[] = [
+  { id: 'preliminary', label: '예비후보 등록', shortLabel: '예비후보', date: '2026-03-01' },
+  { id: 'primary', label: '당내 경선', shortLabel: '당내경선', date: '2026-04-15' },
+  { id: 'general', label: '본선 대결', shortLabel: '본선대결', date: '2026-05-20' },
+  { id: 'confirmed', label: '당선 확정', shortLabel: '당선확정', date: '2026-06-03' },
 ];
+
+// 오늘 날짜 기준으로 각 단계의 진행 상태 계산 (선거일이 지나면 전 단계 완료)
+export const getElectionMilestones = (): ElectionMilestone[] => {
+  const over = isCurrentElectionOver();
+  let currentIdx = -1;
+  if (!over) {
+    BASE_MILESTONES.forEach((m, i) => {
+      if (calculateDDayTo(m.date) <= 0) currentIdx = i;
+    });
+    if (currentIdx === -1) currentIdx = 0;
+  }
+  return BASE_MILESTONES.map((m, i) => ({
+    ...m,
+    isComplete: over || i < currentIdx,
+    isCurrent: !over && i === currentIdx,
+    isLocked: !over && i > currentIdx,
+  }));
+};
+
+export const getCurrentPhase = (): ElectionPhase => {
+  const milestones = getElectionMilestones();
+  return (milestones.find((m) => m.isCurrent) ?? milestones[milestones.length - 1]).id;
+};
+
+// 기존 코드 호환용 (모듈 로드 시점 기준 값)
+export const PRELIMINARY_PHASE_MILESTONES: ElectionMilestone[] = getElectionMilestones();
 
 // 서울시장 예비후보 데이터
 export const SEOUL_MAYOR_CANDIDATES: Candidate[] = [
@@ -219,6 +265,8 @@ export const getElectionStatus = (sido: string, sigungu: string): ElectionStatus
     return {
       ...METROPOLITAN_ELECTION_STATUS[sido],
       dDay: calculateDDay(), // 항상 현재 날짜 기준으로 계산
+      currentPhase: getCurrentPhase(),
+      milestones: getElectionMilestones(),
     };
   }
   
@@ -232,10 +280,10 @@ export const getDefaultElectionStatus = (regionName: string): ElectionStatus => 
   regionName,
   electionType: '지방선거',
   electionLevel: 'district',
-  currentPhase: 'preliminary',
-  electionDate: '2026-06-03',
+  currentPhase: getCurrentPhase(),
+  electionDate: CURRENT_ELECTION.date,
   dDay: calculateDDay(),
-  milestones: PRELIMINARY_PHASE_MILESTONES,
+  milestones: getElectionMilestones(),
   candidates: [
     { id: 'c1', name: '후보자 A', party: '더불어민주당', partyColor: '#004EA2', summary: '정책 공약 준비중', position: '예비후보' },
     { id: 'c2', name: '후보자 B', party: '국민의힘', partyColor: '#E61E2B', summary: '정책 공약 준비중', position: '예비후보' },
