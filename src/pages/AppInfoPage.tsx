@@ -373,7 +373,7 @@ export function AppInfoPage() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            2026년 6월 3일 지방선거를 앞두고, 시민들이 쉽고 재미있게 정치에 참여할 수 있도록 설계된 지역 기반 정치 참여 플랫폼입니다. 
+            시민들이 쉽고 재미있게 정치에 참여할 수 있도록 설계된 지역 기반 정치 참여 플랫폼입니다.
             정책 매칭 게임을 통해 자신의 성향과 맞는 후보를 찾고, 퀴즈로 정치 상식을 테스트하며, 후보자 정보를 한눈에 비교할 수 있습니다.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

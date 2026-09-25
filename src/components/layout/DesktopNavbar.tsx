@@ -145,14 +145,16 @@ export function DesktopNavbar({ region, onRegionClick }: DesktopNavbarProps) {
               )}
             </motion.button>
 
-            {/* App Info */}
-            <button 
-              onClick={() => navigate('/app-info')}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary transition-colors text-sm text-muted-foreground"
-            >
-              <FileText size={16} />
-              <span>기획서</span>
-            </button>
+            {/* App Info — 관리자 전용 */}
+            {isAdmin && (
+              <button
+                onClick={() => navigate('/app-info')}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-secondary transition-colors text-sm text-muted-foreground"
+              >
+                <FileText size={16} />
+                <span>기획서</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

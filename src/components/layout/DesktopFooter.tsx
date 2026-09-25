@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '@/hooks/useAppSettings';
+import { useAdmin } from '@/hooks/useAdmin';
 
 export function DesktopFooter() {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
+  const { isAdmin } = useAdmin();
 
   return (
     <footer className="hidden lg:block bg-card border-t border-border">
@@ -77,14 +79,16 @@ export function DesktopFooter() {
           <div>
             <h3 className="font-semibold text-foreground mb-4">정보</h3>
             <ul className="space-y-2">
-              <li>
-                <button 
-                  onClick={() => navigate('/app-info')} 
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  앱 기획서
-                </button>
-              </li>
+              {isAdmin && (
+                <li>
+                  <button
+                    onClick={() => navigate('/app-info')}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    앱 기획서
+                  </button>
+                </li>
+              )}
               <li>
                 {settings?.link_terms ? (
                   <a 

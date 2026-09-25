@@ -118,7 +118,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 {region.sigungu} 선거 정보
               </h1>
               <p className="text-muted-foreground mt-1">
-                {metropolitanTitle} 예비후보 현황과 정책을 확인하세요
+                {metropolitanTitle} 후보 정보와 정책을 확인하세요
               </p>
             </div>
             <motion.button
@@ -166,7 +166,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
                 <Users size={18} className="text-primary" />
-                {metropolitanTitle} 예비후보
+                {metropolitanTitle} 후보
               </h3>
               <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">
                 {shuffledCandidates.length}명
@@ -310,7 +310,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-bold text-foreground text-lg flex items-center gap-2">
                   <Users size={20} className="text-primary" />
-                  {metropolitanTitle} 예비후보
+                  {metropolitanTitle} 후보
                 </h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
