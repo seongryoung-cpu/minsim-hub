@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppContainer } from '@/components/layout/AppContainer';
@@ -7,31 +7,41 @@ import { SplashScreen } from '@/components/splash/SplashScreen';
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { Home } from '@/pages/Home';
-import { Election } from '@/pages/Election';
-import { Discussion } from '@/pages/Discussion';
-import { MyPage } from '@/pages/MyPage';
-import { AppInfoPage } from '@/pages/AppInfoPage';
-import { CandidateDetail } from '@/pages/CandidateDetail';
-import { PolicyMatchGame } from '@/pages/PolicyMatchGame';
-import { NewsFeed } from '@/pages/NewsFeed';
-import { CandidateCompare } from '@/pages/CandidateCompare';
-import { QuizPage } from '@/pages/QuizPage';
-import { LeaderboardPage } from '@/pages/LeaderboardPage';
-import { NotificationSettingsPage } from '@/pages/NotificationSettingsPage';
-import { FAQPage } from '@/pages/FAQPage';
-import { AdminDashboard } from '@/pages/admin/AdminDashboard';
-import { AdminUsers } from '@/pages/admin/AdminUsers';
-import { AdminContent } from '@/pages/admin/AdminContent';
-import { AdminReports } from '@/pages/admin/AdminReports';
-import { AdminPolicyCards } from '@/pages/admin/AdminPolicyCards';
-import { AdminSettings } from '@/pages/admin/AdminSettings';
-import { AdminMbti } from '@/pages/admin/AdminMbti';
-import { PoliticalMbtiPage } from '@/pages/PoliticalMbtiPage';
-import AdminCandidateImport from '@/pages/admin/AdminCandidateImport';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdmin } from '@/hooks/useAdmin';
 import type { Region } from '@/types/region';
+
+// 페이지별 코드 분할: 첫 화면(Home) 외에는 해당 페이지에 들어갈 때 불러옴
+const Election = lazy(() => import('@/pages/Election').then((m) => ({ default: m.Election })));
+const Discussion = lazy(() => import('@/pages/Discussion').then((m) => ({ default: m.Discussion })));
+const MyPage = lazy(() => import('@/pages/MyPage').then((m) => ({ default: m.MyPage })));
+const AppInfoPage = lazy(() => import('@/pages/AppInfoPage').then((m) => ({ default: m.AppInfoPage })));
+const CandidateDetail = lazy(() => import('@/pages/CandidateDetail').then((m) => ({ default: m.CandidateDetail })));
+const PolicyMatchGame = lazy(() => import('@/pages/PolicyMatchGame').then((m) => ({ default: m.PolicyMatchGame })));
+const NewsFeed = lazy(() => import('@/pages/NewsFeed').then((m) => ({ default: m.NewsFeed })));
+const CandidateCompare = lazy(() => import('@/pages/CandidateCompare').then((m) => ({ default: m.CandidateCompare })));
+const QuizPage = lazy(() => import('@/pages/QuizPage').then((m) => ({ default: m.QuizPage })));
+const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })));
+const NotificationSettingsPage = lazy(() => import('@/pages/NotificationSettingsPage').then((m) => ({ default: m.NotificationSettingsPage })));
+const FAQPage = lazy(() => import('@/pages/FAQPage').then((m) => ({ default: m.FAQPage })));
+const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers').then((m) => ({ default: m.AdminUsers })));
+const AdminContent = lazy(() => import('@/pages/admin/AdminContent').then((m) => ({ default: m.AdminContent })));
+const AdminReports = lazy(() => import('@/pages/admin/AdminReports').then((m) => ({ default: m.AdminReports })));
+const AdminPolicyCards = lazy(() => import('@/pages/admin/AdminPolicyCards').then((m) => ({ default: m.AdminPolicyCards })));
+const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings').then((m) => ({ default: m.AdminSettings })));
+const AdminMbti = lazy(() => import('@/pages/admin/AdminMbti').then((m) => ({ default: m.AdminMbti })));
+const PoliticalMbtiPage = lazy(() => import('@/pages/PoliticalMbtiPage').then((m) => ({ default: m.PoliticalMbtiPage })));
+const AdminCandidateImport = lazy(() => import('@/pages/admin/AdminCandidateImport'));
+
+function PageFallback() {
+  return (
+    <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="w-8 h-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    </div>
+  );
+}
 
 type AppPhase = 'splash' | 'onboarding' | 'main';
 
@@ -101,6 +111,7 @@ function Index() {
       region={currentRegion} 
       onRegionClick={() => setIsRegionSheetOpen(true)}
     >
+      <Suspense fallback={<PageFallback />}>
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           <Route
@@ -139,6 +150,7 @@ function Index() {
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
         </Routes>
       </AnimatePresence>
+      </Suspense>
       {!isAdminRoute && <BottomTabBar />}
 
       <RegionSheet
