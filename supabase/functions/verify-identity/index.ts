@@ -85,63 +85,17 @@ serve(async (req: Request) => {
     // - PASS: Integration via SDK popup
     // ============================================
 
-    // Generate a mock CI (연계정보) - in production this comes from the identity provider
-    const mockCI = `DEMO_CI_${userId}_${Date.now()}`;
-    
-    // Check for duplicate CI (prevent duplicate accounts)
-    const { data: existingProfile } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("identity_ci", mockCI)
-      .neq("user_id", userId)
-      .maybeSingle();
-
-    if (existingProfile) {
-      return new Response(
-        JSON.stringify({ 
-          error: "이미 인증된 다른 계정이 존재합니다",
-          code: "DUPLICATE_IDENTITY" 
-        }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Update profile with verification info
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        display_name: name,
-        phone_number: phone.replace(/-/g, ""),
-        verification_level: "identity",
-        phone_verified_at: new Date().toISOString(),
-        identity_verified_at: new Date().toISOString(),
-        identity_provider: "demo", // In production: 'pass' | 'toss' | 'kcb'
-        identity_ci: mockCI,
-      })
-      .eq("user_id", userId);
-
-    if (updateError) {
-      console.error("Profile update error:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update profile" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    console.log(`Identity verified for user ${userId} (DEMO MODE)`);
-
+    // 실제 본인인증(PASS/토스 등) 연동 전까지는 인증 처리를 하지 않음.
+    // 이전 데모 모드는 아무 정보로나 "본인인증 완료"가 되어 인증 배지의 신뢰도를 해쳤기 때문에 비활성화함.
+    void userId; void name; void phone; void birthDate; void gender; void carrier;
     return new Response(
       JSON.stringify({
-        success: true,
-        message: "본인인증이 완료되었습니다",
-        verificationLevel: "identity",
-        provider: "demo",
+        error: "본인인증 서비스 준비 중입니다",
+        code: "IDENTITY_NOT_AVAILABLE",
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, "Content-Type": "application/json" } 
-      }
+      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
+
 
   } catch (error) {
     console.error("Verification error:", error);

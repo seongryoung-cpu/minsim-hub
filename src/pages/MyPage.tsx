@@ -196,11 +196,13 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                         : '본인 인증을 완료하면 투표 참여가 가능해요'}
                     </span>
                   </div>
-                  <button 
-                    onClick={() => setIsVerificationModalOpen(true)}
-                    className="w-full mt-2 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium"
+                  {/* 실제 본인인증 연동 전까지 비활성화 (데모 인증 제거) */}
+                  <button
+                    disabled
+                    aria-disabled="true"
+                    className="w-full mt-2 py-2 bg-secondary text-muted-foreground rounded-lg text-sm font-medium cursor-not-allowed"
                   >
-                    본인 인증하기
+                    본인 인증 (준비 중)
                   </button>
                 </div>
               )}

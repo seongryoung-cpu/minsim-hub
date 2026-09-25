@@ -111,10 +111,38 @@ async function sendWebPush(
   return response;
 }
 
+// 관리자 인증: 로그인한 관리자만 이 함수를 호출할 수 있음
+async function requireAdmin(req: Request): Promise<Response | null> {
+  const deny = (status: number, error: string) =>
+    new Response(JSON.stringify({ error }), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return deny(401, 'Unauthorized');
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: { user }, error } = await userClient.auth.getUser();
+    if (error || !user) return deny(401, 'Unauthorized');
+    const { data: isAdmin, error: roleError } = await userClient.rpc('is_admin', { _user_id: user.id });
+    if (roleError || !isAdmin) return deny(403, 'Forbidden');
+    return null;
+  } catch {
+    return deny(401, 'Unauthorized');
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const denied = await requireAdmin(req);
+  if (denied) return denied;
 
   try {
     const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY');

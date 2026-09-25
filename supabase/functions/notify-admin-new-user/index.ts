@@ -132,9 +132,33 @@ serve(async (req) => {
       );
     }
 
-    const { user_id, display_name } = parseResult.data;
+    const { user_id } = parseResult.data;
 
-    const userName = display_name || '새 사용자';
+    // 호출자 검증: 방금 가입한 본인만 자기 가입 알림을 보낼 수 있음 (알림 스팸 방지)
+    const authHeader = req.headers.get('Authorization');
+    const { data: { user: caller } } = authHeader?.startsWith('Bearer ')
+      ? await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+      : { data: { user: null } };
+    if (!caller || caller.id !== user_id) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (Date.now() - new Date(caller.created_at).getTime() > 10 * 60 * 1000) {
+      return new Response(
+        JSON.stringify({ error: 'Signup notification window expired' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 표시 이름은 요청 본문이 아니라 DB 프로필에서 가져옴
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('user_id', user_id)
+      .maybeSingle();
+    const userName = (profile?.display_name || '새 사용자').slice(0, 50);
 
     console.log('New user signup notification for:', userName);
 
