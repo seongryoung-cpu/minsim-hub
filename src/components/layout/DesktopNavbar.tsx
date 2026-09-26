@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAdmin } from '@/hooks/useAdmin';
-import type { Region } from '@/types/region';
+import { getSidoEmoji, type Region } from '@/types/region';
 
 interface NavItem {
   id: string;
@@ -21,27 +21,6 @@ const allNavItems: NavItem[] = [
   { id: 'my', label: '마이페이지', icon: User, path: '/my' },
 ];
 
-// 시/도별 이모지 아이콘
-const SIDO_EMOJI: Record<string, string> = {
-  '서울특별시': '🏛️',
-  '부산광역시': '🌊',
-  '대구광역시': '🍎',
-  '인천광역시': '✈️',
-  '광주광역시': '💡',
-  '대전광역시': '🔬',
-  '울산광역시': '🏭',
-  '세종특별자치시': '🏢',
-  '경기도': '🏙️',
-  '강원도': '🏔️',
-  '충청북도': '🌾',
-  '충청남도': '🌻',
-  '전라북도': '🎋',
-  '전라남도': '🌿',
-  '경상북도': '🏯',
-  '경상남도': '🌸',
-  '제주특별자치도': '🍊',
-};
-
 interface DesktopNavbarProps {
   region?: Region;
   onRegionClick?: () => void;
@@ -57,7 +36,7 @@ export function DesktopNavbar({ region, onRegionClick }: DesktopNavbarProps) {
   // Filter nav items based on admin status
   const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
 
-  const sidoEmoji = region ? SIDO_EMOJI[region.sido] || '📍' : '📍';
+  const sidoEmoji = region ? getSidoEmoji(region.sido) : '📍';
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';

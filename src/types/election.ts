@@ -294,6 +294,7 @@ export const getDefaultElectionStatus = (regionName: string): ElectionStatus => 
 export const getMetropolitanTitle = (sido: string): string => {
   if (sido === '서울특별시') return '서울시장';
   if (sido === '경기도') return '경기도지사';
+  if (sido === '세종특별자치시') return '세종시장';
   if (sido.includes('광역시')) return `${sido.replace('광역시', '')}시장`;
   if (sido.includes('도')) return `${sido.replace('도', '')}도지사`;
   if (sido.includes('특별자치')) return `${sido.replace('특별자치시', '').replace('특별자치도', '')}지사`;

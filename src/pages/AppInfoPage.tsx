@@ -637,6 +637,26 @@ export function AppInfoPage() {
           <p className="text-xs text-muted-foreground">
             마지막 업데이트: 2026년 2월 1일
           </p>
+          <p className="text-[11px] text-muted-foreground/80 mt-2">
+            지도 데이터:{' '}
+            <a
+              href="https://github.com/VictorCazanave/svg-maps"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              SVG Maps
+            </a>{' '}
+            by Victor Cazanave ·{' '}
+            <a
+              href="https://creativecommons.org/licenses/by/4.0/deed.ko"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              CC BY 4.0
+            </a>
+          </p>
         </motion.div>
       </main>
     </motion.div>

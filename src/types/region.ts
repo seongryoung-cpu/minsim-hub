@@ -3,6 +3,11 @@ export interface Region {
   sigungu: string;
 }
 
+/**
+ * 17개 시·도 (2026-07-01 기준 행정구역명)
+ * - 강원도 → 강원특별자치도 (2023-06-11)
+ * - 전라북도 → 전북특별자치도 (2024-01-18)
+ */
 export const SIDO_LIST = [
   '서울특별시',
   '부산광역시',
@@ -13,17 +18,76 @@ export const SIDO_LIST = [
   '울산광역시',
   '세종특별자치시',
   '경기도',
-  '강원도',
+  '강원특별자치도',
   '충청북도',
   '충청남도',
-  '전라북도',
+  '전북특별자치도',
   '전라남도',
   '경상북도',
   '경상남도',
   '제주특별자치도',
 ] as const;
 
-export const SIGUNGU_MAP: Record<string, string[]> = {
+export type SidoType = typeof SIDO_LIST[number];
+
+/** 특별시·광역시·특별자치시 */
+export const METRO_SIDO_LIST: readonly SidoType[] = [
+  '서울특별시', '부산광역시', '대구광역시', '인천광역시',
+  '광주광역시', '대전광역시', '울산광역시', '세종특별자치시',
+];
+
+/** 도·특별자치도 */
+export const PROVINCE_SIDO_LIST: readonly SidoType[] = [
+  '경기도', '강원특별자치도', '충청북도', '충청남도', '전북특별자치도',
+  '전라남도', '경상북도', '경상남도', '제주특별자치도',
+];
+
+/** 칩·라벨용 짧은 이름 */
+export const SIDO_SHORT: Record<SidoType, string> = {
+  '서울특별시': '서울',
+  '부산광역시': '부산',
+  '대구광역시': '대구',
+  '인천광역시': '인천',
+  '광주광역시': '광주',
+  '대전광역시': '대전',
+  '울산광역시': '울산',
+  '세종특별자치시': '세종',
+  '경기도': '경기',
+  '강원특별자치도': '강원',
+  '충청북도': '충북',
+  '충청남도': '충남',
+  '전북특별자치도': '전북',
+  '전라남도': '전남',
+  '경상북도': '경북',
+  '경상남도': '경남',
+  '제주특별자치도': '제주',
+};
+
+const SIDO_EMOJI: Record<SidoType, string> = {
+  '서울특별시': '🏛️',
+  '부산광역시': '🌊',
+  '대구광역시': '🍎',
+  '인천광역시': '✈️',
+  '광주광역시': '💡',
+  '대전광역시': '🔬',
+  '울산광역시': '🏭',
+  '세종특별자치시': '🏢',
+  '경기도': '🏙️',
+  '강원특별자치도': '🏔️',
+  '충청북도': '🌾',
+  '충청남도': '🌻',
+  '전북특별자치도': '🎋',
+  '전라남도': '🌿',
+  '경상북도': '🏯',
+  '경상남도': '🌸',
+  '제주특별자치도': '🍊',
+};
+
+export function getSidoEmoji(sido: string): string {
+  return isSidoType(sido) ? SIDO_EMOJI[sido] : '📍';
+}
+
+export const SIGUNGU_MAP: Record<SidoType, string[]> = {
   '서울특별시': [
     '종로구', '중구', '용산구', '성동구', '광진구', '동대문구', '중랑구',
     '성북구', '강북구', '도봉구', '노원구', '은평구', '서대문구', '마포구',
@@ -35,11 +99,13 @@ export const SIGUNGU_MAP: Record<string, string[]> = {
     '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군'
   ],
   '대구광역시': [
-    '중구', '동구', '서구', '남구', '북구', '수성구', '달서구', '달성군'
+    '중구', '동구', '서구', '남구', '북구', '수성구', '달서구', '달성군',
+    '군위군'  // 2023-07-01 경상북도에서 편입
   ],
+  // 2026-07-01 행정체제 개편: 중구·동구 폐지 → 제물포구·영종구, 서구 → 서해구, 검단구 분리
   '인천광역시': [
-    '중구', '동구', '미추홀구', '연수구', '남동구', '부평구', '계양구', '서구', '강화군', '옹진군',
-    '제물포구', '영종구', '검단구'  // 2026년 신설 구역
+    '제물포구', '영종구', '미추홀구', '연수구', '남동구', '부평구', '계양구',
+    '서해구', '검단구', '강화군', '옹진군'
   ],
   '광주광역시': ['동구', '서구', '남구', '북구', '광산구'],
   '대전광역시': ['동구', '중구', '서구', '유성구', '대덕구'],
@@ -52,7 +118,7 @@ export const SIGUNGU_MAP: Record<string, string[]> = {
     '안성시', '포천시', '의왕시', '하남시', '여주시', '양평군', '동두천시',
     '과천시', '가평군', '연천군'
   ],
-  '강원도': [
+  '강원특별자치도': [
     '춘천시', '원주시', '강릉시', '동해시', '태백시', '속초시', '삼척시',
     '홍천군', '횡성군', '영월군', '평창군', '정선군', '철원군', '화천군',
     '양구군', '인제군', '고성군', '양양군'
@@ -65,7 +131,7 @@ export const SIGUNGU_MAP: Record<string, string[]> = {
     '천안시', '공주시', '보령시', '아산시', '서산시', '논산시', '계룡시',
     '당진시', '금산군', '부여군', '서천군', '청양군', '홍성군', '예산군', '태안군'
   ],
-  '전라북도': [
+  '전북특별자치도': [
     '전주시', '군산시', '익산시', '정읍시', '남원시', '김제시', '완주군',
     '진안군', '무주군', '장수군', '임실군', '순창군', '고창군', '부안군'
   ],
@@ -76,7 +142,7 @@ export const SIGUNGU_MAP: Record<string, string[]> = {
   ],
   '경상북도': [
     '포항시', '경주시', '김천시', '안동시', '구미시', '영주시', '영천시',
-    '상주시', '문경시', '경산시', '군위군', '의성군', '청송군', '영양군',
+    '상주시', '문경시', '경산시', '의성군', '청송군', '영양군',
     '영덕군', '청도군', '고령군', '성주군', '칠곡군', '예천군', '봉화군', '울진군', '울릉군'
   ],
   '경상남도': [
@@ -87,4 +153,36 @@ export const SIGUNGU_MAP: Record<string, string[]> = {
   '제주특별자치도': ['제주시', '서귀포시'],
 };
 
-export type SidoType = typeof SIDO_LIST[number];
+export function isSidoType(value: string): value is SidoType {
+  return (SIDO_LIST as readonly string[]).includes(value);
+}
+
+// ── 저장된 지역 마이그레이션 ──────────────────────────────────────────
+
+const SIDO_RENAMES: Record<string, SidoType> = {
+  '강원도': '강원특별자치도',
+  '전라북도': '전북특별자치도',
+};
+
+const SIGUNGU_MOVES: { from: Region; to: Region }[] = [
+  { from: { sido: '경상북도', sigungu: '군위군' }, to: { sido: '대구광역시', sigungu: '군위군' } },
+  { from: { sido: '인천광역시', sigungu: '서구' }, to: { sido: '인천광역시', sigungu: '서해구' } },
+  { from: { sido: '인천광역시', sigungu: '동구' }, to: { sido: '인천광역시', sigungu: '제물포구' } },
+  // 인천 중구는 제물포구·영종구로 나뉘어 자동 변환 불가 → 재선택 유도
+];
+
+/**
+ * 예전 행정구역명으로 저장된 지역을 현재 이름으로 바꾼다.
+ * 더 이상 존재하지 않거나 자동 변환할 수 없는 지역이면 null.
+ */
+export function normalizeRegion(region: Region): Region | null {
+  const sido = SIDO_RENAMES[region.sido] ?? region.sido;
+  const moved = SIGUNGU_MOVES.find(
+    m => m.from.sido === sido && m.from.sigungu === region.sigungu
+  );
+  const next: Region = moved ? { ...moved.to } : { sido, sigungu: region.sigungu };
+
+  if (!isSidoType(next.sido)) return null;
+  if (next.sigungu !== '전체' && !SIGUNGU_MAP[next.sido].includes(next.sigungu)) return null;
+  return next;
+}

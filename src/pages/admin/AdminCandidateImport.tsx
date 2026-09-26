@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdmin } from '@/hooks/useAdmin';
 import { PARTY_COLORS } from '@/types/election';
+import { SIDO_LIST } from '@/types/region';
 
 interface Career {
   period: string;
@@ -51,11 +52,7 @@ interface ExtractedCandidate {
   showImagePicker?: boolean;
 }
 
-const REGIONS = [
-  '서울특별시', '부산광역시', '대구광역시', '인천광역시', '광주광역시',
-  '대전광역시', '울산광역시', '세종특별자치시', '경기도', '강원특별자치도',
-  '충청북도', '충청남도', '전북특별자치도', '전라남도', '경상북도', '경상남도', '제주특별자치도'
-];
+const REGIONS: readonly string[] = SIDO_LIST;
 
 const PARTIES = [
   '더불어민주당', '국민의힘', '조국혁신당', '개혁신당', '진보당', '기본소득당', '사회민주당', '무소속'
