@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,75 +6,109 @@ import { QuizCard } from '@/components/quiz/QuizCard';
 import { QuizIntroScreen } from '@/components/quiz/QuizIntroScreen';
 import { QuizResultScreen } from '@/components/quiz/QuizResultScreen';
 import { useQuizStats } from '@/hooks/useQuizStats';
-import { useDailyQuiz } from '@/hooks/useQuizQuestions';
+import { useDailyQuiz, submitDailyQuiz } from '@/hooks/useQuizQuestions';
+import type { QuizAnswerInput, QuizAnswerResult } from '@/hooks/useQuizQuestions';
 import { logActivity } from '@/lib/activityLogger';
-import type { QuizResult } from '@/types/quiz';
 
 type QuizPhase = 'intro' | 'playing' | 'result';
 
 export function QuizPage() {
   const navigate = useNavigate();
-  const { stats, isLoaded, updateStats, canPlayToday } = useQuizStats();
+  const { stats, isLoaded, canPlayToday } = useQuizStats();
   const { data: todayQuestions, isLoading: isQuestionsLoading } = useDailyQuiz();
   const [phase, setPhase] = useState<QuizPhase>('intro');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [results, setResults] = useState<QuizResult[]>([]);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
 
+  // 서버 채점 결과 (마지막 문제 완료 후 집계)
+  const [earnedPoints, setEarnedPoints] = useState(0);
+  const [correctCount, setCorrectCount] = useState(0);
+
+  // 누적 답안 목록 (마지막 문제에서 한꺼번에 제출)
+  const accumulatedAnswers = useRef<QuizAnswerInput[]>([]);
+
   const currentQuestion = todayQuestions?.[currentQuestionIndex];
-  const categories = useMemo(() => (todayQuestions || []).map(q => q.category), [todayQuestions]);
 
   const handleStart = useCallback(() => {
     const canPlay = canPlayToday();
     setIsPracticeMode(!canPlay);
     setPhase('playing');
     setCurrentQuestionIndex(0);
-    setResults([]);
+    setEarnedPoints(0);
+    setCorrectCount(0);
+    accumulatedAnswers.current = [];
   }, [canPlayToday]);
 
-  const handleAnswer = useCallback((selectedIndex: number, isCorrect: boolean) => {
-    if (!currentQuestion || !todayQuestions) return;
-    
-    const newResult: QuizResult = {
-      questionId: currentQuestion.id,
-      selectedAnswer: selectedIndex,
-      isCorrect,
-      timeSpent: 0,
+  /**
+   * QuizCard의 onAnswer prop: (selectedIndex) => Promise<QuizAnswerResult>
+   * - 문제별로 서버에 채점 요청
+   * - 마지막 문제면 전체 제출(submit_daily_quiz)로 stats까지 저장
+   */
+  const handleAnswer = useCallback(async (selectedIndex: number): Promise<QuizAnswerResult> => {
+    if (!currentQuestion || !todayQuestions) {
+      throw new Error('No current question');
+    }
+
+    const answer: QuizAnswerInput = {
+      question_id: currentQuestion.id,
+      selected_index: selectedIndex,
     };
 
-    setResults(prev => [...prev, newResult]);
+    const newAccumulated = [...accumulatedAnswers.current, answer];
+    accumulatedAnswers.current = newAccumulated;
 
-    if (currentQuestionIndex < todayQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    } else {
-      // 퀴즈 완료
-      const allResults = [...results, newResult];
-      if (!isPracticeMode) {
-        updateStats(allResults, categories);
-        
-        const correctCount = allResults.filter(r => r.isCorrect).length;
-        logActivity({
-          activityType: 'quiz_complete',
-          description: `퀴즈 완료: ${correctCount}/${allResults.length} 정답`,
-          metadata: { correctCount, totalQuestions: allResults.length },
-        });
-      }
-      setPhase('result');
+    const isLast = currentQuestionIndex === todayQuestions.length - 1;
+
+    // 마지막 문제: 전체 제출 (채점 + stats 저장)
+    if (isLast && !isPracticeMode) {
+      const response = await submitDailyQuiz(newAccumulated);
+
+      const thisResult = response.results.find(r => r.question_id === currentQuestion.id);
+      if (!thisResult) throw new Error('Result not found');
+
+      setEarnedPoints(response.total_points ?? 0);
+      setCorrectCount(response.correct_count ?? 0);
+
+      logActivity({
+        activityType: 'quiz_complete',
+        description: `퀴즈 완료: ${response.correct_count}/${response.total_count} 정답`,
+        metadata: {
+          correctCount: response.correct_count,
+          totalQuestions: response.total_count,
+          totalPoints: response.total_points,
+        },
+      });
+
+      // 결과 화면으로 전환 (약간의 딜레이로 애니메이션 확인 가능)
+      setTimeout(() => setPhase('result'), 800);
+
+      return thisResult;
     }
-  }, [currentQuestion, currentQuestionIndex, todayQuestions, results, isPracticeMode, updateStats, categories]);
+
+    // 연습 모드 또는 중간 문제: 단일 채점만
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase.rpc('submit_quiz_answer', {
+      p_question_id: currentQuestion.id,
+      p_selected_index: selectedIndex,
+    });
+
+    if (error) throw error;
+
+    const result = data as QuizAnswerResult;
+
+    if (isLast) {
+      // 연습 모드 마지막 문제 — stats 없이 결과 화면으로
+      setTimeout(() => setPhase('result'), 800);
+    } else {
+      setCurrentQuestionIndex(prev => prev + 1);
+    }
+
+    return result;
+  }, [currentQuestion, currentQuestionIndex, todayQuestions, isPracticeMode]);
 
   const handlePlayAgain = useCallback(() => {
     setPhase('intro');
   }, []);
-
-  const earnedPoints = useMemo(() => {
-    if (!todayQuestions) return 0;
-    return results.reduce((sum, r, i) => {
-      return sum + (r.isCorrect ? todayQuestions[i]?.points || 0 : 0);
-    }, 0);
-  }, [results, todayQuestions]);
-
-  const correctCount = results.filter(r => r.isCorrect).length;
 
   if (!isLoaded || isQuestionsLoading) {
     return (
