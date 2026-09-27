@@ -18,7 +18,7 @@ export function Discussion() {
       <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="h-14 flex items-center px-4">
           <MessageSquare size={22} className="text-primary mr-2" />
-          <h1 className="font-semibold text-lg text-foreground">토론</h1>
+          <h1 className="font-semibold text-lg text-foreground">공론</h1>
         </div>
       </header>
 

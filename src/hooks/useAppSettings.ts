@@ -15,6 +15,10 @@ export interface AppSettings {
   link_privacy: string;
   link_terms: string;
   enable_hover_animation: boolean;
+  /** 선거 기간: 연결 카드에서 첫 반응을 받지 않음 */
+  election_quiet_mode: boolean;
+  /** 선거 기간: 후보·정책 화면의 공론 연결 카드 숨김 */
+  election_hide_link_cards: boolean;
 }
 
 export function useAppSettings() {
@@ -49,6 +53,8 @@ export function useAppSettings() {
           link_privacy: settingsMap.link_privacy || '',
           link_terms: settingsMap.link_terms || '',
           enable_hover_animation: settingsMap.enable_hover_animation !== 'false',
+          election_quiet_mode: settingsMap.election_quiet_mode === 'true',
+          election_hide_link_cards: settingsMap.election_hide_link_cards === 'true',
         });
       } catch (error) {
         console.error('Failed to fetch app settings:', error);

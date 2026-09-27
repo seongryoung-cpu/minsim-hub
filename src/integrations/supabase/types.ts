@@ -14,6 +14,189 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_issues: {
+        Row: {
+          agenda_id: string
+          body: string
+          created_at: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          agenda_id: string
+          body?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          agenda_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      agenda_links: {
+        Row: {
+          agenda_id: string
+          created_at: string
+          id: string
+          pledge_id: string | null
+          policy_card_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          agenda_id: string
+          created_at?: string
+          id?: string
+          pledge_id?: string | null
+          policy_card_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          agenda_id?: string
+          created_at?: string
+          id?: string
+          pledge_id?: string | null
+          policy_card_id?: string | null
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      agenda_statements: {
+        Row: {
+          agenda_id: string
+          body: string
+          created_at: string
+          id: string
+          is_hidden: boolean
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agenda_votes: {
+        Row: {
+          agenda_id: string
+          choice: string
+          created_at: string
+          id: string
+          source: string
+          stage: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          choice: string
+          created_at?: string
+          id?: string
+          source?: string
+          stage: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          choice?: string
+          created_at?: string
+          id?: string
+          source?: string
+          stage?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agendas: {
+        Row: {
+          background: string
+          closes_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_featured: boolean
+          opens_at: string | null
+          region_sido: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          background?: string
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_featured?: boolean
+          opens_at?: string | null
+          region_sido?: string | null
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          background?: string
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_featured?: boolean
+          opens_at?: string | null
+          region_sido?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      statement_reactions: {
+        Row: {
+          choice: string
+          created_at: string
+          statement_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          choice: string
+          created_at?: string
+          statement_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          choice?: string
+          created_at?: string
+          statement_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           activity_type: string
@@ -1044,8 +1227,77 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_questions_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          difficulty: string | null
+          id: string | null
+          is_active: boolean | null
+          options: Json | null
+          points: number | null
+          question: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      app_setting_on: { Args: { p_key: string }; Returns: boolean }
+      cast_agenda_vote: {
+        Args: {
+          p_agenda_id: string
+          p_choice: string
+          p_source?: string
+          p_stage: string
+        }
+        Returns: Json
+      }
+      get_agenda_related_pledges: {
+        Args: { p_agenda_id: string }
+        Returns: {
+          candidate_id: string
+          candidate_name: string
+          candidate_slug: string
+          party: string
+          pledge_description: string
+          pledge_id: string
+          pledge_title: string
+        }[]
+      }
+      get_agenda_statements: {
+        Args: {
+          p_agenda_id: string
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: {
+          agree: number
+          body: string
+          created_at: string
+          disagree: number
+          hold: number
+          id: string
+          is_mine: boolean
+          my_reaction: string | null
+        }[]
+      }
+      get_agenda_summary: { Args: { p_agenda_id: string }; Returns: Json }
+      get_linked_agendas: {
+        Args: { p_pledge_ids?: string[]; p_policy_card_ids?: string[] }
+        Returns: {
+          agenda_id: string
+          closes_at: string | null
+          my_final: string | null
+          my_first: string | null
+          participants: number
+          pledge_id: string | null
+          policy_card_id: string | null
+          quiet_mode: boolean
+          status: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1054,6 +1306,11 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      submit_daily_quiz: { Args: { p_answers: Json }; Returns: Json }
+      submit_quiz_answer: {
+        Args: { p_question_id: string; p_selected_index: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
