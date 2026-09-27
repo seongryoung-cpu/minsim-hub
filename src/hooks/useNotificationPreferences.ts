@@ -90,7 +90,7 @@ export function useNotificationPreferences() {
     try {
       const { error } = await supabase
         .from('notification_preferences')
-        .update({ [key]: value })
+        .update({ [key]: value } as Partial<Record<typeof key, boolean>>)
         .eq('user_id', user.id);
 
       if (error) throw error;

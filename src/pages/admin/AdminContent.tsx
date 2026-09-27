@@ -403,7 +403,7 @@ function NewsManager() {
     queryFn: async () => {
       const { data, error } = await supabase.from('news_articles').select('*').order('published_at', { ascending: false });
       if (error) throw error;
-      return data as NewsArticle[];
+      return data;
     },
   });
 
@@ -416,7 +416,7 @@ function NewsManager() {
   });
 
   const updateNews = useMutation({
-    mutationFn: async ({ id, ...data }: NewsArticle) => {
+    mutationFn: async ({ id, ...data }: NewsArticleInput & { id: string }) => {
       const { error } = await supabase.from('news_articles').update(data).eq('id', id);
       if (error) throw error;
     },
