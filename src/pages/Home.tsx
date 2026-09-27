@@ -12,7 +12,9 @@ import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { FeaturedAgendaBanner } from '@/components/gonglon/FeaturedAgendaBanner';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
-import { getElectionStatus, getMetropolitanTitle, formatDDay } from '@/types/election';
+import { ElectedOfficialCard } from '@/components/dashboard/ElectedOfficialCard';
+import { getElectionStatus, getMetropolitanTitle, formatDDay, sortByElectionResult, CURRENT_ELECTION } from '@/types/election';
+import { useAppMode } from '@/hooks/useAppMode';
 import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import type { Region } from '@/types/region';
 
@@ -40,22 +42,33 @@ export function Home({ region, onRegionChange }: HomeProps) {
     return getMetropolitanTitle(region.sido);
   }, [region.sido]);
 
-  // DB 후보자를 셔플 (매 세션마다 랜덤)
+  const isNormal = useAppMode() === 'normal';
+
+  // 선거 모드: 공정성을 위해 매 세션 무작위. 평상시: 당선 → 낙선(득표순) → 본선 미진출
   const shuffledCandidates = useMemo(() => {
     const candidates = dbCandidates ? [...dbCandidates] : [];
+    if (isNormal) return sortByElectionResult(candidates);
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
     return candidates;
-  }, [dbCandidates]);
+  }, [dbCandidates, isNormal]);
 
-  // 표시할 후보자 수
-  const displayedCandidates = showAllCandidates 
-    ? shuffledCandidates 
-    : shuffledCandidates.slice(0, 4);
-  
-  const remainingCount = shuffledCandidates.length - 4;
+  // 평상시에는 본선 후보(당선·낙선)만 먼저 보여 주고 경선·예비후보는 접어 둔다
+  const finalistCount = shuffledCandidates.filter(
+    (c) => c.electionResult === 'elected' || c.electionResult === 'defeated',
+  ).length;
+  const initialCount = isNormal && finalistCount > 0 ? finalistCount : 4;
+  const displayedCandidates = showAllCandidates
+    ? shuffledCandidates
+    : shuffledCandidates.slice(0, initialCount);
+
+  const remainingCount = shuffledCandidates.length - initialCount;
+  const candidatesTitle = isNormal ? `지난 선거 ${metropolitanTitle} 후보` : `${metropolitanTitle} 후보`;
+  const orderNote = isNormal
+    ? `※ ${CURRENT_ELECTION.name} 기준, 당선·득표순으로 표시됩니다`
+    : '※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다';
 
   const handleViewAllCandidates = useCallback(() => {
     setShowAllCandidates(true);
@@ -116,10 +129,12 @@ export function Home({ region, onRegionChange }: HomeProps) {
           <div className="flex items-center justify-between mb-2">
             <div>
               <h1 className="text-3xl font-bold text-foreground">
-                {region.sigungu} 선거 정보
+                {region.sigungu} {isNormal ? '정치 정보' : '선거 정보'}
               </h1>
               <p className="text-muted-foreground mt-1">
-                {metropolitanTitle} 후보 정보와 정책을 확인하세요
+                {isNormal
+                  ? `${metropolitanTitle} 당선인과 우리 지역 공론을 확인하세요`
+                  : `${metropolitanTitle} 후보 정보와 정책을 확인하세요`}
               </p>
             </div>
             <motion.button
@@ -138,18 +153,25 @@ export function Home({ region, onRegionChange }: HomeProps) {
           {/* 이번 주 공론 (공론 공개 + 홈 배너 지정 의제가 있을 때만) */}
           <FeaturedAgendaBanner sido={region.sido} />
 
-          {/* Election Timeline */}
-          <DashboardSection
-            title={`${metropolitanTitle} 선거 진행 현황`}
-            icon="🗳️"
-            badge={formatDDay(electionStatus.dDay)}
-            delay={0.1}
-          >
-            <ElectionTimeline
-              milestones={electionStatus.milestones}
-              currentPhase={electionStatus.currentPhase}
+          {isNormal ? (
+            <ElectedOfficialCard
+              candidates={shuffledCandidates}
+              officeTitle={metropolitanTitle}
+              isLoading={candidatesLoading}
             />
-          </DashboardSection>
+          ) : (
+            <DashboardSection
+              title={`${metropolitanTitle} 선거 진행 현황`}
+              icon="🗳️"
+              badge={formatDDay(electionStatus.dDay)}
+              delay={0.1}
+            >
+              <ElectionTimeline
+                milestones={electionStatus.milestones}
+                currentPhase={electionStatus.currentPhase}
+              />
+            </DashboardSection>
+          )}
 
           {/* Quiz Banner */}
           <QuizBanner />
@@ -160,7 +182,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
           {/* MBTI Banner */}
           <MbtiBanner onPress={() => navigate('/political-mbti')} />
 
-          {/* Mobile Candidates Section */}
+          {/* Mobile Candidates Section (평상시에 이 지역 후보 데이터가 없으면 숨김) */}
+          {(!isNormal || candidatesLoading || shuffledCandidates.length > 0) && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -170,7 +193,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
                 <Users size={18} className="text-primary" />
-                {metropolitanTitle} 후보
+                {candidatesTitle}
               </h3>
               <span className="text-xs text-muted-foreground bg-secondary px-2 py-1 rounded-full">
                 {shuffledCandidates.length}명
@@ -203,13 +226,13 @@ export function Home({ region, onRegionChange }: HomeProps) {
                   onClick={handleViewAllCandidates}
                   className="w-full py-2.5 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors border border-dashed border-primary/30"
                 >
-                  +{remainingCount}명 더 보기
+                  {isNormal && finalistCount > 0 ? `경선·예비후보 ${remainingCount}명 더 보기` : `+${remainingCount}명 더 보기`}
                 </motion.button>
               )}
 
               {showAllCandidates && (
                 <p className="text-center text-xs text-muted-foreground py-1">
-                  ※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다
+                  {orderNote}
                 </p>
               )}
 
@@ -223,10 +246,11 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 className="w-full py-3.5 mt-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-xl shadow-md shadow-primary/20 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all"
               >
                 <Scale size={18} />
-                <span>후보자 공약 비교하기</span>
+                <span>{isNormal ? '지난 후보 공약 비교하기' : '후보자 공약 비교하기'}</span>
               </motion.button>
             </div>
           </motion.div>
+          )}
 
           {/* More Info Section */}
           <DashboardSection
@@ -252,18 +276,25 @@ export function Home({ region, onRegionChange }: HomeProps) {
           <div className="lg:col-span-8 space-y-6">
             <FeaturedAgendaBanner sido={region.sido} />
 
-            {/* Election Timeline */}
-            <DashboardSection
-              title={`${metropolitanTitle} 선거 진행 현황`}
-              icon="🗳️"
-              badge={formatDDay(electionStatus.dDay)}
-              delay={0.1}
-            >
-              <ElectionTimeline
-                milestones={electionStatus.milestones}
-                currentPhase={electionStatus.currentPhase}
+            {isNormal ? (
+              <ElectedOfficialCard
+                candidates={shuffledCandidates}
+                officeTitle={metropolitanTitle}
+                isLoading={candidatesLoading}
               />
-            </DashboardSection>
+            ) : (
+              <DashboardSection
+                title={`${metropolitanTitle} 선거 진행 현황`}
+                icon="🗳️"
+                badge={formatDDay(electionStatus.dDay)}
+                delay={0.1}
+              >
+                <ElectionTimeline
+                  milestones={electionStatus.milestones}
+                  currentPhase={electionStatus.currentPhase}
+                />
+              </DashboardSection>
+            )}
 
             {/* Quiz Banner */}
             <QuizBanner />
@@ -307,6 +338,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             </motion.div>
 
             {/* Desktop Candidates - Horizontal Cards */}
+            {(!isNormal || candidatesLoading || shuffledCandidates.length > 0) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -316,7 +348,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-bold text-foreground text-lg flex items-center gap-2">
                   <Users size={20} className="text-primary" />
-                  {metropolitanTitle} 후보
+                  {candidatesTitle}
                 </h3>
                 <div className="flex items-center gap-3">
                   <span className="text-sm text-muted-foreground bg-secondary px-3 py-1 rounded-full">
@@ -356,9 +388,10 @@ export function Home({ region, onRegionChange }: HomeProps) {
               </div>
 
               <p className="text-center text-xs text-muted-foreground mt-4">
-                ※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다
+                {orderNote}
               </p>
             </motion.div>
+            )}
           </div>
 
           {/* Right Column - Sidebar */}
@@ -373,7 +406,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
                   <Heart size={16} className="text-rose-500" />
-                  빠른 후보 탐색
+                  {isNormal ? '지난 선거 후보' : '빠른 후보 탐색'}
                 </h3>
               </div>
 
@@ -419,21 +452,18 @@ export function Home({ region, onRegionChange }: HomeProps) {
             >
               <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
                 <span>💡</span>
-                선거 참여 팁
+                {isNormal ? '평소에 참여하는 법' : '선거 참여 팁'}
               </h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  후보자의 공약을 꼼꼼히 비교해보세요
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  정책 매칭으로 나와 맞는 후보를 찾아보세요
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary">•</span>
-                  퀴즈로 선거 지식을 쌓아보세요
-                </li>
+                {(isNormal
+                  ? ['당선인의 공약을 확인하고 지켜보세요', '공론에서 우리 지역 의제에 의견을 남겨보세요', '퀴즈로 정치 지식을 쌓아보세요']
+                  : ['후보자의 공약을 꼼꼼히 비교해보세요', '정책 매칭으로 나와 맞는 후보를 찾아보세요', '퀴즈로 선거 지식을 쌓아보세요']
+                ).map((tip) => (
+                  <li key={tip} className="flex items-start gap-2">
+                    <span className="text-primary">•</span>
+                    {tip}
+                  </li>
+                ))}
               </ul>
             </motion.div>
           </div>

@@ -41,7 +41,29 @@ export interface Candidate {
   slogan?: string;
   pledges?: CandidatePledge[];
   careers?: CandidateCareer[];
+  /** 선거 후 결과. 없으면 아직 입력 전 */
+  electionResult?: ElectionResult;
+  /** 본선 최종 득표율(%) */
+  voteShare?: number;
 }
+
+export type ElectionResult = 'elected' | 'defeated' | 'not_nominated';
+
+export const ELECTION_RESULT_LABELS: Record<ElectionResult, string> = {
+  elected: '당선',
+  defeated: '낙선',
+  not_nominated: '본선 미진출',
+};
+
+const RESULT_ORDER: Record<ElectionResult, number> = { elected: 0, defeated: 1, not_nominated: 2 };
+
+/** 당선 → 본선 낙선(득표율 높은 순) → 본선 미진출 → 결과 미입력 */
+export const sortByElectionResult = <T extends Pick<Candidate, 'electionResult' | 'voteShare'>>(list: T[]): T[] =>
+  [...list].sort((a, b) => {
+    const ra = a.electionResult ? RESULT_ORDER[a.electionResult] : 3;
+    const rb = b.electionResult ? RESULT_ORDER[b.electionResult] : 3;
+    return ra - rb || (b.voteShare ?? 0) - (a.voteShare ?? 0);
+  });
 
 export interface ElectionStatus {
   regionId: string;

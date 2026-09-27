@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Vote, Calendar, Users, MapPin, Navigation, ExternalLink } from 'lucide-react';
@@ -16,7 +16,9 @@ import {
   getMetropolitanTitle,
   CURRENT_ELECTION,
   NEXT_ELECTION,
+  sortByElectionResult,
 } from '@/types/election';
+import { useAppMode } from '@/hooks/useAppMode';
 
 export function Election() {
   const navigate = useNavigate();
@@ -24,6 +26,8 @@ export function Election() {
   
   // Fetch candidates from DB
   const { data: candidates, isLoading: isCandidatesLoading } = useCandidates(region?.sido);
+  const isNormal = useAppMode() === 'normal';
+  const [showOthers, setShowOthers] = useState(false);
 
   const electionStatus = useMemo(() => {
     if (!region) return null;
@@ -42,10 +46,19 @@ export function Election() {
       isOver: dDay < 0,
       nextDDay: calculateDDayTo(NEXT_ELECTION.date),
       milestones: getElectionMilestones(),
-      candidates: candidates || [],
+      candidates: isNormal ? sortByElectionResult(candidates || []) : candidates || [],
       title: getMetropolitanTitle(regionName),
     };
-  }, [region, candidates]);
+  }, [region, candidates, isNormal]);
+
+  const finalists = electionStatus?.candidates.filter(
+    (c) => c.electionResult === 'elected' || c.electionResult === 'defeated',
+  ) ?? [];
+  const others = electionStatus?.candidates.filter(
+    (c) => c.electionResult !== 'elected' && c.electionResult !== 'defeated',
+  ) ?? [];
+  // 평상시인데 결과가 아직 없으면 후보 전체를 그대로 보여 준다
+  const showResults = isNormal && finalists.length > 0;
 
   const pageVariants = {
     initial: { opacity: 0, x: 50 },
@@ -116,143 +129,194 @@ export function Election() {
           )}
           <div className="bg-secondary rounded-xl p-4 text-center">
             <Users size={24} className="text-primary mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">등록 후보</p>
+            <p className="text-xs text-muted-foreground">{isNormal ? '지난 선거 후보' : '등록 후보'}</p>
             <p className="font-semibold text-foreground text-lg">
               {isCandidatesLoading ? '-' : `${electionStatus.candidates.length}명`}
             </p>
           </div>
         </motion.div>
 
-        {/* Election Timeline */}
-        <DashboardSection title="선거 진행 단계" icon="📊" delay={0.1}>
-          <ElectionTimeline
-            milestones={electionStatus.milestones}
-            currentPhase={electionStatus.currentPhase}
-          />
-        </DashboardSection>
-
-        {/* Candidates */}
-        <DashboardSection
-          title="후보자 현황"
-          icon="👥"
-          action={{
-            label: '비교하기',
-            onPress: () => navigate('/compare'),
-          }}
-          delay={0.2}
-        >
-          <div className="space-y-3">
-            {isCandidatesLoading ? (
-              <>
-                <CandidateCardSkeleton />
-                <CandidateCardSkeleton />
-              </>
-            ) : electionStatus.candidates.length > 0 ? (
-              electionStatus.candidates.map((candidate, index) => (
+        {showResults ? (
+          <DashboardSection
+            title={`${electionStatus.title} 선거 결과`}
+            icon="🏛️"
+            action={{ label: '공약 비교', onPress: () => navigate('/compare') }}
+            delay={0.1}
+          >
+            <div className="space-y-3">
+              {finalists.map((candidate, index) => (
                 <CandidateCard
                   key={candidate.id}
                   candidate={candidate}
                   index={index}
                   onPress={() => navigate(candidatePath(candidate))}
                 />
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Users size={32} className="mx-auto mb-2 opacity-50" />
-                <p className="text-sm">등록된 후보자가 없습니다</p>
-              </div>
-            )}
-          </div>
-        </DashboardSection>
+              ))}
+              {others.length > 0 && (
+                showOthers ? (
+                  <>
+                    <p className="pt-2 px-1 text-xs font-medium text-muted-foreground">경선·예비후보</p>
+                    {others.map((candidate, index) => (
+                      <CandidateCard
+                        key={candidate.id}
+                        candidate={candidate}
+                        index={index}
+                        variant="compact"
+                        onPress={() => navigate(candidatePath(candidate))}
+                      />
+                    ))}
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowOthers(true)}
+                    className="w-full py-2.5 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors border border-dashed border-primary/30"
+                  >
+                    경선·예비후보 {others.length}명 더 보기
+                  </button>
+                )
+              )}
+            </div>
+          </DashboardSection>
+        ) : (
+          <>
+          {/* Election Timeline */}
+          <DashboardSection title="선거 진행 단계" icon="📊" delay={0.1}>
+            <ElectionTimeline
+              milestones={electionStatus.milestones}
+              currentPhase={electionStatus.currentPhase}
+            />
+          </DashboardSection>
 
-        {/* Polling Station Finder */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Navigation size={20} className="text-primary" />
+          {/* Candidates */}
+          <DashboardSection
+            title="후보자 현황"
+            icon="👥"
+            action={{
+              label: '비교하기',
+              onPress: () => navigate('/compare'),
+            }}
+            delay={0.2}
+          >
+            <div className="space-y-3">
+              {isCandidatesLoading ? (
+                <>
+                  <CandidateCardSkeleton />
+                  <CandidateCardSkeleton />
+                </>
+              ) : electionStatus.candidates.length > 0 ? (
+                electionStatus.candidates.map((candidate, index) => (
+                  <CandidateCard
+                    key={candidate.id}
+                    candidate={candidate}
+                    index={index}
+                    onPress={() => navigate(candidatePath(candidate))}
+                  />
+                ))
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users size={32} className="mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">등록된 후보자가 없습니다</p>
+                </div>
+              )}
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground">🗳️ 투표소 찾기</h3>
-              <p className="text-xs text-muted-foreground">내 투표소 위치를 확인하세요</p>
-            </div>
-          </div>
+          </DashboardSection>
+          </>
+        )}
+
+        {/* 투표소·체크리스트는 선거 기간에만 */}
+        {!isNormal && (
+          <>
+            {/* Polling Station Finder */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Navigation size={20} className="text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">🗳️ 투표소 찾기</h3>
+                  <p className="text-xs text-muted-foreground">내 투표소 위치를 확인하세요</p>
+                </div>
+              </div>
           
-          <div className="space-y-3">
-            <motion.a
-              href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
-              target="_blank"
-              rel="noopener noreferrer"
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <MapPin size={16} className="text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground text-sm">사전투표소 찾기</p>
-                  <p className="text-xs text-muted-foreground">2026.05.29 ~ 05.30</p>
-                </div>
+              <div className="space-y-3">
+                <motion.a
+                  href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <MapPin size={16} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground text-sm">사전투표소 찾기</p>
+                      <p className="text-xs text-muted-foreground">2026.05.29 ~ 05.30</p>
+                    </div>
+                  </div>
+                  <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                </motion.a>
+
+                <motion.a
+                  href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Vote size={16} className="text-accent" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground text-sm">선거일 투표소 찾기</p>
+                      <p className="text-xs text-muted-foreground">2026.06.03</p>
+                    </div>
+                  </div>
+                  <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                </motion.a>
               </div>
-              <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-            </motion.a>
 
-            <motion.a
-              href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
-              target="_blank"
-              rel="noopener noreferrer"
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                중앙선거관리위원회 공식 사이트로 연결됩니다
+              </p>
+            </motion.div>
+
+            {/* Checklist */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Vote size={16} className="text-accent" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground text-sm">선거일 투표소 찾기</p>
-                  <p className="text-xs text-muted-foreground">2026.06.03</p>
-                </div>
-              </div>
-              <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-            </motion.a>
-          </div>
-
-          <p className="text-xs text-muted-foreground text-center mt-4">
-            중앙선거관리위원회 공식 사이트로 연결됩니다
-          </p>
-        </motion.div>
-
-        {/* Checklist */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
-        >
-          <h3 className="font-semibold text-foreground mb-3">📋 선거 준비 체크리스트</h3>
-          <ul className="space-y-3">
-            {['선거인명부 확인', '투표소 위치 확인', '후보자 정책 비교'].map((item, i) => (
-              <motion.li
-                key={i}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-3 text-sm text-muted-foreground p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
-              >
-                <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-medium">
-                  {i + 1}
-                </div>
-                {item}
-              </motion.li>
-            ))}
-          </ul>
-        </motion.div>
+              <h3 className="font-semibold text-foreground mb-3">📋 선거 준비 체크리스트</h3>
+              <ul className="space-y-3">
+                {['선거인명부 확인', '투표소 위치 확인', '후보자 정책 비교'].map((item, i) => (
+                  <motion.li
+                    key={i}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + i * 0.1 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center gap-3 text-sm text-muted-foreground p-2 rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-medium">
+                      {i + 1}
+                    </div>
+                    {item}
+                  </motion.li>
+                ))}
+              </ul>
+            </motion.div>
+          </>
+        )}
       </main>
     </motion.div>
   );

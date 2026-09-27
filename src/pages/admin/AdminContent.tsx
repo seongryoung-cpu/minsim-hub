@@ -313,6 +313,8 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
     region_name: '서울특별시',
     sort_order: 0,
     image_url: null as string | null,
+    election_result: null as string | null,
+    vote_share: null as number | null,
   });
 
   useEffect(() => {
@@ -327,6 +329,8 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
         region_name: candidate.region_name,
         sort_order: candidate.sort_order,
         image_url: candidate.image_url,
+        election_result: candidate.election_result,
+        vote_share: candidate.vote_share,
       });
     } else {
       setForm({
@@ -339,6 +343,8 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
         region_name: '서울특별시',
         sort_order: 0,
         image_url: null,
+        election_result: null,
+        vote_share: null,
       });
     }
   }, [candidate, isOpen]);
@@ -368,6 +374,38 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
           <Input placeholder="지역 (예: 서울특별시)" value={form.region_name} onChange={e => setForm(f => ({ ...f, region_name: e.target.value }))} />
           <Textarea placeholder="요약" value={form.summary} onChange={e => setForm(f => ({ ...f, summary: e.target.value }))} />
           <Input type="number" placeholder="정렬 순서" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))} />
+          <div className="rounded-lg border border-border p-3 space-y-2">
+            <p className="text-sm font-medium">선거 결과</p>
+            <div className="grid grid-cols-2 gap-2">
+              <select
+                aria-label="선거 결과"
+                value={form.election_result ?? ''}
+                onChange={e => setForm(f => ({
+                  ...f,
+                  election_result: e.target.value || null,
+                  vote_share: e.target.value === 'elected' || e.target.value === 'defeated' ? f.vote_share : null,
+                }))}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">입력 전</option>
+                <option value="elected">당선</option>
+                <option value="defeated">본선 낙선</option>
+                <option value="not_nominated">본선 미진출</option>
+              </select>
+              <Input
+                type="number"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="득표율 %"
+                aria-label="득표율"
+                disabled={form.election_result !== 'elected' && form.election_result !== 'defeated'}
+                value={form.vote_share ?? ''}
+                onChange={e => setForm(f => ({ ...f, vote_share: e.target.value === '' ? null : Number(e.target.value) }))}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">득표율은 확정된 최종 수치만 입력하세요. 모르면 비워 두세요.</p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>취소</Button>
