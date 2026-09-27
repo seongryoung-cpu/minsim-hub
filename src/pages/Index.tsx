@@ -9,14 +9,15 @@ import { RegionSheet } from '@/components/region/RegionSheet';
 import { Home } from '@/pages/Home';
 import NotFound from '@/pages/NotFound';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
+import { GonglonGate } from '@/components/gonglon/GonglonGate';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAdmin } from '@/hooks/useAdmin';
 import type { Region } from '@/types/region';
 
 // 페이지별 코드 분할: 첫 화면(Home) 외에는 해당 페이지에 들어갈 때 불러옴
 const Election = lazy(() => import('@/pages/Election').then((m) => ({ default: m.Election })));
-const Discussion = lazy(() => import('@/pages/Discussion').then((m) => ({ default: m.Discussion })));
+const GonglonHub = lazy(() => import('@/pages/gonglon/GonglonHub').then((m) => ({ default: m.GonglonHub })));
+const AgendaDetail = lazy(() => import('@/pages/gonglon/AgendaDetail').then((m) => ({ default: m.AgendaDetail })));
 const MyPage = lazy(() => import('@/pages/MyPage').then((m) => ({ default: m.MyPage })));
 const AppInfoPage = lazy(() => import('@/pages/AppInfoPage').then((m) => ({ default: m.AppInfoPage })));
 const CandidateDetail = lazy(() => import('@/pages/CandidateDetail').then((m) => ({ default: m.CandidateDetail })));
@@ -36,6 +37,7 @@ const AdminSettings = lazy(() => import('@/pages/admin/AdminSettings').then((m) 
 const AdminMbti = lazy(() => import('@/pages/admin/AdminMbti').then((m) => ({ default: m.AdminMbti })));
 const PoliticalMbtiPage = lazy(() => import('@/pages/PoliticalMbtiPage').then((m) => ({ default: m.PoliticalMbtiPage })));
 const AdminCandidateImport = lazy(() => import('@/pages/admin/AdminCandidateImport'));
+const AdminAgendas = lazy(() => import('@/pages/admin/AdminAgendas').then((m) => ({ default: m.AdminAgendas })));
 
 function PageFallback() {
   return (
@@ -50,7 +52,6 @@ type AppPhase = 'splash' | 'onboarding' | 'main';
 function Index() {
   const { region, setRegion, isLoaded, hasRegion } = useRegion();
   const isMobile = useIsMobile();
-  const { isAdmin } = useAdmin();
   const [phase, setPhase] = useState<AppPhase>('splash');
   const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
   const location = useLocation();
@@ -124,7 +125,9 @@ function Index() {
             }
           />
           <Route path="/election" element={<Election />} />
-          {isAdmin && <Route path="/gonglon" element={<Discussion />} />}
+          {/* 공론: 공개 전에는 관리자만 (GonglonGate가 관리자 설정 '공론 공개'를 확인) */}
+          <Route path="/gonglon" element={<GonglonGate><GonglonHub region={currentRegion} /></GonglonGate>} />
+          <Route path="/gonglon/:id" element={<GonglonGate><AgendaDetail /></GonglonGate>} />
           <Route path="/discussion" element={<Navigate to="/gonglon" replace />} />
           <Route
             path="/my"
@@ -152,6 +155,7 @@ function Index() {
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
+          <Route path="/admin/agendas" element={<AdminAgendas />} />
 
           {/* 404: 알 수 없는 경로 */}
           <Route path="*" element={<NotFound />} />

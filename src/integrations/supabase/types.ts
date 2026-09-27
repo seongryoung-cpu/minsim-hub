@@ -47,7 +47,9 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          kind: string
           sort_order: number
+          sources: string[]
           title: string
         }
         Insert: {
@@ -55,7 +57,9 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          kind?: string
           sort_order?: number
+          sources?: string[]
           title: string
         }
         Update: {
@@ -63,7 +67,9 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          kind?: string
           sort_order?: number
+          sources?: string[]
           title?: string
         }
         Relationships: [
@@ -204,13 +210,16 @@ export type Database = {
       agendas: {
         Row: {
           background: string
+          category: string | null
           closes_at: string | null
           created_at: string
           created_by: string | null
           id: string
           is_featured: boolean
           opens_at: string | null
+          question: string
           region_sido: string | null
+          split_reason: string
           status: string
           summary: string
           title: string
@@ -218,13 +227,16 @@ export type Database = {
         }
         Insert: {
           background?: string
+          category?: string | null
           closes_at?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           is_featured?: boolean
           opens_at?: string | null
+          question?: string
           region_sido?: string | null
+          split_reason?: string
           status?: string
           summary?: string
           title: string
@@ -232,13 +244,16 @@ export type Database = {
         }
         Update: {
           background?: string
+          category?: string | null
           closes_at?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           is_featured?: boolean
           opens_at?: string | null
+          question?: string
           region_sido?: string | null
+          split_reason?: string
           status?: string
           summary?: string
           title?: string
@@ -1325,6 +1340,26 @@ export type Database = {
           p_stage: string
         }
         Returns: Json
+      }
+      get_agenda_list: {
+        Args: { p_sido?: string }
+        Returns: {
+          category: string | null
+          closes_at: string | null
+          created_at: string
+          id: string
+          is_featured: boolean
+          my_final: string | null
+          my_first: string | null
+          opens_at: string | null
+          participants: number
+          pledge_count: number
+          region_sido: string | null
+          statement_count: number
+          status: string
+          summary: string
+          title: string
+        }[]
       }
       get_agenda_related_pledges: {
         Args: { p_agenda_id: string }

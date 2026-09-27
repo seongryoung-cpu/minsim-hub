@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash, ImageIcon, Upload, X, MousePointer, Vote } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,11 +26,13 @@ interface AppSettings {
   enable_hover_animation: string;
   election_quiet_mode: string;
   election_hide_link_cards: string;
+  gonglon_public: string;
 }
 
 export function AdminSettings() {
   const navigate = useNavigate();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -50,6 +53,7 @@ export function AdminSettings() {
     enable_hover_animation: 'true',
     election_quiet_mode: 'false',
     election_hide_link_cards: 'false',
+    gonglon_public: 'false',
   });
 
   useEffect(() => {
@@ -90,6 +94,7 @@ export function AdminSettings() {
           enable_hover_animation: settingsMap.enable_hover_animation ?? 'true',
           election_quiet_mode: settingsMap.election_quiet_mode ?? 'false',
           election_hide_link_cards: settingsMap.election_hide_link_cards ?? 'false',
+          gonglon_public: settingsMap.gonglon_public ?? 'false',
         });
       } catch (error) {
         console.error('Failed to fetch settings:', error);
@@ -196,6 +201,9 @@ export function AdminSettings() {
       if (firstError) throw firstError;
 
       toast.success('설정이 저장되었습니다');
+      // 공론 공개 여부·선거 기간 설정을 쓰는 화면이 바로 반영되게
+      queryClient.invalidateQueries({ queryKey: ['app-setting'] });
+      queryClient.invalidateQueries({ queryKey: ['agendas'] });
 
       // Re-fetch once to keep UI in sync
       const { data, error } = await supabase
@@ -224,6 +232,7 @@ export function AdminSettings() {
           enable_hover_animation: settingsMap.enable_hover_animation ?? 'true',
           election_quiet_mode: settingsMap.election_quiet_mode ?? 'false',
           election_hide_link_cards: settingsMap.election_hide_link_cards ?? 'false',
+          gonglon_public: settingsMap.gonglon_public ?? 'false',
         });
       }
     } catch (error) {
@@ -393,14 +402,20 @@ export function AdminSettings() {
           >
             <div className="flex items-center gap-2">
               <Vote size={20} className="text-primary" />
-              <h2 className="font-semibold text-lg">선거 기간 설정</h2>
+              <h2 className="font-semibold text-lg">공론 공개 · 선거 기간 설정</h2>
             </div>
             <p className="text-sm text-muted-foreground">
-              후보 공약·정책 비교 화면에 붙는 공론 연결 카드의 동작입니다. 예비후보 등록일부터 선거일까지 켜 두는 것을 권장합니다.
+              ‘공론 공개’를 끄면 공론 탭·홈 배너·연결 카드가 관리자에게만 보입니다. 의제를 채운 뒤 켜세요.
+              아래 두 설정은 후보 공약·정책 비교 화면에 붙는 공론 연결 카드의 동작입니다. 예비후보 등록일부터 선거일까지 켜 두는 것을 권장합니다.
               공직선거법 제108조(여론조사 결과 공표) 적용 여부는 선관위 질의 후 확정하세요.
             </p>
             <div className="space-y-3">
               {([
+                {
+                  key: 'gonglon_public' as const,
+                  label: '공론 공개',
+                  desc: '켜면 모든 사용자에게 공론 탭, 홈 ‘이번 주 공론’ 배너, 후보 화면 연결 카드가 보입니다.',
+                },
                 {
                   key: 'election_quiet_mode' as const,
                   label: '조용한 모드',
