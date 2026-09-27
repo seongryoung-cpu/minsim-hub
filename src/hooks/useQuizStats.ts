@@ -197,8 +197,11 @@ export function useQuizStats() {
   }, [checkStreak, syncToDatabase]);
 
   const canPlayToday = useCallback(() => {
-    const today = new Date().toDateString();
-    return stats.lastPlayedDate !== today;
+    // 서버(submit_daily_quiz)는 last_played_date를 KST 'YYYY-MM-DD'로 저장한다.
+    // 예전 클라이언트가 저장한 toDateString() 형식도 함께 비교해 호환한다.
+    const kstToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+    const legacyToday = new Date().toDateString();
+    return stats.lastPlayedDate !== kstToday && stats.lastPlayedDate !== legacyToday;
   }, [stats.lastPlayedDate]);
 
   const resetStats = useCallback(() => {

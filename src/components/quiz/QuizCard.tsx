@@ -11,22 +11,31 @@ interface QuizCardProps {
   totalQuestions: number;
   /** 답안 선택 시 호출 — 서버 채점 결과를 Promise로 반환 */
   onAnswer: (selectedIndex: number) => Promise<QuizAnswerResult>;
+  /** 해설을 읽은 뒤 사용자가 '다음'을 눌렀을 때 호출 */
+  onNext: () => void;
 }
 
-export function QuizCard({ question, questionNumber, totalQuestions, onAnswer }: QuizCardProps) {
+export function QuizCard({ question, questionNumber, totalQuestions, onAnswer, onNext }: QuizCardProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [result, setResult] = useState<QuizAnswerResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const handleSelect = async (index: number) => {
     if (selectedAnswer !== null || isLoading) return;
 
     setSelectedAnswer(index);
     setIsLoading(true);
+    setHasError(false);
 
     try {
       const res = await onAnswer(index);
       setResult(res);
+    } catch (error) {
+      // 채점 실패 시 선택을 풀어 다시 고를 수 있게 한다 (예전엔 보기가 잠긴 채 멈춤)
+      console.error('Quiz answer failed:', error);
+      setSelectedAnswer(null);
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
@@ -156,9 +165,22 @@ export function QuizCard({ question, questionNumber, totalQuestions, onAnswer }:
                 {result?.explanation}
               </p>
             </div>
+            <button
+              type="button"
+              onClick={onNext}
+              className="mt-4 w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold"
+            >
+              {questionNumber === totalQuestions ? '결과 보기' : '다음 문제'}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {hasError && (
+        <p role="alert" className="mt-4 text-sm text-destructive text-center">
+          채점에 실패했어요. 잠시 후 다시 선택해 주세요.
+        </p>
+      )}
     </motion.div>
   );
 }

@@ -44,8 +44,8 @@ function transformToCandidate(
   careers: DBCandidateCareer[] = []
 ): Candidate & { regionName: string } {
   return {
-    id: db.slug, // for URL routing
-    dbId: db.id, // actual UUID for DB operations like follow
+    id: db.id,
+    slug: db.slug,
     name: db.name,
     party: db.party,
     partyColor: db.party_color,
@@ -126,6 +126,13 @@ export function useCandidates(regionName?: string) {
   });
 }
 
+/** 후보 상세 경로. slug가 비어 있는 후보도 있어(실데이터 확인) 그때는 UUID로 연다. */
+export const candidatePath = (c: { id: string; slug?: string | null }) =>
+  `/candidate/${encodeURIComponent(c.slug?.trim() || c.id)}`;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** /candidate/:slug 조회. 결과 화면 등에서 UUID로 들어와도 찾을 수 있게 UUID도 받는다. */
 export function useCandidateBySlug(slug: string) {
   return useQuery({
     queryKey: ['candidate', slug],
@@ -133,7 +140,7 @@ export function useCandidateBySlug(slug: string) {
       const { data, error } = await supabase
         .from('candidates')
         .select('*')
-        .eq('slug', slug)
+        .eq(UUID_RE.test(slug) ? 'id' : 'slug', slug)
         .eq('is_active', true)
         .maybeSingle();
 

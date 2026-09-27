@@ -24,9 +24,11 @@ export function NewsFeed() {
   const { data: allNews, isLoading: isAllNewsLoading, error: allNewsError, refetch: refetchAllNews } = useNews();
   
   // Fetch personalized news based on followed candidates
+  // 팔로우/필터는 후보 UUID, news_articles.candidate_id 는 후보 slug — slug로 변환해 조회
   const targetIds = useMemo(() => {
-    return selectedFilters.length > 0 ? selectedFilters : followedIds;
-  }, [selectedFilters, followedIds]);
+    const uuids = selectedFilters.length > 0 ? selectedFilters : followedIds;
+    return dbCandidates.filter(c => uuids.includes(c.id)).map(c => c.slug);
+  }, [selectedFilters, followedIds, dbCandidates]);
   
   const { data: personalizedNews, isLoading: isPersonalizedLoading, error: personalizedError, refetch: refetchPersonalized } = useNews(
     targetIds.length > 0 ? targetIds : undefined

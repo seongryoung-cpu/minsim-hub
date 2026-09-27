@@ -12,7 +12,7 @@ import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { getElectionStatus, getMetropolitanTitle, formatDDay } from '@/types/election';
-import { useCandidates } from '@/hooks/useCandidates';
+import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import type { Region } from '@/types/region';
 
 interface HomeProps {
@@ -186,7 +186,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                     key={candidate.id}
                     candidate={candidate}
                     index={index}
-                    onPress={() => navigate(`/candidate/${candidate.id}`)}
+                    onPress={() => navigate(candidatePath(candidate))}
                   />
                 ))
               )}
@@ -343,7 +343,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                       candidate={candidate}
                       index={index}
                       variant="horizontal"
-                      onPress={() => navigate(`/candidate/${candidate.id}`)}
+                      onPress={() => navigate(candidatePath(candidate))}
                     />
                   ))
                 )}
@@ -385,7 +385,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                       candidate={candidate}
                       index={index}
                       variant="compact"
-                      onPress={() => navigate(`/candidate/${candidate.id}`)}
+                      onPress={() => navigate(candidatePath(candidate))}
                     />
                   ))
                 )}

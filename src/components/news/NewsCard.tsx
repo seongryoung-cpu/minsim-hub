@@ -3,9 +3,7 @@ import { Clock, ExternalLink, Newspaper, Mic, Flag, FileText } from 'lucide-reac
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import type { NewsArticle } from '@/types/news';
-import { SEOUL_MAYOR_CANDIDATES, GYEONGGI_GOVERNOR_CANDIDATES } from '@/types/election';
-
-const ALL_CANDIDATES = [...SEOUL_MAYOR_CANDIDATES, ...GYEONGGI_GOVERNOR_CANDIDATES];
+import { useCandidates } from '@/hooks/useCandidates';
 
 const CATEGORY_CONFIG = {
   policy: { icon: FileText, label: '정책', color: 'text-blue-500 bg-blue-500/10' },
@@ -21,7 +19,9 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ article, index, showCandidate = true }: NewsCardProps) {
-  const candidate = ALL_CANDIDATES.find(c => c.id === article.candidateId);
+  // news_articles.candidate_id 는 후보 slug(TEXT)로 저장됨 — 실제 DB 후보와 slug로 매칭
+  const { data: candidates } = useCandidates();
+  const candidate = candidates?.find(c => c.slug === article.candidateId);
   const categoryConfig = CATEGORY_CONFIG[article.category];
   const CategoryIcon = categoryConfig.icon;
 

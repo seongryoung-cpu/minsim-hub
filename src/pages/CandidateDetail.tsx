@@ -22,7 +22,7 @@ export function CandidateDetail() {
   const { data: candidate, isLoading: isCandidateLoading } = useCandidateBySlug(id || '');
   
   // Fetch news from DB
-  const { data: news, isLoading: isNewsLoading } = useNewsForCandidate(id || '');
+  const { data: news, isLoading: isNewsLoading } = useNewsForCandidate(candidate?.slug || ''); // news_articles.candidate_id = slug
 
   // URL 파라미터 변경 시 탭 동기화
   useEffect(() => {
@@ -114,7 +114,7 @@ export function CandidateDetail() {
           </button>
           <h1 className="font-semibold">후보자 정보</h1>
           <FollowButton
-            candidateId={candidate.dbId || candidate.id}
+            candidateId={candidate.id}
             candidateName={candidate.name}
             partyColor={candidate.partyColor}
             variant="icon"

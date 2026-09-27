@@ -10,7 +10,10 @@ export function PolicyMatchBanner({ onPress }: PolicyMatchBannerProps) {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    if (onPress) onPress();
+    if (onPress) {
+      onPress();
+      return;
+    }
     navigate('/policy-match');
   };
 

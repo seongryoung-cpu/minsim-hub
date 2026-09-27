@@ -1,3 +1,4 @@
+import { candidatePath } from '@/hooks/useCandidates';
 import { motion } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { User, ChevronRight, Heart } from 'lucide-react';
@@ -81,21 +82,22 @@ export function CandidateCard({
   const { isFollowing, toggleFollow } = useFollowedCandidates();
   const { settings } = useAppSettings();
   const { toast } = useToast();
-  // Use dbId (UUID) for follow operations, id (slug) is for URL routing
-  const candidateDbId = candidate.dbId || candidate.id;
-  const following = isFollowing(candidateDbId);
+  // id = DB UUID (팔로우 등 DB 작업), slug = URL 라우팅
+  const following = isFollowing(candidate.id);
   const enableHover = settings?.enable_hover_animation !== false;
 
   const handleClick = () => {
+    // onPress가 있으면 그쪽에 이동을 맡김 — 둘 다 호출하면 히스토리가 두 번 쌓임
     if (onPress) {
       onPress();
+      return;
     }
-    navigate(`/candidate/${candidate.id}`);
+    navigate(candidatePath(candidate));
   };
 
   const handleFollowClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleFollow(candidateDbId);
+    toggleFollow(candidate.id);
     
     if (!following) {
       toast({
