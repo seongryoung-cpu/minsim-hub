@@ -1381,6 +1381,21 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_restricted_api_user: { Args: never; Returns: boolean }
+      leaderboard_rows: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          correct_answers: number
+          current_streak: number
+          display_name: string
+          id: string
+          longest_streak: number
+          region_sido: string
+          total_points: number
+          total_quizzes: number
+          updated_at: string
+        }[]
+      }
       submit_daily_quiz: { Args: { p_answers: Json }; Returns: Json }
       submit_quiz_answer: {
         Args: { p_question_id: string; p_selected_index: number }
