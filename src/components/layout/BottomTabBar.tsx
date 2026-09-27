@@ -2,32 +2,31 @@ import { Home, Vote, User, MessageSquare } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useGonglonAccess } from '@/hooks/useAgendas';
 
 interface TabItem {
   id: string;
   label: string;
   icon: typeof Home | 'logo';
   path: string;
-  adminOnly?: boolean;
+  /** 공론: 관리자 설정 '공론 공개'가 켜졌거나 관리자일 때만 */
+  gonglon?: boolean;
 }
 
 export function BottomTabBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { settings } = useAppSettings();
-  const { isAdmin } = useAdmin();
+  const gonglon = useGonglonAccess();
 
   const allTabs: TabItem[] = [
     { id: 'home', label: settings?.app_name || '홈', icon: 'logo', path: '/' },
-    // 공론 허브: 화면(허브 목록·의제 상세)이 완성될 때까지 관리자에게만 노출. 공개 시 adminOnly 제거.
-    { id: 'gonglon', label: '공론', icon: MessageSquare, path: '/gonglon', adminOnly: true },
+    { id: 'gonglon', label: '공론', icon: MessageSquare, path: '/gonglon', gonglon: true },
     { id: 'election', label: '선거', icon: Vote, path: '/election' },
     { id: 'my', label: '마이', icon: User, path: '/my' },
   ];
 
-  // Filter tabs based on admin status
-  const tabs = allTabs.filter(tab => !tab.adminOnly || isAdmin);
+  const tabs = allTabs.filter(tab => !tab.gonglon || gonglon.allowed);
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';

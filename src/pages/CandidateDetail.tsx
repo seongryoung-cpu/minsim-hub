@@ -1,7 +1,7 @@
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, User, Share2, Briefcase, FileText, GraduationCap, Calendar, Building2, Newspaper } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FollowButton } from '@/components/candidate/FollowButton';
 import { NewsCard } from '@/components/news/NewsCard';
@@ -10,6 +10,8 @@ import { useNewsForCandidate } from '@/hooks/useNews';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageLoading } from '@/components/ui/loading-state';
 import { toast } from 'sonner';
+import { useGonglonAccess, useLinkedAgendas } from '@/hooks/useAgendas';
+import { AgendaLinkCard } from '@/components/gonglon/AgendaLinkCard';
 
 export function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +25,12 @@ export function CandidateDetail() {
   
   // Fetch news from DB
   const { data: news, isLoading: isNewsLoading } = useNewsForCandidate(candidate?.slug || ''); // news_articles.candidate_id = slug
+
+  // 공론 연결 카드: 공약마다 연결된 의제 (공론 공개 전에는 관리자만)
+  const location = useLocation();
+  const gonglon = useGonglonAccess();
+  const pledgeIds = useMemo(() => candidate?.pledges?.map((p) => p.id) ?? [], [candidate]);
+  const { data: linkedAgendas } = useLinkedAgendas({ pledgeIds: gonglon.allowed ? pledgeIds : [] });
 
   // URL 파라미터 변경 시 탭 동기화
   useEffect(() => {
@@ -292,6 +300,16 @@ export function CandidateDetail() {
                           <p className="text-sm text-secondary-foreground">
                             {pledge.description}
                           </p>
+                          {linkedAgendas?.get(pledge.id)?.map((agenda) => (
+                            <AgendaLinkCard
+                              key={agenda.agenda_id}
+                              agenda={agenda}
+                              from={{
+                                label: `${candidate.name} 후보의 공약 ‘${pledge.title}’에서 왔어요`,
+                                path: `${location.pathname}?tab=pledges`,
+                              }}
+                            />
+                          ))}
                         </div>
                       </div>
                     </motion.div>

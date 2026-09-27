@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Shield, Users, FileText, BarChart3, MessageSquare, 
   ChevronRight, Settings, LogOut, ArrowLeft, Activity,
-  LogIn, Trophy, Target, UserPlus, UserCheck
+  LogIn, Trophy, Target, UserPlus, UserCheck, MessagesSquare
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -188,6 +188,7 @@ export function AdminDashboard() {
     { icon: Users, label: '사용자 관리', description: '회원 목록 및 권한 관리', path: '/admin/users' },
     { icon: FileText, label: '콘텐츠 관리', description: '후보자, 뉴스, 퀴즈 관리', path: '/admin/content' },
     { icon: MessageSquare, label: '신고/문의 관리', description: '사용자 신고 및 문의 처리', path: '/admin/reports' },
+    { icon: MessagesSquare, label: '공론 의제 관리', description: '의제·쟁점 작성, 공약 연결, 한 줄 의견 숨김', path: '/admin/agendas' },
     { icon: Settings, label: '시스템 설정', description: '앱 설정 및 환경 구성', path: '/admin/settings' },
     { icon: BarChart3, label: '기획서', description: '앱 기능 명세 확인', path: '/app-info' },
   ];

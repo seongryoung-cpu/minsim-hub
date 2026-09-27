@@ -10,6 +10,7 @@ import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/Can
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
+import { FeaturedAgendaBanner } from '@/components/gonglon/FeaturedAgendaBanner';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { getElectionStatus, getMetropolitanTitle, formatDDay } from '@/types/election';
 import { useCandidates, candidatePath } from '@/hooks/useCandidates';
@@ -134,6 +135,9 @@ export function Home({ region, onRegionChange }: HomeProps) {
 
         {/* Mobile Layout */}
         <div className="lg:hidden space-y-5">
+          {/* 이번 주 공론 (공론 공개 + 홈 배너 지정 의제가 있을 때만) */}
+          <FeaturedAgendaBanner sido={region.sido} />
+
           {/* Election Timeline */}
           <DashboardSection
             title={`${metropolitanTitle} 선거 진행 현황`}
@@ -246,6 +250,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
           
           {/* Left Column - Main Content */}
           <div className="lg:col-span-8 space-y-6">
+            <FeaturedAgendaBanner sido={region.sido} />
+
             {/* Election Timeline */}
             <DashboardSection
               title={`${metropolitanTitle} 선거 진행 현황`}

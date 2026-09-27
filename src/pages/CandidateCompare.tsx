@@ -1,11 +1,13 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, User, Check, X, Scale, FileText, Briefcase, Calendar, Building2, Loader2 } from 'lucide-react';
 import type { Candidate } from '@/types/election';
 import type { Region } from '@/types/region';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCandidates } from '@/hooks/useCandidates';
+import { useGonglonAccess, useLinkedAgendas, type LinkedAgenda } from '@/hooks/useAgendas';
+import { AgendaLinkRow } from '@/components/gonglon/AgendaLinkRow';
 
 interface CandidateCompareProps {
   region: Region;
@@ -13,7 +15,16 @@ interface CandidateCompareProps {
 
 export function CandidateCompare({ region }: CandidateCompareProps) {
   const navigate = useNavigate();
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // 선택한 후보를 주소(?ids=)에 담아, 공론 화면에서 '돌아가기'로 와도 비교가 유지되게
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    () => searchParams.get('ids')?.split(',').filter(Boolean).slice(0, 4) ?? [],
+  );
+  useEffect(() => {
+    const next = selectedIds.join(',');
+    if ((searchParams.get('ids') ?? '') === next) return;
+    setSearchParams(next ? { ids: next } : {}, { replace: true });
+  }, [selectedIds, searchParams, setSearchParams]);
   const [activeTab, setActiveTab] = useState<'pledges' | 'careers'>('pledges');
 
   // Fetch candidates from user's region only
@@ -58,6 +69,42 @@ export function CandidateCompare({ region }: CandidateCompareProps) {
     });
     return Array.from(categories);
   }, [selectedCandidates]);
+
+  // 공론 연결 행: 카테고리별로, 화면에 보이는 공약(후보마다 그 카테고리의 첫 공약)에 연결된 의제.
+  // 중복 제거 후 진행 중 먼저·가나다순으로 최대 2개 — 어떤 후보를 먼저 골랐는지에 따라 달라지지 않게.
+  const gonglon = useGonglonAccess();
+  const shownPledges = useMemo(
+    () =>
+      allCategories.flatMap((category) =>
+        selectedCandidates
+          .map((c) => c.pledges?.find((p) => p.category === category))
+          .filter((p): p is NonNullable<typeof p> => !!p),
+      ),
+    [allCategories, selectedCandidates],
+  );
+  const { data: linkedAgendas } = useLinkedAgendas({
+    pledgeIds: gonglon.allowed ? shownPledges.map((p) => p.id) : [],
+  });
+  const agendasByCategory = useMemo(() => {
+    const byCategory = new Map<string, LinkedAgenda[]>();
+    if (!linkedAgendas) return byCategory;
+    shownPledges.forEach((p) => {
+      const list = byCategory.get(p.category) ?? [];
+      linkedAgendas.get(p.id)?.forEach((a) => {
+        if (!list.some((x) => x.agenda_id === a.agenda_id)) list.push(a);
+      });
+      byCategory.set(p.category, list);
+    });
+    byCategory.forEach((list, category) =>
+      byCategory.set(
+        category,
+        [...list]
+          .sort((a, b) => Number(b.status === 'open') - Number(a.status === 'open') || a.title.localeCompare(b.title, 'ko'))
+          .slice(0, 2),
+      ),
+    );
+    return byCategory;
+  }, [linkedAgendas, shownPledges]);
 
   if (isLoading) {
     return (
@@ -371,6 +418,21 @@ export function CandidateCompare({ region }: CandidateCompareProps) {
                           })}
                         </div>
                       </div>
+
+                      {(agendasByCategory.get(category)?.length ?? 0) > 0 && (
+                        <div className="space-y-2 border-t border-border/50 p-3">
+                          {agendasByCategory.get(category)!.map((agenda) => (
+                            <AgendaLinkRow
+                              key={agenda.agenda_id}
+                              agenda={agenda}
+                              from={{
+                                label: `후보 비교의 ‘${category}’ 공약에서 왔어요`,
+                                path: `/compare?ids=${selectedIds.join(',')}`,
+                              }}
+                            />
+                          ))}
+                        </div>
+                      )}
                     </motion.div>
                   ))}
 

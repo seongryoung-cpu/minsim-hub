@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useGonglonAccess } from '@/hooks/useAgendas';
 import { getSidoEmoji, type Region } from '@/types/region';
 
 interface NavItem {
@@ -11,12 +12,13 @@ interface NavItem {
   label: string;
   icon: typeof Home;
   path: string;
-  adminOnly?: boolean;
+  /** 공론: 관리자 설정 '공론 공개'가 켜졌거나 관리자일 때만 */
+  gonglon?: boolean;
 }
 
 const allNavItems: NavItem[] = [
   { id: 'home', label: '홈', icon: Home, path: '/' },
-  { id: 'gonglon', label: '공론', icon: MessageSquare, path: '/gonglon', adminOnly: true },
+  { id: 'gonglon', label: '공론', icon: MessageSquare, path: '/gonglon', gonglon: true },
   { id: 'election', label: '선거', icon: Vote, path: '/election' },
   { id: 'my', label: '마이페이지', icon: User, path: '/my' },
 ];
@@ -34,7 +36,8 @@ export function DesktopNavbar({ region, onRegionClick }: DesktopNavbarProps) {
   const { isAdmin } = useAdmin();
 
   // Filter nav items based on admin status
-  const navItems = allNavItems.filter(item => !item.adminOnly || isAdmin);
+  const gonglon = useGonglonAccess();
+  const navItems = allNavItems.filter(item => !item.gonglon || gonglon.allowed);
 
   const sidoEmoji = region ? getSidoEmoji(region.sido) : '📍';
 

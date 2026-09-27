@@ -1,11 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useGonglonAccess } from '@/hooks/useAgendas';
 
 export function DesktopFooter() {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
   const { isAdmin } = useAdmin();
+  const gonglon = useGonglonAccess();
 
   return (
     <footer className="hidden lg:block bg-card border-t border-border">
@@ -56,8 +58,8 @@ export function DesktopFooter() {
                   선거 정보
                 </button>
               </li>
-              {/* 공론 허브 공개 전까지 관리자만 (BottomTabBar와 동일) */}
-              {isAdmin && (
+              {/* 공론: 공개 전에는 관리자만 (BottomTabBar와 동일) */}
+              {gonglon.allowed && (
                 <li>
                   <button 
                     onClick={() => navigate('/gonglon')} 
