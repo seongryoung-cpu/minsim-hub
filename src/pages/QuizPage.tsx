@@ -87,7 +87,7 @@ export function QuizPage() {
 
     // 연습 모드 또는 중간 문제: 단일 채점만
     const { supabase } = await import('@/integrations/supabase/client');
-    const { data, error } = await (supabase.rpc as unknown as (fn: string, args: object) => Promise<{ data: unknown; error: Error | null }>)('submit_quiz_answer', {
+    const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: object) => Promise<{ data: unknown; error: Error | null }> }).rpc('submit_quiz_answer', {
       p_question_id: currentQuestion.id,
       p_selected_index: selectedIndex,
     });

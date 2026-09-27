@@ -97,7 +97,7 @@ export type SubmitDailyQuizResponse = {
 export async function submitDailyQuiz(
   answers: QuizAnswerInput[]
 ): Promise<SubmitDailyQuizResponse> {
-  const { data, error } = await (supabase.rpc as unknown as (fn: string, args: object) => Promise<{ data: unknown; error: Error | null }>)('submit_daily_quiz', {
+  const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: object) => Promise<{ data: unknown; error: Error | null }> }).rpc('submit_daily_quiz', {
     p_answers: answers,
   });
 
