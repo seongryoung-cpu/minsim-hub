@@ -10,6 +10,7 @@ import { Home } from '@/pages/Home';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdmin } from '@/hooks/useAdmin';
+import NotFound from '@/pages/NotFound';
 import type { Region } from '@/types/region';
 
 // 페이지별 코드 분할: 첫 화면(Home) 외에는 해당 페이지에 들어갈 때 불러옴
@@ -148,6 +149,9 @@ function Index() {
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
+
+          {/* 404: 알 수 없는 경로 */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
       </Suspense>
