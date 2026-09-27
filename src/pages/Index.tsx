@@ -153,7 +153,7 @@ function Index() {
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
 
-          {/* 없는 주소 — 예전엔 빈 화면 */}
+          {/* 404: 알 수 없는 경로 */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </AnimatePresence>
