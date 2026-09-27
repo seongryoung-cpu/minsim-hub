@@ -1,22 +1,19 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
+  const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
-        </a>
-      </div>
+    <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 p-6 text-center">
+      <p className="text-4xl font-bold text-foreground">404</p>
+      <p className="text-base text-muted-foreground">찾는 화면이 없어요. 주소가 바뀌었거나 삭제되었을 수 있어요.</p>
+      <button
+        type="button"
+        onClick={() => navigate('/', { replace: true })}
+        className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-medium"
+      >
+        홈으로 가기
+      </button>
     </div>
   );
 };

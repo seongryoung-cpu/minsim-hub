@@ -9,6 +9,8 @@ import { useQuizStats } from '@/hooks/useQuizStats';
 import { useDailyQuiz, submitDailyQuiz } from '@/hooks/useQuizQuestions';
 import type { QuizAnswerInput, QuizAnswerResult } from '@/hooks/useQuizQuestions';
 import { logActivity } from '@/lib/activityLogger';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 type QuizPhase = 'intro' | 'playing' | 'result';
 
@@ -44,6 +46,31 @@ export function QuizPage() {
    * - 문제별로 서버에 채점 요청
    * - 마지막 문제면 전체 제출(submit_daily_quiz)로 stats까지 저장
    */
+  // 문항별 채점 결과를 모아 결과 화면 집계에 쓴다 (연습 모드·비로그인도 정답 수가 보이게)
+  const recordResult = useCallback((result: QuizAnswerResult) => {
+    if (result.is_correct) {
+      setCorrectCount(prev => prev + 1);
+      setEarnedPoints(prev => prev + (result.points ?? 0));
+    }
+  }, []);
+
+  const gradeSingle = useCallback(async (questionId: string, selectedIndex: number): Promise<QuizAnswerResult> => {
+    const { data, error } = await supabase.rpc('submit_quiz_answer', {
+      p_question_id: questionId,
+      p_selected_index: selectedIndex,
+    });
+    if (error) throw error;
+    const result = data as QuizAnswerResult & { error?: string };
+    if (result?.error) throw new Error(result.error);
+    return result;
+  }, []);
+
+  /**
+   * QuizCard의 onAnswer prop: (selectedIndex) => Promise<QuizAnswerResult>
+   * - 중간 문항: submit_quiz_answer로 단건 채점
+   * - 마지막 문항(정식 모드): submit_daily_quiz로 전체 제출 + stats 저장
+   * - 다음 문항 이동은 사용자가 해설을 읽고 '다음'을 누를 때(handleNext) 한다
+   */
   const handleAnswer = useCallback(async (selectedIndex: number): Promise<QuizAnswerResult> => {
     if (!currentQuestion || !todayQuestions) {
       throw new Error('No current question');
@@ -53,58 +80,59 @@ export function QuizPage() {
       question_id: currentQuestion.id,
       selected_index: selectedIndex,
     };
-
-    const newAccumulated = [...accumulatedAnswers.current, answer];
-    accumulatedAnswers.current = newAccumulated;
+    accumulatedAnswers.current = [...accumulatedAnswers.current, answer];
 
     const isLast = currentQuestionIndex === todayQuestions.length - 1;
 
-    // 마지막 문제: 전체 제출 (채점 + stats 저장)
     if (isLast && !isPracticeMode) {
-      const response = await submitDailyQuiz(newAccumulated);
+      const response = await submitDailyQuiz(accumulatedAnswers.current);
 
-      const thisResult = response.results.find(r => r.question_id === currentQuestion.id);
+      // 다른 기기·탭에서 이미 제출한 경우: 서버는 results 없이 error만 준다 → 연습 모드로 전환
+      if (response.error === 'already_submitted') {
+        setIsPracticeMode(true);
+        toast.info(response.message ?? '오늘은 이미 퀴즈를 완료했어요. 이번 결과는 연습으로 처리돼요.');
+        const single = await gradeSingle(currentQuestion.id, selectedIndex);
+        recordResult(single);
+        return single;
+      }
+
+      const thisResult = response.results?.find(r => r.question_id === currentQuestion.id);
       if (!thisResult) throw new Error('Result not found');
 
-      setEarnedPoints(response.total_points ?? 0);
-      setCorrectCount(response.correct_count ?? 0);
+      // 서버 집계값을 최종값으로 사용 (비로그인은 saved=false라 집계값이 없어 results로 계산)
+      const results = response.results ?? [];
+      setCorrectCount(response.correct_count ?? results.filter(r => r.is_correct).length);
+      setEarnedPoints(response.total_points ?? results.reduce((sum, r) => sum + (r.points ?? 0), 0));
 
-      logActivity({
-        activityType: 'quiz_complete',
-        description: `퀴즈 완료: ${response.correct_count}/${response.total_count} 정답`,
-        metadata: {
-          correctCount: response.correct_count,
-          totalQuestions: response.total_count,
-          totalPoints: response.total_points,
-        },
-      });
-
-      // 결과 화면으로 전환 (약간의 딜레이로 애니메이션 확인 가능)
-      setTimeout(() => setPhase('result'), 800);
+      if (response.saved) {
+        logActivity({
+          activityType: 'quiz_complete',
+          description: `퀴즈 완료: ${response.correct_count}/${response.total_count} 정답`,
+          metadata: {
+            correctCount: response.correct_count,
+            totalQuestions: response.total_count,
+            totalPoints: response.total_points,
+          },
+        });
+      }
 
       return thisResult;
     }
 
-    // 연습 모드 또는 중간 문제: 단일 채점만
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: object) => Promise<{ data: unknown; error: Error | null }> }).rpc('submit_quiz_answer', {
-      p_question_id: currentQuestion.id,
-      p_selected_index: selectedIndex,
-    });
+    const result = await gradeSingle(currentQuestion.id, selectedIndex);
+    // 정식 모드 중간 문항은 마지막 전체 제출 때 서버 집계로 덮어쓰므로 여기서도 누적해도 안전
+    recordResult(result);
+    return result;
+  }, [currentQuestion, currentQuestionIndex, todayQuestions, isPracticeMode, gradeSingle, recordResult]);
 
-    if (error) throw error;
-
-    const result = data as QuizAnswerResult;
-
-    if (isLast) {
-      // 연습 모드 마지막 문제 — stats 없이 결과 화면으로
-      setTimeout(() => setPhase('result'), 800);
+  const handleNext = useCallback(() => {
+    if (!todayQuestions) return;
+    if (currentQuestionIndex >= todayQuestions.length - 1) {
+      setPhase('result');
     } else {
       setCurrentQuestionIndex(prev => prev + 1);
     }
-
-    return result;
-  }, [currentQuestion, currentQuestionIndex, todayQuestions, isPracticeMode]);
+  }, [currentQuestionIndex, todayQuestions]);
 
   const handlePlayAgain = useCallback(() => {
     setPhase('intro');
@@ -187,6 +215,7 @@ export function QuizPage() {
               questionNumber={currentQuestionIndex + 1}
               totalQuestions={todayQuestions.length}
               onAnswer={handleAnswer}
+              onNext={handleNext}
             />
           </motion.div>
         )}

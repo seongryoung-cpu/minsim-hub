@@ -20,8 +20,9 @@ export function BottomTabBar() {
 
   const allTabs: TabItem[] = [
     { id: 'home', label: settings?.app_name || '홈', icon: 'logo', path: '/' },
+    // 공론 허브: 화면(허브 목록·의제 상세)이 완성될 때까지 관리자에게만 노출. 공개 시 adminOnly 제거.
+    { id: 'gonglon', label: '공론', icon: MessageSquare, path: '/gonglon', adminOnly: true },
     { id: 'election', label: '선거', icon: Vote, path: '/election' },
-    { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion', adminOnly: true },
     { id: 'my', label: '마이', icon: User, path: '/my' },
   ];
 

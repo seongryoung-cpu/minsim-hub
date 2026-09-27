@@ -16,8 +16,8 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { id: 'home', label: '홈', icon: Home, path: '/' },
+  { id: 'gonglon', label: '공론', icon: MessageSquare, path: '/gonglon', adminOnly: true },
   { id: 'election', label: '선거', icon: Vote, path: '/election' },
-  { id: 'discussion', label: '토론', icon: MessageSquare, path: '/discussion', adminOnly: true },
   { id: 'my', label: '마이페이지', icon: User, path: '/my' },
 ];
 

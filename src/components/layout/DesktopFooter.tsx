@@ -56,14 +56,17 @@ export function DesktopFooter() {
                   선거 정보
                 </button>
               </li>
-              <li>
-                <button 
-                  onClick={() => navigate('/discussion')} 
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  토론 참여
-                </button>
-              </li>
+              {/* 공론 허브 공개 전까지 관리자만 (BottomTabBar와 동일) */}
+              {isAdmin && (
+                <li>
+                  <button 
+                    onClick={() => navigate('/gonglon')} 
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    공론 참여
+                  </button>
+                </li>
+              )}
               <li>
                 <button 
                   onClick={() => navigate('/my')} 

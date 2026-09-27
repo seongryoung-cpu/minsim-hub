@@ -47,18 +47,27 @@ export function PolicyMatchGame() {
 
   // DB 데이터가 있으면 사용, 없으면 폴백 데이터 사용
   const policyCards: PolicyCard[] = useMemo(() => {
-    if (dbPolicyCards && dbPolicyCards.length > 0) {
-      return dbPolicyCards;
-    }
-    // 폴백: 하드코딩된 데이터 사용
-    return FALLBACK_POLICY_CARDS;
-  }, [dbPolicyCards]);
+    const source = dbPolicyCards && dbPolicyCards.length > 0
+      ? dbPolicyCards
+      : FALLBACK_POLICY_CARDS; // 폴백: 하드코딩된 데이터 사용
+
+    // 후보 식별자는 UUID로 통일. 폴백 카드처럼 slug로 적힌 정렬값은 UUID로 바꿔 둔다.
+    const slugToId = new Map((dbCandidates || []).map(c => [c.slug, c.id]));
+    return source.map(card => ({
+      ...card,
+      candidateAlignment: card.candidateAlignment.map(a => ({
+        ...a,
+        candidateId: slugToId.get(a.candidateId) ?? a.candidateId,
+      })),
+    }));
+  }, [dbPolicyCards, dbCandidates]);
 
   // 후보자 데이터 변환
   const candidates = useMemo(() => {
     if (dbCandidates && dbCandidates.length > 0) {
       return dbCandidates.map(c => ({
         id: c.id,
+        slug: c.slug,
         name: c.name,
         party: c.party,
         partyColor: c.partyColor,

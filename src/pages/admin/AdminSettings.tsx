@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash, ImageIcon, Upload, X, MousePointer } from 'lucide-react';
+import { ArrowLeft, Settings, Save, Loader2, Mail, Phone, Twitter, Facebook, Instagram, Youtube, FileText, Shield, Info, Tag, Hash, ImageIcon, Upload, X, MousePointer, Vote } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +23,8 @@ interface AppSettings {
   link_privacy: string;
   link_terms: string;
   enable_hover_animation: string;
+  election_quiet_mode: string;
+  election_hide_link_cards: string;
 }
 
 export function AdminSettings() {
@@ -46,6 +48,8 @@ export function AdminSettings() {
     link_privacy: '',
     link_terms: '',
     enable_hover_animation: 'true',
+    election_quiet_mode: 'false',
+    election_hide_link_cards: 'false',
   });
 
   useEffect(() => {
@@ -84,6 +88,8 @@ export function AdminSettings() {
           link_privacy: settingsMap.link_privacy || '',
           link_terms: settingsMap.link_terms || '',
           enable_hover_animation: settingsMap.enable_hover_animation ?? 'true',
+          election_quiet_mode: settingsMap.election_quiet_mode ?? 'false',
+          election_hide_link_cards: settingsMap.election_hide_link_cards ?? 'false',
         });
       } catch (error) {
         console.error('Failed to fetch settings:', error);
@@ -216,6 +222,8 @@ export function AdminSettings() {
           link_privacy: settingsMap.link_privacy || '',
           link_terms: settingsMap.link_terms || '',
           enable_hover_animation: settingsMap.enable_hover_animation ?? 'true',
+          election_quiet_mode: settingsMap.election_quiet_mode ?? 'false',
+          election_hide_link_cards: settingsMap.election_hide_link_cards ?? 'false',
         });
       }
     } catch (error) {
@@ -373,6 +381,52 @@ export function AdminSettings() {
                   }))}
                 />
               </motion.div>
+            </div>
+          </motion.div>
+
+          {/* 선거 기간 설정 — 공론 연결 카드 */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            className="bg-card rounded-xl p-4 md:p-6 shadow-app-md space-y-4 md:col-span-2"
+          >
+            <div className="flex items-center gap-2">
+              <Vote size={20} className="text-primary" />
+              <h2 className="font-semibold text-lg">선거 기간 설정</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              후보 공약·정책 비교 화면에 붙는 공론 연결 카드의 동작입니다. 예비후보 등록일부터 선거일까지 켜 두는 것을 권장합니다.
+              공직선거법 제108조(여론조사 결과 공표) 적용 여부는 선관위 질의 후 확정하세요.
+            </p>
+            <div className="space-y-3">
+              {([
+                {
+                  key: 'election_quiet_mode' as const,
+                  label: '조용한 모드',
+                  desc: '연결 카드에서 첫 반응(동의·비동의·유보)을 받지 않고 참여자 수와 "의제 보기"만 보여 줍니다.',
+                },
+                {
+                  key: 'election_hide_link_cards' as const,
+                  label: '연결 카드 숨김',
+                  desc: '후보·정책 화면에서 공론 연결 카드를 아예 표시하지 않습니다. 공론 허브는 그대로 열려 있습니다.',
+                },
+              ]).map(item => (
+                <div key={item.key} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-secondary/30">
+                  <div>
+                    <label htmlFor={item.key} className="text-sm font-medium">{item.label}</label>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <Switch
+                    id={item.key}
+                    checked={settings[item.key] === 'true'}
+                    onCheckedChange={(checked) => setSettings(prev => ({
+                      ...prev,
+                      [item.key]: checked ? 'true' : 'false',
+                    }))}
+                  />
+                </div>
+              ))}
             </div>
           </motion.div>
 

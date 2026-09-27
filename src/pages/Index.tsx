@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppContainer } from '@/components/layout/AppContainer';
 import { BottomTabBar } from '@/components/layout/BottomTabBar';
@@ -7,10 +7,11 @@ import { SplashScreen } from '@/components/splash/SplashScreen';
 import { OnboardingScreen } from '@/components/onboarding/OnboardingScreen';
 import { RegionSheet } from '@/components/region/RegionSheet';
 import { Home } from '@/pages/Home';
+import NotFound from '@/pages/NotFound';
+import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdmin } from '@/hooks/useAdmin';
-import NotFound from '@/pages/NotFound';
 import type { Region } from '@/types/region';
 
 // 페이지별 코드 분할: 첫 화면(Home) 외에는 해당 페이지에 들어갈 때 불러옴
@@ -112,6 +113,7 @@ function Index() {
       region={currentRegion} 
       onRegionClick={() => setIsRegionSheetOpen(true)}
     >
+      <ErrorBoundary resetKey={location.pathname}>
       <Suspense fallback={<PageFallback />}>
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
@@ -122,7 +124,8 @@ function Index() {
             }
           />
           <Route path="/election" element={<Election />} />
-          {isAdmin && <Route path="/discussion" element={<Discussion />} />}
+          {isAdmin && <Route path="/gonglon" element={<Discussion />} />}
+          <Route path="/discussion" element={<Navigate to="/gonglon" replace />} />
           <Route
             path="/my"
             element={
@@ -155,6 +158,7 @@ function Index() {
         </Routes>
       </AnimatePresence>
       </Suspense>
+      </ErrorBoundary>
       {!isAdminRoute && <BottomTabBar />}
 
       <RegionSheet

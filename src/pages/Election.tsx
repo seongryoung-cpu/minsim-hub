@@ -6,7 +6,7 @@ import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
 import { useRegion } from '@/hooks/useRegion';
-import { useCandidates } from '@/hooks/useCandidates';
+import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import { 
   calculateDDay, 
   calculateDDayTo,
@@ -153,7 +153,7 @@ export function Election() {
                   key={candidate.id}
                   candidate={candidate}
                   index={index}
-                  onPress={() => navigate(`/candidate/${candidate.id}`)}
+                  onPress={() => navigate(candidatePath(candidate))}
                 />
               ))
             ) : (

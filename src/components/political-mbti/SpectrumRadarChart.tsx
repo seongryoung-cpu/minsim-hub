@@ -206,9 +206,10 @@ export function DimensionBar({ dimension, score, uncertainty, animated = true, d
       </div>
       
       <div className="flex justify-between text-[10px] text-muted-foreground">
-        <span>{isLeft ? percentage : 100 - percentage}%</span>
+        {/* percentage = 오른쪽 성향 비율. 왼쪽은 항상 100 - percentage (예전엔 isLeft일 때 좌우가 뒤바뀜) */}
+        <span>{100 - percentage}%</span>
         <span>{uncertainty > 0.5 ? '낮은 확신' : uncertainty > 0.3 ? '중간 확신' : '높은 확신'}</span>
-        <span>{isLeft ? 100 - percentage : percentage}%</span>
+        <span>{percentage}%</span>
       </div>
     </div>
   );

@@ -1353,7 +1353,7 @@ export type Database = {
           hold: number
           id: string
           is_mine: boolean
-          my_reaction: string
+          my_reaction: string | null
         }[]
       }
       get_agenda_summary: { Args: { p_agenda_id: string }; Returns: Json }
@@ -1361,12 +1361,12 @@ export type Database = {
         Args: { p_pledge_ids?: string[]; p_policy_card_ids?: string[] }
         Returns: {
           agenda_id: string
-          closes_at: string
-          my_final: string
-          my_first: string
+          closes_at: string | null
+          my_final: string | null
+          my_first: string | null
           participants: number
-          pledge_id: string
-          policy_card_id: string
+          pledge_id: string | null
+          policy_card_id: string | null
           quiet_mode: boolean
           status: string
           title: string
