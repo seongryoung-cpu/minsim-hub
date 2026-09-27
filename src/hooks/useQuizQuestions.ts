@@ -28,7 +28,7 @@ export function useQuizQuestions(count: number = 5) {
     queryKey: ['quiz-questions', count],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('quiz_questions_public')
+        .from('quiz_questions_public' as 'quiz_questions')
         .select('id, category, question, options, difficulty, points')
         .limit(count * 2);
 
@@ -48,7 +48,7 @@ export function useDailyQuiz() {
       const today = new Date().toISOString().split('T')[0];
 
       const { data, error } = await supabase
-        .from('quiz_questions_public')
+        .from('quiz_questions_public' as 'quiz_questions')
         .select('id, category, question, options, difficulty, points');
 
       if (error) throw error;
@@ -97,7 +97,7 @@ export type SubmitDailyQuizResponse = {
 export async function submitDailyQuiz(
   answers: QuizAnswerInput[]
 ): Promise<SubmitDailyQuizResponse> {
-  const { data, error } = await supabase.rpc('submit_daily_quiz', {
+  const { data, error } = await (supabase as unknown as { rpc: (fn: string, args: object) => Promise<{ data: unknown; error: Error | null }> }).rpc('submit_daily_quiz', {
     p_answers: answers,
   });
 

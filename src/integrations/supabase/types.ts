@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -38,6 +38,211 @@ export type Database = {
           id?: string
           metadata?: Json | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      agenda_issues: {
+        Row: {
+          agenda_id: string
+          body: string
+          created_at: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          agenda_id: string
+          body?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          agenda_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_issues_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_links: {
+        Row: {
+          agenda_id: string
+          created_at: string
+          id: string
+          pledge_id: string | null
+          policy_card_id: string | null
+          sort_order: number
+        }
+        Insert: {
+          agenda_id: string
+          created_at?: string
+          id?: string
+          pledge_id?: string | null
+          policy_card_id?: string | null
+          sort_order?: number
+        }
+        Update: {
+          agenda_id?: string
+          created_at?: string
+          id?: string
+          pledge_id?: string | null
+          policy_card_id?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_links_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_links_pledge_id_fkey"
+            columns: ["pledge_id"]
+            isOneToOne: false
+            referencedRelation: "candidate_pledges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_links_policy_card_id_fkey"
+            columns: ["policy_card_id"]
+            isOneToOne: false
+            referencedRelation: "policy_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_statements: {
+        Row: {
+          agenda_id: string
+          body: string
+          created_at: string
+          id: string
+          is_hidden: boolean
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_statements_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_votes: {
+        Row: {
+          agenda_id: string
+          choice: string
+          created_at: string
+          id: string
+          source: string
+          stage: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          choice: string
+          created_at?: string
+          id?: string
+          source?: string
+          stage: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          choice?: string
+          created_at?: string
+          id?: string
+          source?: string
+          stage?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_votes_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agendas: {
+        Row: {
+          background: string
+          closes_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_featured: boolean
+          opens_at: string | null
+          region_sido: string | null
+          status: string
+          summary: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          background?: string
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_featured?: boolean
+          opens_at?: string | null
+          region_sido?: string | null
+          status?: string
+          summary?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          background?: string
+          closes_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_featured?: boolean
+          opens_at?: string | null
+          region_sido?: string | null
+          status?: string
+          summary?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -928,6 +1133,38 @@ export type Database = {
         }
         Relationships: []
       }
+      statement_reactions: {
+        Row: {
+          choice: string
+          created_at: string
+          statement_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          choice: string
+          created_at?: string
+          statement_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          choice?: string
+          created_at?: string
+          statement_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "statement_reactions_statement_id_fkey"
+            columns: ["statement_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_statements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_followed_candidates: {
         Row: {
           candidate_id: string
@@ -1044,8 +1281,97 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_questions_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          difficulty: string | null
+          id: string | null
+          is_active: boolean | null
+          options: Json | null
+          points: number | null
+          question: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          options?: Json | null
+          points?: number | null
+          question?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          options?: Json | null
+          points?: number | null
+          question?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      app_setting_on: { Args: { p_key: string }; Returns: boolean }
+      cast_agenda_vote: {
+        Args: {
+          p_agenda_id: string
+          p_choice: string
+          p_source?: string
+          p_stage: string
+        }
+        Returns: Json
+      }
+      get_agenda_related_pledges: {
+        Args: { p_agenda_id: string }
+        Returns: {
+          candidate_id: string
+          candidate_name: string
+          candidate_slug: string
+          party: string
+          pledge_description: string
+          pledge_id: string
+          pledge_title: string
+        }[]
+      }
+      get_agenda_statements: {
+        Args: {
+          p_agenda_id: string
+          p_limit?: number
+          p_offset?: number
+          p_sort?: string
+        }
+        Returns: {
+          agree: number
+          body: string
+          created_at: string
+          disagree: number
+          hold: number
+          id: string
+          is_mine: boolean
+          my_reaction: string
+        }[]
+      }
+      get_agenda_summary: { Args: { p_agenda_id: string }; Returns: Json }
+      get_linked_agendas: {
+        Args: { p_pledge_ids?: string[]; p_policy_card_ids?: string[] }
+        Returns: {
+          agenda_id: string
+          closes_at: string
+          my_final: string
+          my_first: string
+          participants: number
+          pledge_id: string
+          policy_card_id: string
+          quiet_mode: boolean
+          status: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1054,6 +1380,27 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_restricted_api_user: { Args: never; Returns: boolean }
+      leaderboard_rows: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          correct_answers: number
+          current_streak: number
+          display_name: string
+          id: string
+          longest_streak: number
+          region_sido: string
+          total_points: number
+          total_quizzes: number
+          updated_at: string
+        }[]
+      }
+      submit_daily_quiz: { Args: { p_answers: Json }; Returns: Json }
+      submit_quiz_answer: {
+        Args: { p_question_id: string; p_selected_index: number }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
@@ -1073,12 +1420,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1102,11 +1449,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1127,11 +1474,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1152,11 +1499,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1169,11 +1516,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

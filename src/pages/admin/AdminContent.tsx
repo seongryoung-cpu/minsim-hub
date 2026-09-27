@@ -13,7 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PledgeCareerManager } from '@/components/admin/PledgeCareerManager';
 import { CandidateImageUpload } from '@/components/admin/CandidateImageUpload';
-import { NewsArticleDialog } from '@/components/admin/NewsArticleDialog';
+import { NewsArticleDialog, type NewsArticleFormData } from '@/components/admin/NewsArticleDialog';
+import type { Tables } from '@/integrations/supabase/types';
 import { ImageMigrationTool } from '@/components/admin/ImageMigrationTool';
 
 type ContentTab = 'candidates' | 'news' | 'quiz' | 'images';
@@ -386,20 +387,9 @@ const NEWS_CATEGORIES = [
   { value: 'general', label: '일반' },
 ];
 
-type NewsArticle = {
-  id: string;
-  title: string;
-  summary: string | null;
-  content: string | null;
-  category: string | null;
-  source_url: string | null;
-  image_url: string | null;
-  published_at: string | null;
-  candidate_id: string | null;
-  [key: string]: unknown;
-};
+type NewsArticle = Tables<'news_articles'>;
 
-type NewsArticleInput = Omit<NewsArticle, 'id'>;
+type NewsArticleInput = NewsArticleFormData;
 
 function NewsManager() {
   const queryClient = useQueryClient();
@@ -413,7 +403,7 @@ function NewsManager() {
     queryFn: async () => {
       const { data, error } = await supabase.from('news_articles').select('*').order('published_at', { ascending: false });
       if (error) throw error;
-      return data as NewsArticle[];
+      return data;
     },
   });
 
@@ -426,7 +416,7 @@ function NewsManager() {
   });
 
   const updateNews = useMutation({
-    mutationFn: async ({ id, ...data }: NewsArticle) => {
+    mutationFn: async ({ id, ...data }: NewsArticleInput & { id: string }) => {
       const { error } = await supabase.from('news_articles').update(data).eq('id', id);
       if (error) throw error;
     },
