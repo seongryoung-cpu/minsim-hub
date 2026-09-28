@@ -41,7 +41,29 @@ export interface Candidate {
   slogan?: string;
   pledges?: CandidatePledge[];
   careers?: CandidateCareer[];
+  /** 선거 후 결과. 없으면 아직 입력 전 */
+  electionResult?: ElectionResult;
+  /** 본선 최종 득표율(%) */
+  voteShare?: number;
 }
+
+export type ElectionResult = 'elected' | 'defeated' | 'not_nominated';
+
+export const ELECTION_RESULT_LABELS: Record<ElectionResult, string> = {
+  elected: '당선',
+  defeated: '낙선',
+  not_nominated: '본선 미진출',
+};
+
+const RESULT_ORDER: Record<ElectionResult, number> = { elected: 0, defeated: 1, not_nominated: 2 };
+
+/** 당선 → 본선 낙선(득표율 높은 순) → 본선 미진출 → 결과 미입력 */
+export const sortByElectionResult = <T extends Pick<Candidate, 'electionResult' | 'voteShare'>>(list: T[]): T[] =>
+  [...list].sort((a, b) => {
+    const ra = a.electionResult ? RESULT_ORDER[a.electionResult] : 3;
+    const rb = b.electionResult ? RESULT_ORDER[b.electionResult] : 3;
+    return ra - rb || (b.voteShare ?? 0) - (a.voteShare ?? 0);
+  });
 
 export interface ElectionStatus {
   regionId: string;
@@ -188,8 +210,18 @@ export const getDefaultElectionStatus = (regionName: string): ElectionStatus => 
   candidates: [],
 });
 
+// 광주광역시·전라남도는 2026-07-01 전남광주통합특별시로 통합됨 (선거도 하나)
+const MERGED_ELECTION_REGION: Record<string, string> = {
+  '광주광역시': '전남광주통합특별시',
+  '전라남도': '전남광주통합특별시',
+};
+
+/** 사용자가 고른 시·도 → 후보 데이터의 region_name */
+export const electionRegionOf = (sido: string): string => MERGED_ELECTION_REGION[sido] ?? sido;
+
 // 광역단체장 타이틀 가져오기
 export const getMetropolitanTitle = (sido: string): string => {
+  if (electionRegionOf(sido) === '전남광주통합특별시') return '전남광주통합특별시장';
   if (sido === '서울특별시') return '서울시장';
   if (sido === '경기도') return '경기도지사';
   if (sido === '세종특별자치시') return '세종시장';

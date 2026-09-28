@@ -12,6 +12,7 @@ import { PageLoading } from '@/components/ui/loading-state';
 import { toast } from 'sonner';
 import { useGonglonAccess, useLinkedAgendas } from '@/hooks/useAgendas';
 import { AgendaLinkCard } from '@/components/gonglon/AgendaLinkCard';
+import { ElectionResultBadge } from '@/components/dashboard/CandidateCard';
 
 export function CandidateDetail() {
   const { id } = useParams<{ id: string }>();
@@ -170,6 +171,7 @@ export function CandidateDetail() {
                 >
                   {candidate.party}
                 </span>
+                <ElectionResultBadge candidate={candidate} size="md" />
               </div>
               <p className="text-muted-foreground mb-2">{candidate.position}</p>
               {candidate.slogan && (

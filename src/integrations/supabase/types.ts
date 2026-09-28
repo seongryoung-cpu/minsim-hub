@@ -366,6 +366,7 @@ export type Database = {
           age: number | null
           created_at: string
           education: string | null
+          election_result: string | null
           id: string
           image_url: string | null
           is_active: boolean
@@ -380,11 +381,13 @@ export type Database = {
           sort_order: number
           summary: string
           updated_at: string
+          vote_share: number | null
         }
         Insert: {
           age?: number | null
           created_at?: string
           education?: string | null
+          election_result?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -399,11 +402,13 @@ export type Database = {
           sort_order?: number
           summary: string
           updated_at?: string
+          vote_share?: number | null
         }
         Update: {
           age?: number | null
           created_at?: string
           education?: string | null
+          election_result?: string | null
           id?: string
           image_url?: string | null
           is_active?: boolean
@@ -418,6 +423,7 @@ export type Database = {
           sort_order?: number
           summary?: string
           updated_at?: string
+          vote_share?: number | null
         }
         Relationships: []
       }

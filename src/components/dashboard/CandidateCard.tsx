@@ -6,7 +6,21 @@ import { useNavigate } from 'react-router-dom';
 import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
 import { useAppSettings } from '@/hooks/useAppSettings';
 import { useToast } from '@/hooks/use-toast';
-import type { Candidate } from '@/types/election';
+import { ELECTION_RESULT_LABELS, type Candidate } from '@/types/election';
+
+/** 당선·낙선 배지 (본선 미진출·결과 미입력은 표시하지 않음) */
+export function ElectionResultBadge({ candidate, size = 'sm' }: { candidate: Candidate; size?: 'sm' | 'md' }) {
+  const r = candidate.electionResult;
+  if (r !== 'elected' && r !== 'defeated') return null;
+  const text = candidate.voteShare != null
+    ? `${ELECTION_RESULT_LABELS[r]} ${candidate.voteShare.toFixed(1)}%`
+    : ELECTION_RESULT_LABELS[r];
+  const tone = r === 'elected'
+    ? 'bg-primary text-primary-foreground'
+    : 'bg-secondary text-muted-foreground';
+  const pad = size === 'md' ? 'text-xs px-2 py-0.5' : 'text-[10px] px-1.5 py-0.5';
+  return <span className={`${pad} ${tone} rounded-full font-semibold flex-shrink-0 tabular-nums`}>{text}</span>;
+}
 
 // Reusable CandidateImage component with lazy loading and fallback
 interface CandidateImageProps {
@@ -17,7 +31,7 @@ interface CandidateImageProps {
   className?: string;
 }
 
-function CandidateImage({ src, alt, partyColor, size = 'md', className = '' }: CandidateImageProps) {
+export function CandidateImage({ src, alt, partyColor, size = 'md', className = '' }: CandidateImageProps) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -154,6 +168,7 @@ export function CandidateCard({
             >
               {candidate.party}
             </span>
+            <ElectionResultBadge candidate={candidate} />
           </div>
           <p className="text-[11px] text-muted-foreground truncate">{candidate.position}</p>
         </div>
@@ -211,10 +226,10 @@ export function CandidateCard({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <h3 className="font-bold text-foreground text-base">{candidate.name}</h3>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
+              <h3 className="font-bold text-foreground text-base whitespace-nowrap">{candidate.name}</h3>
               <span
-                className="text-[11px] px-2 py-0.5 rounded-full font-medium"
+                className="text-[11px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap"
                 style={{
                   backgroundColor: `${candidate.partyColor}15`,
                   color: candidate.partyColor,
@@ -222,6 +237,7 @@ export function CandidateCard({
               >
                 {candidate.party}
               </span>
+              <ElectionResultBadge candidate={candidate} />
             </div>
             <p className="text-xs text-muted-foreground mb-1">{candidate.position}</p>
             
@@ -307,6 +323,7 @@ export function CandidateCard({
             >
               {candidate.party}
             </span>
+            <ElectionResultBadge candidate={candidate} />
           </div>
           <p className="text-xs text-muted-foreground mb-1">{candidate.position}</p>
           

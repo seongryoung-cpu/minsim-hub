@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Candidate } from '@/types/election';
+import { electionRegionOf, type Candidate, type ElectionResult } from '@/types/election';
 
 export interface DBCandidate {
   id: string;
@@ -18,6 +18,8 @@ export interface DBCandidate {
   slogan: string | null;
   is_active: boolean;
   sort_order: number;
+  election_result: string | null;
+  vote_share: number | null;
 }
 
 export interface DBCandidatePledge {
@@ -56,6 +58,8 @@ function transformToCandidate(
     age: db.age || undefined,
     education: db.education || undefined,
     slogan: db.slogan || undefined,
+    electionResult: (db.election_result as ElectionResult | null) ?? undefined,
+    voteShare: db.vote_share != null ? Number(db.vote_share) : undefined,
     pledges: pledges.map(p => ({
       id: p.id,
       title: p.title,
@@ -82,7 +86,7 @@ export function useCandidates(regionName?: string) {
         .order('sort_order', { ascending: true });
 
       if (regionName) {
-        query = query.eq('region_name', regionName);
+        query = query.eq('region_name', electionRegionOf(regionName));
       }
 
       const { data, error } = await query;
