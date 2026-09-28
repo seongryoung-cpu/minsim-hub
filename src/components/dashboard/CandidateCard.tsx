@@ -13,7 +13,7 @@ export function ElectionResultBadge({ candidate, size = 'sm' }: { candidate: Can
   const r = candidate.electionResult;
   if (r !== 'elected' && r !== 'defeated') return null;
   const text = candidate.voteShare != null
-    ? `${ELECTION_RESULT_LABELS[r]} ${candidate.voteShare.toFixed(2)}%`
+    ? `${ELECTION_RESULT_LABELS[r]} ${candidate.voteShare.toFixed(1)}%`
     : ELECTION_RESULT_LABELS[r];
   const tone = r === 'elected'
     ? 'bg-primary text-primary-foreground'

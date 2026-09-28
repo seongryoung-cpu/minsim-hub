@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { Candidate, ElectionResult } from '@/types/election';
+import { electionRegionOf, type Candidate, type ElectionResult } from '@/types/election';
 
 export interface DBCandidate {
   id: string;
@@ -86,7 +86,7 @@ export function useCandidates(regionName?: string) {
         .order('sort_order', { ascending: true });
 
       if (regionName) {
-        query = query.eq('region_name', regionName);
+        query = query.eq('region_name', electionRegionOf(regionName));
       }
 
       const { data, error } = await query;

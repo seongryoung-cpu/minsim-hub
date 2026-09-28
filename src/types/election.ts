@@ -210,8 +210,18 @@ export const getDefaultElectionStatus = (regionName: string): ElectionStatus => 
   candidates: [],
 });
 
+// 광주광역시·전라남도는 2026-07-01 전남광주통합특별시로 통합됨 (선거도 하나)
+const MERGED_ELECTION_REGION: Record<string, string> = {
+  '광주광역시': '전남광주통합특별시',
+  '전라남도': '전남광주통합특별시',
+};
+
+/** 사용자가 고른 시·도 → 후보 데이터의 region_name */
+export const electionRegionOf = (sido: string): string => MERGED_ELECTION_REGION[sido] ?? sido;
+
 // 광역단체장 타이틀 가져오기
 export const getMetropolitanTitle = (sido: string): string => {
+  if (electionRegionOf(sido) === '전남광주통합특별시') return '전남광주통합특별시장';
   if (sido === '서울특별시') return '서울시장';
   if (sido === '경기도') return '경기도지사';
   if (sido === '세종특별자치시') return '세종시장';

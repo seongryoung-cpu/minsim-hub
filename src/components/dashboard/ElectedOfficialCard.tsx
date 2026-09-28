@@ -87,7 +87,7 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
                       style={{ width: `${c.voteShare}%`, backgroundColor: c.partyColor }}
                     />
                   </div>
-                  <span className="w-14 text-right tabular-nums text-muted-foreground">{c.voteShare!.toFixed(2)}%</span>
+                  <span className="w-14 text-right tabular-nums text-muted-foreground">{c.voteShare!.toFixed(1)}%</span>
                 </div>
               ))}
             </div>

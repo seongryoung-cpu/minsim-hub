@@ -394,7 +394,7 @@ function CandidateDialog({ candidate, isOpen, onClose, onSave }: CandidateDialog
               </select>
               <Input
                 type="number"
-                step="0.01"
+                step="0.1"
                 min={0}
                 max={100}
                 placeholder="득표율 %"
