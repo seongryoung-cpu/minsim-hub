@@ -216,7 +216,7 @@ function BackgroundSection({ agenda }: { agenda: Agenda }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 쟁점 카드 (가로로 넘겨 보기)
+// 쟁점 카드 (사실 · 찬성 · 반대 탭, 좌우 스와이프)
 // ─────────────────────────────────────────────────────────────
 const KIND_STYLE: Record<IssueKind, { card: string; chip: string }> = {
   pro: { card: 'border-primary', chip: 'bg-primary/10 text-primary' },
@@ -225,32 +225,98 @@ const KIND_STYLE: Record<IssueKind, { card: string; chip: string }> = {
   point: { card: 'border-border', chip: 'bg-secondary text-secondary-foreground' },
 };
 
-const CARD_W = 272;
-const CARD_GAP = 12;
+/** 탭 순서: 사실을 먼저 읽고 찬반으로 넘어가도록 */
+const TAB_ORDER: IssueKind[] = ['fact', 'point', 'pro', 'con'];
+const TAB_LABEL: Record<IssueKind, string> = { fact: '사실', point: '쟁점', pro: '찬성', con: '반대' };
+const TAB_ACTIVE: Record<IssueKind, string> = {
+  fact: 'text-foreground',
+  point: 'text-foreground',
+  pro: 'text-primary',
+  con: 'text-accent',
+};
 
+/** 사실 · 찬성 · 반대 탭 + 좌우 스와이프 (한 번에 한 묶음씩 전체 너비로) */
 function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
+  const groups = TAB_ORDER.map((kind) => ({
+    kind,
+    items: issues.filter((i) => (i.kind in KIND_STYLE ? i.kind : 'point') === kind),
+  })).filter((g) => g.items.length > 0);
+
   const [index, setIndex] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
 
+  const goTo = (i: number) => {
+    const el = scroller.current;
+    if (!el) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollTo({ left: i * el.clientWidth, behavior: reduce ? 'auto' : 'smooth' });
+    setIndex(i);
+  };
+
   return (
     <section className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-[17px] font-bold">쟁점 카드</h2>
-        {issues.length > 1 && (
-          <span className="text-[13px] tabular-nums text-muted-foreground" aria-live="polite">
-            {index + 1} / {issues.length}
-          </span>
-        )}
-      </div>
+      <h2 className="text-[17px] font-bold">쟁점 카드</h2>
+
+      {groups.length > 1 && (
+        <div role="tablist" aria-label="쟁점 종류" className="flex gap-0.5 rounded-xl bg-secondary p-[3px]">
+          {groups.map((g, i) => {
+            const active = i === index;
+            return (
+              <button
+                key={g.kind}
+                type="button"
+                role="tab"
+                id={`issue-tab-${g.kind}`}
+                aria-selected={active}
+                aria-controls={`issue-panel-${g.kind}`}
+                onClick={() => goTo(i)}
+                className={cn(
+                  'flex h-10 flex-1 items-center justify-center gap-1 rounded-[9px] text-[13px] font-semibold transition-colors',
+                  active ? cn('bg-card shadow-sm', TAB_ACTIVE[g.kind]) : 'text-muted-foreground',
+                )}
+              >
+                {TAB_LABEL[g.kind]}
+                <span className="text-[11px] font-medium tabular-nums opacity-70">{g.items.length}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <div
         ref={scroller}
-        onScroll={(e) => setIndex(Math.min(issues.length - 1, Math.round(e.currentTarget.scrollLeft / (CARD_W + CARD_GAP))))}
-        className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          const i = Math.round(el.scrollLeft / el.clientWidth);
+          if (i !== index) setIndex(Math.min(groups.length - 1, Math.max(0, i)));
+        }}
+        className="-mx-4 flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        {issues.map((issue) => (
-          <IssueCard key={issue.id} issue={issue} />
+        {groups.map((g) => (
+          <div
+            key={g.kind}
+            role="tabpanel"
+            id={`issue-panel-${g.kind}`}
+            aria-labelledby={`issue-tab-${g.kind}`}
+            className="flex w-full shrink-0 snap-start snap-always flex-col gap-2.5 px-4"
+          >
+            {g.items.map((issue) => (
+              <IssueCard key={issue.id} issue={issue} />
+            ))}
+          </div>
         ))}
       </div>
+
+      {groups.length > 1 && index < groups.length - 1 && (
+        <button
+          type="button"
+          onClick={() => goTo(index + 1)}
+          className="flex h-9 items-center gap-0.5 text-[13px] font-semibold text-muted-foreground"
+        >
+          다음: {TAB_LABEL[groups[index + 1].kind]}
+          <ChevronRight size={15} aria-hidden />
+        </button>
+      )}
     </section>
   );
 }
@@ -262,7 +328,7 @@ function IssueCard({ issue }: { issue: AgendaIssue }) {
 
   return (
     <article
-      className={cn('flex w-[272px] shrink-0 snap-start flex-col gap-2.5 rounded-2xl border-[1.5px] bg-card p-4', style.card)}
+      className={cn('flex flex-col gap-2.5 rounded-2xl border-[1.5px] bg-card p-4', style.card)}
     >
       <span className={cn('self-start rounded-md px-2 py-0.5 text-xs font-bold', style.chip)}>
         {ISSUE_KIND_LABELS[kind]}
