@@ -1,7 +1,7 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, ChevronRight, CornerUpLeft, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, CornerUpLeft, Share2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -253,6 +253,31 @@ function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
     setIndex(i);
   };
 
+  // 첫 방문 시 한 번만 스와이프 힌트 애니메이션
+  useEffect(() => {
+    if (groups.length <= 1) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    const HINT_KEY = 'minsim-issue-swipe-hinted';
+    if (localStorage.getItem(HINT_KEY)) return;
+    localStorage.setItem(HINT_KEY, '1');
+
+    const el = scroller.current;
+    if (!el) return;
+
+    // 600ms 후 살짝 오른쪽으로, 그 뒤 다시 처음으로 복귀
+    const t1 = setTimeout(() => {
+      el.scrollTo({ left: 60, behavior: 'smooth' });
+    }, 600);
+    const t2 = setTimeout(() => {
+      el.scrollTo({ left: 0, behavior: 'smooth' });
+    }, 1000);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  // groups.length는 마운트 시 결정되므로 exhaustive-deps 경고 무시
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <section className="space-y-3">
       <h2 className="text-[17px] font-bold">쟁점 카드</h2>
@@ -307,16 +332,6 @@ function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
         ))}
       </div>
 
-      {groups.length > 1 && index < groups.length - 1 && (
-        <button
-          type="button"
-          onClick={() => goTo(index + 1)}
-          className="flex h-9 items-center gap-0.5 text-[13px] font-semibold text-muted-foreground"
-        >
-          다음: {TAB_LABEL[groups[index + 1].kind]}
-          <ChevronRight size={15} aria-hidden />
-        </button>
-      )}
     </section>
   );
 }
