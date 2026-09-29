@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, CornerUpLeft, Share2, Trash2 } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { ArrowLeft, ChevronDown, ChevronRight, CornerUpLeft, Hand, Share2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -235,6 +235,9 @@ const TAB_ACTIVE: Record<IssueKind, string> = {
   con: 'text-accent',
 };
 
+/** 첫 방문 스와이프 가이드를 이미 봤는지 (v2: 화면 가이드로 바뀌며 키 변경) */
+const SWIPE_GUIDE_KEY = 'minsim-issue-swipe-guide-v2';
+
 /** 사실 · 찬성 · 반대 탭 + 좌우 스와이프 (한 번에 한 묶음씩 전체 너비로) */
 function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
   const groups = TAB_ORDER.map((kind) => ({
@@ -253,30 +256,57 @@ function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
     setIndex(i);
   };
 
-  // 첫 방문 시 한 번만 스와이프 힌트 애니메이션
+  // 첫 방문 가이드: 카드 영역이 화면에 들어왔을 때 한 번만 보여 줌
+  const [showGuide, setShowGuide] = useState(false);
+  const reduceMotion = useReducedMotion();
+  const cardArea = useRef<HTMLDivElement>(null);
+  const hasMultiple = groups.length > 1;
+
   useEffect(() => {
-    if (groups.length <= 1) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) return;
-    const HINT_KEY = 'minsim-issue-swipe-hinted';
-    if (localStorage.getItem(HINT_KEY)) return;
-    localStorage.setItem(HINT_KEY, '1');
+    if (!hasMultiple) return;
+    try {
+      if (localStorage.getItem(SWIPE_GUIDE_KEY)) return;
+    } catch {
+      return;
+    }
+    const target = cardArea.current;
+    if (!target) return;
 
-    const el = scroller.current;
-    if (!el) return;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        try {
+          localStorage.setItem(SWIPE_GUIDE_KEY, '1');
+        } catch {
+          /* 저장 불가 환경이면 이번만 보여 줌 */
+        }
+        setShowGuide(true);
 
-    // 600ms 후 살짝 오른쪽으로, 그 뒤 다시 처음으로 복귀
-    const t1 = setTimeout(() => {
-      el.scrollTo({ left: 60, behavior: 'smooth' });
-    }, 600);
-    const t2 = setTimeout(() => {
-      el.scrollTo({ left: 0, behavior: 'smooth' });
-    }, 1000);
+        // 카드도 살짝 밀었다가 되돌려서 "넘어간다"는 걸 같이 보여 줌
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const el = scroller.current;
+        if (!reduce && el) {
+          timers.push(setTimeout(() => el.scrollTo({ left: 56, behavior: 'smooth' }), 500));
+          timers.push(setTimeout(() => el.scrollTo({ left: 0, behavior: 'smooth' }), 900));
+        }
+        timers.push(setTimeout(() => setShowGuide(false), 3200));
+      },
+      { threshold: 0.5 },
+    );
+    observer.observe(target);
 
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  // groups.length는 마운트 시 결정되므로 exhaustive-deps 경고 무시
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, [hasMultiple]);
+
+  const nextLabels = groups
+    .slice(1)
+    .map((g) => TAB_LABEL[g.kind])
+    .join('·');
 
   return (
     <section className="space-y-3">
@@ -309,29 +339,62 @@ function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
       )}
 
       <div
-        ref={scroller}
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          const i = Math.round(el.scrollLeft / el.clientWidth);
-          if (i !== index) setIndex(Math.min(groups.length - 1, Math.max(0, i)));
-        }}
-        className="-mx-4 flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        ref={cardArea}
+        className="relative"
+        onPointerDownCapture={() => showGuide && setShowGuide(false)}
       >
-        {groups.map((g) => (
-          <div
-            key={g.kind}
-            role="tabpanel"
-            id={`issue-panel-${g.kind}`}
-            aria-labelledby={`issue-tab-${g.kind}`}
-            className="flex w-full shrink-0 snap-start snap-always flex-col gap-2.5 px-4"
-          >
-            {g.items.map((issue) => (
-              <IssueCard key={issue.id} issue={issue} />
-            ))}
-          </div>
-        ))}
-      </div>
+        <div
+          ref={scroller}
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            const i = Math.round(el.scrollLeft / el.clientWidth);
+            if (i !== index) setIndex(Math.min(groups.length - 1, Math.max(0, i)));
+          }}
+          className="-mx-4 flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {groups.map((g) => (
+            <div
+              key={g.kind}
+              role="tabpanel"
+              id={`issue-panel-${g.kind}`}
+              aria-labelledby={`issue-tab-${g.kind}`}
+              className="flex w-full shrink-0 snap-start snap-always flex-col gap-2.5 px-4"
+            >
+              {g.items.map((issue) => (
+                <IssueCard key={issue.id} issue={issue} />
+              ))}
+            </div>
+          ))}
+        </div>
 
+        <AnimatePresence>
+          {showGuide && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              role="status"
+              className="pointer-events-none absolute inset-0 flex items-start justify-center rounded-2xl bg-background/75 pt-12"
+            >
+              <div className="flex flex-col items-center gap-3 rounded-2xl bg-foreground px-5 py-4 text-background shadow-lg">
+                <motion.span
+                  aria-hidden
+                  animate={reduceMotion ? undefined : { x: [18, -18, 18] }}
+                  transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Hand size={28} />
+                </motion.span>
+                <p className="text-center text-sm font-semibold leading-snug">
+                  옆으로 넘기면
+                  <br />
+                  {nextLabels} 카드도 볼 수 있어요
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </section>
   );
 }
