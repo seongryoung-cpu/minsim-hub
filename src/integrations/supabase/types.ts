@@ -1398,6 +1398,7 @@ export type Database = {
         }[]
       }
       get_agenda_summary: { Args: { p_agenda_id: string }; Returns: Json }
+      get_daily_quiz_status: { Args: never; Returns: Json }
       get_linked_agendas: {
         Args: { p_pledge_ids?: string[]; p_policy_card_ids?: string[] }
         Returns: {

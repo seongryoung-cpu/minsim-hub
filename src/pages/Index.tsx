@@ -137,7 +137,10 @@ function Index() {
           />
           <Route path="/app-info" element={<AppInfoPage />} />
           <Route path="/candidate/:id" element={<CandidateDetail />} />
-          <Route path="/policy-match" element={<PolicyMatchGame />} />
+          <Route
+            path="/policy-match"
+            element={<PolicyMatchGame region={currentRegion} onChangeRegion={() => setIsRegionSheetOpen(true)} />}
+          />
           <Route path="/political-mbti" element={<PoliticalMbtiPage />} />
           <Route path="/news" element={<NewsFeed />} />
           <Route path="/compare" element={<CandidateCompare region={currentRegion} />} />

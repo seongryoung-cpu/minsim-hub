@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Heart, X, Loader2 } from 'lucide-react';
+import { Brain, Heart, X, Loader2, MapPin } from 'lucide-react';
 import { SwipeCard, SwipeControls } from '@/components/policy-match/SwipeCard';
 import { PreRevealScreen } from '@/components/policy-match/PreRevealScreen';
 import { RadarResultScreen } from '@/components/policy-match/RadarResultScreen';
@@ -21,16 +21,22 @@ import {
 import { usePolicyCards } from '@/hooks/usePolicyCards';
 import { useSavePolicyMatchResult } from '@/hooks/usePolicyMatchResults';
 import { useCandidates } from '@/hooks/useCandidates';
-import { useRegion } from '@/hooks/useRegion';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { toast } from 'sonner';
+import type { Region } from '@/types/region';
 
 export type GameStep = 'intro' | 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
 
-export function PolicyMatchGame() {
+interface PolicyMatchGameProps {
+  /** 앱 전체가 쓰는 현재 지역 (Index에서 내려줌 — 홈과 같은 값을 보도록) */
+  region: Region;
+  /** 앱 공통 지역 선택 시트 열기 */
+  onChangeRegion: () => void;
+}
+
+export function PolicyMatchGame({ region, onChangeRegion }: PolicyMatchGameProps) {
   const navigate = useNavigate();
-  const { region } = useRegion();
   const { isAuthenticated } = useAuthContext();
   const saveResult = useSavePolicyMatchResult();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -274,6 +280,7 @@ export function PolicyMatchGame() {
         toast.success('결과가 저장되었습니다');
       } catch (error) {
         console.error('Failed to save result:', error);
+        toast.error('결과를 저장하지 못했어요. 결과는 이 화면에서 계속 볼 수 있어요.');
       }
     }
   }, [isAuthenticated, hasSaved, results, userPreference, region?.sido, choices, policyCards.length, saveResult]);
@@ -302,6 +309,41 @@ export function PolicyMatchGame() {
           >
             돌아가기
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 이 지역에 비교할 후보가 없으면 시작 전에 안내 (예전엔 끝까지 하면 결과 화면에서 흰 화면)
+  if (candidates.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="w-full max-w-sm text-center space-y-5">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary">
+            <MapPin size={24} className="text-muted-foreground" aria-hidden />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-lg font-bold">{region.sido}에는 아직 비교할 후보가 없어요</h1>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              정책 매칭은 후보 정보가 등록된 지역에서 할 수 있어요. 다른 지역을 골라 주세요.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={onChangeRegion}
+              className="h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground"
+            >
+              다른 지역 고르기
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="h-12 w-full rounded-xl text-sm font-medium text-muted-foreground"
+            >
+              홈으로
+            </button>
+          </div>
         </div>
       </div>
     );

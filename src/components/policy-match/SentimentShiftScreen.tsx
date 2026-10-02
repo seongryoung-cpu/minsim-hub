@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { RefreshCw, Shield, Heart, Bell, Check, Share2, RotateCcw, User, Brain } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import type { MatchResult, PreferredCandidate, SentimentChoice } from '@/types/policy';
+import { EmptyResultNotice } from './EmptyResultNotice';
 
 interface SentimentShiftScreenProps {
   results: MatchResult[];
@@ -20,6 +21,7 @@ export function SentimentShiftScreen({
   const [savedCandidate, setSavedCandidate] = useState<string | null>(null);
   
   const topMatch = results[0];
+  if (!topMatch) return <EmptyResultNotice />;
   const preferredResult = userPreference 
     ? results.find(r => r.candidateId === userPreference.candidateId)
     : null;

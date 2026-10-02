@@ -16,7 +16,7 @@ type QuizPhase = 'intro' | 'playing' | 'result';
 
 export function QuizPage() {
   const navigate = useNavigate();
-  const { stats, isLoaded, canPlayToday } = useQuizStats();
+  const { stats, isLoaded, canPlayToday, markPlayedToday } = useQuizStats();
   const { data: todayQuestions, isLoading: isQuestionsLoading } = useDailyQuiz();
   const [phase, setPhase] = useState<QuizPhase>('intro');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -90,6 +90,7 @@ export function QuizPage() {
       // 다른 기기·탭에서 이미 제출한 경우: 서버는 results 없이 error만 준다 → 연습 모드로 전환
       if (response.error === 'already_submitted') {
         setIsPracticeMode(true);
+        markPlayedToday();
         toast.info(response.message ?? '오늘은 이미 퀴즈를 완료했어요. 이번 결과는 연습으로 처리돼요.');
         const single = await gradeSingle(currentQuestion.id, selectedIndex);
         recordResult(single);
@@ -105,6 +106,7 @@ export function QuizPage() {
       setEarnedPoints(response.total_points ?? results.reduce((sum, r) => sum + (r.points ?? 0), 0));
 
       if (response.saved) {
+        markPlayedToday();
         logActivity({
           activityType: 'quiz_complete',
           description: `퀴즈 완료: ${response.correct_count}/${response.total_count} 정답`,
@@ -123,7 +125,7 @@ export function QuizPage() {
     // 정식 모드 중간 문항은 마지막 전체 제출 때 서버 집계로 덮어쓰므로 여기서도 누적해도 안전
     recordResult(result);
     return result;
-  }, [currentQuestion, currentQuestionIndex, todayQuestions, isPracticeMode, gradeSingle, recordResult]);
+  }, [currentQuestion, currentQuestionIndex, todayQuestions, isPracticeMode, gradeSingle, recordResult, markPlayedToday]);
 
   const handleNext = useCallback(() => {
     if (!todayQuestions) return;

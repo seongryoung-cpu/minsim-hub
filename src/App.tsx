@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { useDynamicFavicon } from "@/hooks/useDynamicFavicon";
 import Index from "./pages/Index";
+import { ErrorBoundary } from "@/components/layout/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -17,9 +18,12 @@ function AppContent() {
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/*" element={<Index />} />
-        </Routes>
+        {/* 화면 바깥(상단바, 시트, 스플래시 등)에서 난 오류도 흰 화면이 되지 않게 */}
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/*" element={<Index />} />
+          </Routes>
+        </ErrorBoundary>
       </BrowserRouter>
     </>
   );

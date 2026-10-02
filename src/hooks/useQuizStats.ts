@@ -25,8 +25,12 @@ const getInitialStats = (): UserQuizStats => {
 
 export function useQuizStats() {
   const [stats, setStats] = useState<UserQuizStats>(getInitialStats);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLocalLoaded, setIsLocalLoaded] = useState(false);
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  // 오늘(KST) 이미 제출했는지 — 서버(get_daily_quiz_status)가 판정한다. 비로그인은 항상 false
+  const [playedToday, setPlayedToday] = useState(false);
+  const isLoaded = isLocalLoaded && isAuthChecked;
 
   // Load stats from localStorage initially
   useEffect(() => {
@@ -39,34 +43,46 @@ export function useQuizStats() {
         setStats(getInitialStats());
       }
     }
-    setIsLoaded(true);
+    setIsLocalLoaded(true);
   }, []);
 
   // Check for authenticated user and sync with DB
   useEffect(() => {
+    const fetchPlayedToday = async () => {
+      const { data, error } = await supabase.rpc('get_daily_quiz_status');
+      // 조회에 실패하면 '가능'으로 둔다. 실제 중복 제출은 submit_daily_quiz가 already_submitted로 막는다
+      setPlayedToday(!error && (data as { played_today?: boolean } | null)?.played_today === true);
+    };
+
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        // Fetch user's stats from DB
-        const { data: dbStats } = await supabase
-          .from('quiz_stats')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      if (!user) {
+        setPlayedToday(false);
+        setIsAuthChecked(true);
+        return;
+      }
+      setUserId(user.id);
+      await fetchPlayedToday();
+      setIsAuthChecked(true);
 
-        if (dbStats) {
-          // Merge with local stats, preferring higher values
-          setStats(prev => ({
-            ...prev,
-            totalPoints: Math.max(prev.totalPoints, dbStats.total_points),
-            totalQuizzes: Math.max(prev.totalQuizzes, dbStats.total_quizzes),
-            correctAnswers: Math.max(prev.correctAnswers, dbStats.correct_answers),
-            currentStreak: Math.max(prev.currentStreak, dbStats.current_streak),
-            longestStreak: Math.max(prev.longestStreak, dbStats.longest_streak),
-            lastPlayedDate: dbStats.last_played_date || prev.lastPlayedDate,
-          }));
-        }
+      // Fetch user's stats from DB
+      const { data: dbStats } = await supabase
+        .from('quiz_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (dbStats) {
+        // Merge with local stats, preferring higher values
+        setStats(prev => ({
+          ...prev,
+          totalPoints: Math.max(prev.totalPoints, dbStats.total_points),
+          totalQuizzes: Math.max(prev.totalQuizzes, dbStats.total_quizzes),
+          correctAnswers: Math.max(prev.correctAnswers, dbStats.correct_answers),
+          currentStreak: Math.max(prev.currentStreak, dbStats.current_streak),
+          longestStreak: Math.max(prev.longestStreak, dbStats.longest_streak),
+          lastPlayedDate: dbStats.last_played_date || prev.lastPlayedDate,
+        }));
       }
     };
 
@@ -75,8 +91,11 @@ export function useQuizStats() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUserId(session.user.id);
+        // 새로 로그인했을 때만 다시 판정 (첫 세션은 checkUser가 처리, 리스너 안에서 바로 await하지 않음)
+        if (event === 'SIGNED_IN') setTimeout(() => { void fetchPlayedToday(); }, 0);
       } else {
         setUserId(null);
+        setPlayedToday(false);
       }
     });
 
@@ -85,10 +104,10 @@ export function useQuizStats() {
 
   // Save to localStorage when stats change
   useEffect(() => {
-    if (isLoaded) {
+    if (isLocalLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
     }
-  }, [stats, isLoaded]);
+  }, [stats, isLocalLoaded]);
 
   // Sync to DB when stats change and user is authenticated
   const syncToDatabase = useCallback(async (newStats: UserQuizStats) => {
@@ -196,13 +215,11 @@ export function useQuizStats() {
     });
   }, [checkStreak, syncToDatabase]);
 
-  const canPlayToday = useCallback(() => {
-    // 서버(submit_daily_quiz)는 last_played_date를 KST 'YYYY-MM-DD'로 저장한다.
-    // 예전 클라이언트가 저장한 toDateString() 형식도 함께 비교해 호환한다.
-    const kstToday = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
-    const legacyToday = new Date().toDateString();
-    return stats.lastPlayedDate !== kstToday && stats.lastPlayedDate !== legacyToday;
-  }, [stats.lastPlayedDate]);
+  /** 오늘 점수가 반영되는 정식 도전이 가능한지. 판정은 서버 기준(KST, quiz_stats.updated_at) */
+  const canPlayToday = useCallback(() => !playedToday, [playedToday]);
+
+  /** 정식 제출이 끝났거나 서버가 already_submitted를 돌려줬을 때 호출 */
+  const markPlayedToday = useCallback(() => setPlayedToday(true), []);
 
   const resetStats = useCallback(() => {
     setStats(getInitialStats());
@@ -214,6 +231,7 @@ export function useQuizStats() {
     isAuthenticated: !!userId,
     updateStats,
     canPlayToday,
+    markPlayedToday,
     checkStreak,
     resetStats,
   };

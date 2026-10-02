@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { MatchResult, PreferredCandidate, CategoryScore } from '@/types/policy';
 import { POLICY_CATEGORIES, generateInsight } from '@/types/policy';
+import { EmptyResultNotice } from './EmptyResultNotice';
 
 interface RadarResultScreenProps {
   results: MatchResult[];
@@ -28,6 +29,7 @@ export function RadarResultScreen({
 }: RadarResultScreenProps) {
   const navigate = useNavigate();
   const topMatch = results[0];
+  if (!topMatch) return <EmptyResultNotice />;
   
   // 사용자가 선택한 후보 찾기
   const preferredResult = userPreference 
