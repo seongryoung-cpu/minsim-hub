@@ -1,6 +1,7 @@
+import { useNavigate } from 'react-router-dom';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Calendar, Users, Megaphone, CheckCheck, Trash2, Newspaper, ExternalLink, Loader2 } from 'lucide-react';
+import { Bell, Calendar, Users, Megaphone, CheckCheck, Trash2, Newspaper, ExternalLink, Loader2, MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -16,6 +17,7 @@ const NOTIFICATION_ICONS: Record<string, typeof Bell> = {
   election: Calendar,
   candidate: Users,
   news: Newspaper,
+  agenda: MessagesSquare,
   default: Megaphone,
 };
 
@@ -23,11 +25,13 @@ const NOTIFICATION_COLORS: Record<string, string> = {
   election: 'from-primary/20 to-primary/5 border-primary/20',
   candidate: 'from-accent/20 to-accent/5 border-accent/20',
   news: 'from-red-500/20 to-red-500/5 border-red-500/20',
+  agenda: 'from-primary/20 to-primary/5 border-primary/20',
   default: 'from-secondary/80 to-secondary/40 border-border',
 };
 
 export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps) {
   const { isAuthenticated } = useAuthContext();
+  const navigate = useNavigate();
   const { 
     notifications, 
     unreadCount, 
@@ -42,6 +46,14 @@ export function NotificationSheet({ open, onOpenChange }: NotificationSheetProps
       markAsRead(notification.id);
     }
     
+    // 앱 안 경로(관심 의제 알림 등)면 그 화면으로
+    const path = notification.data?.path;
+    if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//')) {
+      onOpenChange(false);
+      navigate(path);
+      return;
+    }
+
     // Open article URL if available
     const articleUrl = notification.data?.article_url as string;
     if (articleUrl) {

@@ -24,6 +24,13 @@ import {
   useSetStatementHidden,
   type AgendaForm,
 } from '@/hooks/useAgendaAdmin';
+import {
+  CLAIM_STATUS_LABELS,
+  useAdminClaims,
+  useImportIssueCardsAsClaims,
+  useUpdateClaimStatus,
+  type ClaimStatus,
+} from '@/hooks/useClaims';
 import { SIDO_LIST } from '@/types/region';
 import type { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
@@ -352,6 +359,7 @@ function AgendaEditor({
             <IssuesEditor agendaId={id} issues={detail.issues} />
             <LinksEditor agendaId={id} links={detail.links} />
             <StatementsModeration agendaId={id} />
+            <ClaimsModeration agendaId={id} />
           </>
         ) : (
           <p className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
@@ -639,6 +647,85 @@ function StatementsModeration({ agendaId }: { agendaId: string }) {
                 {s.is_hidden ? <Eye size={15} className="mr-1" /> : <EyeOff size={15} className="mr-1" />}
                 {s.is_hidden ? '다시 보이기' : '숨기기'}
               </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+const CLAIM_STATUSES: ClaimStatus[] = ['new', 'review', 'verified', 'hidden'];
+
+/** 주장 검토 (공론 2단계). 스위치가 꺼져 있어도 관리자는 미리 정리해 둘 수 있다. */
+function ClaimsModeration({ agendaId }: { agendaId: string }) {
+  const { data: claims } = useAdminClaims(agendaId);
+  const setStatus = useUpdateClaimStatus();
+  const importCards = useImportIssueCardsAsClaims();
+
+  return (
+    <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold">주장 {claims && claims.length > 0 && `(${claims.length})`}</h2>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={importCards.isPending}
+            onClick={() =>
+              importCards.mutate(agendaId, {
+                onSuccess: (n) => toast.success(n > 0 ? `찬성·반대 카드 ${n}개를 주장으로 옮겼어요` : '새로 옮길 카드가 없어요'),
+                onError: (err) => toast.error(errorMessage(err)),
+              })
+            }
+          >
+            찬성·반대 카드를 주장으로
+          </Button>
+          <Button size="sm" variant="ghost" asChild>
+            <Link to={`/gonglon/${agendaId}/claims`}>
+              <ExternalLink size={15} className="mr-1" /> 시민 화면
+            </Link>
+          </Button>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        시민이 쓴 주장은 '신규'로 들어와요. 근거를 확인했으면 '검증 완료', 비방·개인정보·허위 사실은 '숨김'으로 바꾸세요.
+        운영진이 정리한 주장(작성자 없음)은 처음부터 검증 완료예요.
+      </p>
+      {!claims || claims.length === 0 ? (
+        <p className="text-sm text-muted-foreground">아직 주장이 없어요.</p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {claims.map((c) => (
+            <li key={c.id} className="flex flex-col gap-2 p-3 text-sm sm:flex-row sm:items-start">
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className={c.status === 'hidden' ? 'text-muted-foreground line-through' : 'font-medium'}>{c.body}</p>
+                <p className="text-xs text-muted-foreground">
+                  {c.user_id ? '시민' : '운영진'} · {formatAgendaDate(c.created_at)}
+                  {c.reason ? ' · 근거 있음' : ''}
+                  {c.sources.length > 0 ? ` · 출처 ${c.sources.length}` : ''}
+                </p>
+              </div>
+              <Select
+                value={c.status}
+                onValueChange={(v) =>
+                  setStatus.mutate(
+                    { agendaId, claimId: c.id, status: v as ClaimStatus },
+                    { onError: (err) => toast.error(errorMessage(err)) },
+                  )
+                }
+              >
+                <SelectTrigger className="h-9 w-full sm:w-32" aria-label="검증 상태">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CLAIM_STATUSES.map((st) => (
+                    <SelectItem key={st} value={st}>
+                      {CLAIM_STATUS_LABELS[st]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </li>
           ))}
         </ul>

@@ -18,6 +18,7 @@ import type { Region } from '@/types/region';
 const Election = lazy(() => import('@/pages/Election').then((m) => ({ default: m.Election })));
 const GonglonHub = lazy(() => import('@/pages/gonglon/GonglonHub').then((m) => ({ default: m.GonglonHub })));
 const AgendaDetail = lazy(() => import('@/pages/gonglon/AgendaDetail').then((m) => ({ default: m.AgendaDetail })));
+const ClaimsPage = lazy(() => import('@/pages/gonglon/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
 const MyPage = lazy(() => import('@/pages/MyPage').then((m) => ({ default: m.MyPage })));
 const AppInfoPage = lazy(() => import('@/pages/AppInfoPage').then((m) => ({ default: m.AppInfoPage })));
 const CandidateDetail = lazy(() => import('@/pages/CandidateDetail').then((m) => ({ default: m.CandidateDetail })));
@@ -128,6 +129,7 @@ function Index() {
           {/* 공론: 공개 전에는 관리자만 (GonglonGate가 관리자 설정 '공론 공개'를 확인) */}
           <Route path="/gonglon" element={<GonglonGate><GonglonHub region={currentRegion} /></GonglonGate>} />
           <Route path="/gonglon/:id" element={<GonglonGate><AgendaDetail /></GonglonGate>} />
+          <Route path="/gonglon/:id/claims" element={<GonglonGate><ClaimsPage /></GonglonGate>} />
           <Route path="/discussion" element={<Navigate to="/gonglon" replace />} />
           <Route
             path="/my"

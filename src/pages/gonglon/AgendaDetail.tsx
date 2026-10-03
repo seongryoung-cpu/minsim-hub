@@ -34,6 +34,8 @@ import { ResultBars } from '@/components/gonglon/ResultBars';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import type { AgendaFrom } from '@/components/gonglon/AgendaLinkCard';
 import { PageLoading } from '@/components/ui/loading-state';
+import { AgendaMetaLine, ClaimsEntryCard } from '@/components/gonglon/AgendaEngagement';
+import { useRecordAgendaView } from '@/hooks/useClaims';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,6 +48,8 @@ export function AgendaDetail() {
 
   const { data, isLoading } = useAgenda(id);
   const { data: summary } = useAgendaSummary(data ? id : undefined);
+  // 읽은 사람 집계 (같은 사람·기기는 한 번만)
+  useRecordAgendaView(data && data.agenda.status !== 'draft' ? id : undefined);
 
   if (id && isLoading) return <PageLoading />;
 
@@ -151,15 +155,19 @@ export function AgendaDetail() {
             )}
           </div>
           <h1 className="text-2xl font-bold leading-snug tracking-tight">{agenda.title}</h1>
-          <p className="text-[13px] text-muted-foreground">
-            참여 {(summary?.participants ?? 0).toLocaleString()}명
-            {agenda.closes_at && ` · ${isOpen ? '마감' : '마감됨'} ${formatAgendaDate(agenda.closes_at)}`}
-          </p>
+          <AgendaMetaLine
+            agendaId={agenda.id}
+            participants={summary?.participants ?? 0}
+            closingText={agenda.closes_at ? `${isOpen ? '마감' : '마감됨'} ${formatAgendaDate(agenda.closes_at)}` : null}
+            canFollow={status !== 'draft'}
+          />
         </section>
 
         <BackgroundSection agenda={agenda} />
 
         {issues.length > 0 && <IssueCarousel issues={issues} />}
+
+        <ClaimsEntryCard agendaId={agenda.id} />
 
         <MyOpinionSection agenda={agenda} status={status} />
 

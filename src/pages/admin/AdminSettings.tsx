@@ -28,6 +28,7 @@ interface AppSettings {
   election_quiet_mode: string;
   election_hide_link_cards: string;
   gonglon_public: string;
+  gonglon_claims: string;
   app_mode: string;
 }
 
@@ -56,6 +57,7 @@ export function AdminSettings() {
     election_quiet_mode: 'false',
     election_hide_link_cards: 'false',
     gonglon_public: 'false',
+    gonglon_claims: 'false',
     app_mode: 'auto',
   });
 
@@ -98,6 +100,7 @@ export function AdminSettings() {
           election_quiet_mode: settingsMap.election_quiet_mode ?? 'false',
           election_hide_link_cards: settingsMap.election_hide_link_cards ?? 'false',
           gonglon_public: settingsMap.gonglon_public ?? 'false',
+          gonglon_claims: settingsMap.gonglon_claims ?? 'false',
           app_mode: settingsMap.app_mode || 'auto',
         });
       } catch (error) {
@@ -237,6 +240,7 @@ export function AdminSettings() {
           election_quiet_mode: settingsMap.election_quiet_mode ?? 'false',
           election_hide_link_cards: settingsMap.election_hide_link_cards ?? 'false',
           gonglon_public: settingsMap.gonglon_public ?? 'false',
+          gonglon_claims: settingsMap.gonglon_claims ?? 'false',
           app_mode: settingsMap.app_mode || 'auto',
         });
       }
@@ -456,6 +460,11 @@ export function AdminSettings() {
                   key: 'gonglon_public' as const,
                   label: '공론 공개',
                   desc: '켜면 모든 사용자에게 공론 탭, 홈 ‘이번 주 공론’ 배너, 후보 화면 연결 카드가 보입니다.',
+                },
+                {
+                  key: 'gonglon_claims' as const,
+                  label: '주장 카드 (2단계)',
+                  desc: '켜면 시민이 의제의 주장을 비교하고, 가장 가까운 주장을 고르고, 직접 주장을 쓸 수 있습니다. 꺼져 있어도 관리자는 미리 써 볼 수 있습니다. 켜기 전에 가입 동의와 탈퇴 시 데이터 삭제(점검 보고서 B 묶음)를 먼저 마치세요.',
                 },
                 {
                   key: 'election_quiet_mode' as const,
