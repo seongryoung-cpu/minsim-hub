@@ -47,7 +47,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             animate={{ scale: 1 }}
             transition={{ duration: 0.5 }}
             className="w-16 h-16 mx-auto mb-6 rounded-2xl flex items-center justify-center overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
+            style={{ background: 'var(--gradient-primary)' }}
           >
             <img 
               src={settings?.logo_url || 'https://zdgpxmtapbviwrpcleqi.supabase.co/storage/v1/object/public/app-assets/logos/logo-1768900705056.jpg'} 
@@ -104,7 +104,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         <motion.button
           onClick={() => setIsRegionSheetOpen(true)}
           className="w-full h-14 rounded-2xl font-semibold text-lg flex items-center justify-center gap-2 text-primary-foreground"
-          style={{ background: 'linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%))' }}
+          style={{ background: 'var(--gradient-primary)' }}
           whileTap={{ scale: 0.98 }}
         >
           <MapPin size={20} />
