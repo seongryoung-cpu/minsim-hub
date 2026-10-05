@@ -6,10 +6,7 @@
 
 @layer base {
   :root {
-    /* Brand palette - 민심잇다 symbol: navy #002B49 + mint #2ED5C4 */
-    --brand-navy: 205 100% 14%;
-    --brand-mint: 174 67% 51%;
-
+    /* Core civic palette - trustworthy blue with warm accents */
     --background: 210 20% 98%;
     --foreground: 220 25% 10%;
 
@@ -19,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 10%;
 
-    /* Primary - Brand navy */
-    --primary: 205 100% 14%;
+    /* Primary - Civic Blue */
+    --primary: 220 70% 50%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Soft gray-blue */
@@ -30,8 +27,8 @@
     --muted: 210 15% 96%;
     --muted-foreground: 220 10% 50%;
 
-    /* Accent - Deep mint (text-safe on white; use brand-mint for fills) */
-    --accent: 175 84% 28%;
+    /* Accent - Warm coral for engagement */
+    --accent: 15 85% 57%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -39,13 +36,13 @@
 
     --border: 210 20% 90%;
     --input: 210 20% 90%;
-    --ring: 175 84% 28%;
+    --ring: 220 70% 50%;
 
     --radius: 1rem;
 
     /* Status colors for timeline */
     --status-preparing: 45 93% 47%;
-    --status-active: 205 100% 14%;
+    --status-active: 220 70% 50%;
     --status-complete: 142 71% 45%;
 
     /* App-specific tokens */
@@ -61,8 +58,8 @@
     --shadow-sheet: 0 -4px 25px -5px hsl(220 25% 10% / 0.15);
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(205 100% 14%), hsl(195 75% 24%));
-    --gradient-accent: linear-gradient(135deg, hsl(174 67% 51%), hsl(175 84% 38%));
+    --gradient-primary: linear-gradient(135deg, hsl(220 70% 50%), hsl(230 70% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(15 85% 57%), hsl(25 90% 55%));
     --gradient-background: linear-gradient(180deg, hsl(210 30% 96%) 0%, hsl(220 25% 92%) 100%);
   }
 
@@ -76,8 +73,8 @@
     --popover: 220 25% 12%;
     --popover-foreground: 210 20% 98%;
 
-    --primary: 174 67% 51%;
-    --primary-foreground: 205 100% 14%;
+    --primary: 215 80% 60%;
+    --primary-foreground: 220 25% 8%;
 
     --secondary: 220 20% 18%;
     --secondary-foreground: 210 20% 90%;
@@ -85,18 +82,18 @@
     --muted: 220 20% 15%;
     --muted-foreground: 210 15% 55%;
 
-    --accent: 174 67% 51%;
-    --accent-foreground: 205 100% 14%;
+    --accent: 15 85% 60%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 20% 18%;
     --input: 220 20% 18%;
-    --ring: 174 67% 51%;
+    --ring: 215 80% 60%;
 
     --status-preparing: 45 90% 50%;
-    --status-active: 174 67% 51%;
+    --status-active: 215 80% 60%;
     --status-complete: 142 70% 50%;
 
     --gradient-background: linear-gradient(180deg, hsl(220 25% 6%) 0%, hsl(225 30% 10%) 100%);
