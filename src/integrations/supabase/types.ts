@@ -1481,6 +1481,24 @@ export type Database = {
       }
     }
     Functions: {
+      get_candidate_ranking: {
+        Args: never
+        Returns: {
+          agree: number
+          category: string | null
+          created_at: string
+          disagree: number
+          divisiveness: number
+          hold: number
+          id: string
+          interested: number
+          region_sido: string | null
+          score: number
+          title: string
+          votes: number
+        }[]
+      }
+      get_quick_agendas: { Args: { p_sido?: string | null }; Returns: Json }
       delete_my_claim: { Args: { p_claim_id: string }; Returns: Json }
       evaluate_claim: {
         Args: { p_claim_id: string; p_evidence: string; p_perspective: string }

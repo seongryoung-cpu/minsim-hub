@@ -5,6 +5,7 @@ import { MessagesSquare, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAgendaList, useGonglonAccess } from '@/hooks/useAgendas';
 import { AgendaHubCard, AgendaHubCardSkeleton } from '@/components/gonglon/AgendaHubCard';
+import { QuickVoteDeck } from '@/components/gonglon/QuickVoteDeck';
 import type { Region } from '@/types/region';
 
 type HubTab = 'open' | 'closed' | 'mine';
@@ -74,8 +75,11 @@ export function GonglonHub({ region }: { region: Region }) {
           </p>
         )}
 
-        <p className="text-sm text-muted-foreground">
-          지금 시민들이 함께 정하고 있는 의제예요. {region.sido}와 전국 의제를 보여 드려요.
+        <QuickVoteDeck sido={region.sido} />
+
+        <h2 className="pt-2 text-[17px] font-bold">공론 중인 의제</h2>
+        <p className="-mt-2 text-sm text-muted-foreground">
+          쟁점을 읽고 함께 정하는 의제예요. {region.sido}와 전국 의제를 보여 드려요.
         </p>
 
         <div role="tablist" aria-label="의제 상태" className="grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">

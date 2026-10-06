@@ -23,7 +23,7 @@ export type Agenda = Tables<'agendas'>;
 export type AgendaIssue = Tables<'agenda_issues'>;
 export type AgendaChoice = 'agree' | 'disagree' | 'hold';
 export type AgendaStage = 'first' | 'final';
-export type AgendaVoteSource = 'pledge_card' | 'compare' | 'home' | 'hub' | 'agenda';
+export type AgendaVoteSource = 'pledge_card' | 'compare' | 'home' | 'hub' | 'agenda' | 'quick';
 export type StatementSort = 'latest' | 'agreed' | 'divisive';
 export type IssueKind = 'pro' | 'con' | 'fact' | 'point';
 export type AgendaListItem = Database['public']['Functions']['get_agenda_list']['Returns'][number];
@@ -76,7 +76,7 @@ type ChoiceCounts = Record<AgendaChoice, number>;
 
 export interface AgendaSummary {
   /** 마감 일시가 지났으면 'closed' (서버 판단) */
-  status: 'draft' | 'open' | 'closed';
+  status: 'draft' | 'candidate' | 'open' | 'closed';
   /** 첫 반응 또는 최종 의견을 낸 사람 수 */
   participants: number;
   /** 최종 의견을 낸 사람 수 — 5명 이상이어야 분포가 공개된다 */

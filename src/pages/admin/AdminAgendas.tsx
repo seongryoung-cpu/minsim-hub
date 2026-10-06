@@ -31,6 +31,7 @@ import {
   useUpdateClaimStatus,
   type ClaimStatus,
 } from '@/hooks/useClaims';
+import { useCandidateRanking } from '@/hooks/useQuickVote';
 import { SIDO_LIST } from '@/types/region';
 import type { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const STATUS_LABELS: Record<string, string> = { draft: '초안', open: '진행 중', closed: '마감' };
+const STATUS_LABELS: Record<string, string> = { draft: '초안', candidate: '후보 (빠른 투표)', open: '진행 중', closed: '마감' };
 const NONE = '__none';
 
 function toLocalInput(iso: string | null | undefined) {
@@ -118,6 +119,7 @@ export function AdminAgendas() {
           모두에게 공개하려면 <Link to="/admin/settings" className="text-primary underline">시스템 설정</Link>의
           ‘공론 공개’를 켜세요.
         </p>
+        <CandidateRanking onEdit={(id) => setEditingId(id)} />
         {!agendas || agendas.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             아직 의제가 없어요. ‘새 의제’로 첫 의제를 만들어 보세요.
@@ -730,6 +732,62 @@ function ClaimsModeration({ agendaId }: { agendaId: string }) {
           ))}
         </ul>
       )}
+    </section>
+  );
+}
+
+/**
+ * 후보 의제 승격 순위 (빠른 투표).
+ * 점수 = (참여 + 더 알고 싶어요 × 3) × (0.4 + 0.6 × 갈림 정도). 가중치는 초안이고, 올릴지는 운영자가 정한다.
+ */
+function CandidateRanking({ onEdit }: { onEdit: (id: string) => void }) {
+  const { data: rows } = useCandidateRanking();
+  if (!rows || rows.length === 0) return null;
+
+  return (
+    <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">빠른 투표 · 승격 순위</h2>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          후보 의제는 공론 탭 맨 위 카드로 보여요. 카드에는 ‘결정’ 문장과 ‘한 줄 요약’이 그대로 나가요.
+          찬반이 고르게 갈리고 ‘더 알고 싶어요’가 많을수록 점수가 높아요. 올릴 의제는 쟁점 카드를 붙인 뒤 상태를 ‘진행 중’으로 바꾸세요.
+          그러면 ‘더 알고 싶어요’를 누른 사람에게 알림이 가요.
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] text-sm">
+          <thead>
+            <tr className="text-left text-xs text-muted-foreground">
+              <th className="py-2 pr-3 font-medium">의제</th>
+              <th className="px-2 py-2 text-right font-medium">참여</th>
+              <th className="px-2 py-2 text-right font-medium">찬성·반대·모름</th>
+              <th className="px-2 py-2 text-right font-medium">더 알고 싶어요</th>
+              <th className="px-2 py-2 text-right font-medium">갈림</th>
+              <th className="px-2 py-2 text-right font-medium">점수</th>
+              <th className="py-2 pl-2" />
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t border-border">
+                <td className="py-2.5 pr-3 font-medium">{r.title}</td>
+                <td className="px-2 py-2.5 text-right tabular-nums">{r.votes}</td>
+                <td className="px-2 py-2.5 text-right tabular-nums text-muted-foreground">
+                  {r.agree}·{r.disagree}·{r.hold}
+                </td>
+                <td className="px-2 py-2.5 text-right tabular-nums">{r.interested}</td>
+                <td className="px-2 py-2.5 text-right tabular-nums">{Math.round(Number(r.divisiveness) * 100)}%</td>
+                <td className="px-2 py-2.5 text-right font-semibold tabular-nums">{r.score}</td>
+                <td className="py-2.5 pl-2 text-right">
+                  <Button size="sm" variant="outline" onClick={() => onEdit(r.id)}>
+                    편집해서 올리기
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

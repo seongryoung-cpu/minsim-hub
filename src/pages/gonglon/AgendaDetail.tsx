@@ -69,6 +69,21 @@ export function AgendaDetail() {
   const isOpen = status === 'open';
   const dday = isOpen ? agendaDDay(agenda.closes_at) : null;
 
+  // 후보 의제(빠른 투표 중)는 상세 화면이 아직 없다 → 공론 탭의 빠른 투표로 안내
+  if (agenda.status === 'candidate') {
+    return (
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-base font-semibold">{agenda.title}</p>
+        <p className="text-sm text-muted-foreground">
+          아직 빠른 투표 중인 의제예요. 반응이 크면 쟁점을 정리해 공론으로 올라와요.
+        </p>
+        <Link to="/gonglon" className="text-sm font-semibold text-primary">
+          빠른 투표하러 가기
+        </Link>
+      </div>
+    );
+  }
+
   const share = async () => {
     const url = `${window.location.origin}/gonglon/${agenda.id}`;
     if (navigator.share) {

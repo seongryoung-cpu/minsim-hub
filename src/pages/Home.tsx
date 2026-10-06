@@ -11,6 +11,7 @@ import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { FeaturedAgendaBanner } from '@/components/gonglon/FeaturedAgendaBanner';
+import { QuickVoteEntry } from '@/components/gonglon/QuickVoteEntry';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { ElectedOfficialCard } from '@/components/dashboard/ElectedOfficialCard';
 import { getElectionStatus, getMetropolitanTitle, formatDDay, sortByElectionResult, CURRENT_ELECTION } from '@/types/election';
@@ -152,6 +153,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
         <div className="lg:hidden space-y-5">
           {/* 이번 주 공론 (공론 공개 + 홈 배너 지정 의제가 있을 때만) */}
           <FeaturedAgendaBanner sido={region.sido} />
+          <QuickVoteEntry sido={region.sido} />
 
           {isNormal ? (
             <ElectedOfficialCard
@@ -275,6 +277,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
           {/* Left Column - Main Content */}
           <div className="lg:col-span-8 space-y-6">
             <FeaturedAgendaBanner sido={region.sido} />
+            <QuickVoteEntry sido={region.sido} />
 
             {isNormal ? (
               <ElectedOfficialCard
