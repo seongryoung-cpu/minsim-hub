@@ -1521,6 +1521,7 @@ export type Database = {
       get_my_political_data_count: { Args: Record<PropertyKey, never>; Returns: number }
       delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       admin_delete_user: { Args: { p_user: string }; Returns: undefined }
+      admin_political_stats: { Args: Record<PropertyKey, never>; Returns: Json }
       delete_my_claim: { Args: { p_claim_id: string }; Returns: Json }
       evaluate_claim: {
         Args: { p_claim_id: string; p_evidence: string; p_perspective: string }

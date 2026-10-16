@@ -40,14 +40,6 @@ interface MbtiType {
   icon: string;
 }
 
-interface MbtiResult {
-  id: string;
-  user_id: string;
-  type_code: string;
-  created_at: string;
-  from_policy_match: boolean;
-}
-
 type ExpandedSection = 'questions' | 'types' | 'results' | null;
 
 export function AdminMbti() {
@@ -109,7 +101,7 @@ export function AdminMbti() {
         <ContentSection
           icon={Users}
           label="결과 통계"
-          description="사용자 테스트 결과 조회"
+          description="동의자 집계만 · 개인별 결과 비공개"
           color="bg-emerald-500"
           isExpanded={expandedSection === 'results'}
           onToggle={() => setExpandedSection(expandedSection === 'results' ? null : 'results')}
@@ -636,81 +628,82 @@ function TypeDialog({ type, isOpen, onClose }: TypeDialogProps) {
   );
 }
 
-// Results Manager
-function ResultsManager() {
-  const { data: results, isLoading } = useQuery({
-    queryKey: ['mbti-results-admin'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('political_mbti_results')
-        .select('id, user_id, type_code, created_at, from_policy_match')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data as MbtiResult[];
-    },
-  });
+// Results Manager — 개인별 결과는 보이지 않는다. 서버 집계(5명 미만 칸은 가림)만 보여 준다.
+interface PoliticalStats {
+  k: number;
+  consented_users: number;
+  mbti: { results: number; people: number; types: { type: string; count: number }[]; hidden_people: number };
+  spectrum: { people: number; averages: Record<'economy' | 'security' | 'gender' | 'fairness' | 'future', number> | null };
+  policy_match: { results: number; people: number };
+}
 
-  const { data: typeStats } = useQuery({
-    queryKey: ['mbti-type-stats'],
+const SPECTRUM_LABELS: Record<string, string> = {
+  economy: '경제', security: '안보', gender: '젠더', fairness: '공정', future: '미래',
+};
+
+function ResultsManager() {
+  const { data: stats, isLoading, error } = useQuery({
+    queryKey: ['admin-political-stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('political_mbti_results')
-        .select('type_code');
+      const { data, error } = await supabase.rpc('admin_political_stats');
       if (error) throw error;
-      
-      const counts: Record<string, number> = {};
-      data?.forEach(r => {
-        counts[r.type_code] = (counts[r.type_code] || 0) + 1;
-      });
-      
-      return Object.entries(counts)
-        .map(([type, count]) => ({ type, count }))
-        .sort((a, b) => b.count - a.count);
+      return data as unknown as PoliticalStats;
     },
   });
 
   if (isLoading) {
     return <div className="p-4 flex justify-center"><Loader2 className="animate-spin" /></div>;
   }
+  if (error || !stats) {
+    return <p className="p-4 text-sm text-muted-foreground">집계를 불러오지 못했어요.</p>;
+  }
 
+  const k = stats.k;
   return (
-    <div className="p-4 space-y-4">
-      {/* Type Distribution */}
-      <div>
-        <h4 className="text-sm font-medium mb-2">유형별 분포</h4>
-        <div className="grid grid-cols-4 gap-2">
-          {typeStats?.slice(0, 8).map(stat => (
-            <div key={stat.type} className="p-2 bg-muted/50 rounded-lg text-center">
-              <span className="font-mono font-bold text-sm">{stat.type}</span>
-              <p className="text-xs text-muted-foreground">{stat.count}명</p>
-            </div>
-          ))}
-        </div>
+    <div className="p-4 space-y-5">
+      <p className="text-xs leading-relaxed text-muted-foreground rounded-lg bg-muted/50 p-3">
+        정치 성향은 민감정보라 관리자도 개인별 결과는 볼 수 없어요. 아래는 계정 저장에 동의한 사람들의 집계이며,
+        {` ${k}명 미만인 칸은 누군지 짐작될 수 있어 숫자를 가려요.`}
+      </p>
+
+      <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="p-2 bg-muted/50 rounded-lg"><p className="text-lg font-bold tabular-nums">{stats.consented_users}</p><p className="text-xs text-muted-foreground">저장 동의</p></div>
+        <div className="p-2 bg-muted/50 rounded-lg"><p className="text-lg font-bold tabular-nums">{stats.spectrum.people}</p><p className="text-xs text-muted-foreground">성향 결과</p></div>
+        <div className="p-2 bg-muted/50 rounded-lg"><p className="text-lg font-bold tabular-nums">{stats.policy_match.people}</p><p className="text-xs text-muted-foreground">정책 매칭</p></div>
       </div>
 
-      {/* Recent Results */}
       <div>
-        <h4 className="text-sm font-medium mb-2">최근 결과 ({results?.length || 0}건)</h4>
-        <div className="space-y-2">
-          {results?.slice(0, 10).map(r => (
-            <div key={r.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-bold text-sm px-2 py-0.5 bg-primary/10 text-primary rounded">
-                  {r.type_code}
-                </span>
-                {r.from_policy_match && (
-                  <span className="text-xs px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded">
-                    정책매칭
-                  </span>
-                )}
+        <h4 className="text-sm font-medium mb-2">MBTI 유형별 분포 (사람 기준 {stats.mbti.people}명)</h4>
+        {stats.mbti.types.length ? (
+          <div className="grid grid-cols-4 gap-2">
+            {stats.mbti.types.map((t) => (
+              <div key={t.type} className="p-2 bg-muted/50 rounded-lg text-center">
+                <span className="font-mono font-bold text-sm">{t.type}</span>
+                <p className="text-xs text-muted-foreground">{t.count}명</p>
               </div>
-              <span className="text-xs text-muted-foreground">
-                {new Date(r.created_at).toLocaleDateString('ko-KR')}
-              </span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : null}
+        {stats.mbti.hidden_people > 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">{k}명 미만 유형 {stats.mbti.hidden_people}명은 가렸어요.</p>
+        )}
+        {stats.mbti.people === 0 && <p className="text-xs text-muted-foreground">아직 결과가 없어요.</p>}
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium mb-2">성향 스펙트럼 평균</h4>
+        {stats.spectrum.averages ? (
+          <div className="grid grid-cols-5 gap-2">
+            {Object.entries(stats.spectrum.averages).map(([key, v]) => (
+              <div key={key} className="p-2 bg-muted/50 rounded-lg text-center">
+                <p className="text-xs text-muted-foreground">{SPECTRUM_LABELS[key] ?? key}</p>
+                <p className="font-bold text-sm tabular-nums">{v}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">{k}명 이상 모이면 보여 드려요 (지금 {stats.spectrum.people}명).</p>
+        )}
       </div>
     </div>
   );
