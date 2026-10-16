@@ -10,10 +10,37 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          activity_type: string
+          created_at: string
+          description: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          description: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       agenda_claims: {
         Row: {
           agenda_id: string
@@ -57,7 +84,29 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agenda_claims_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_claims_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_claims_source_issue_id_fkey"
+            columns: ["source_issue_id"]
+            isOneToOne: true
+            referencedRelation: "agenda_issues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agenda_interests: {
         Row: {
@@ -75,115 +124,15 @@ export type Database = {
           created_at?: string
           user_id?: string
         }
-        Relationships: []
-      }
-      agenda_views: {
-        Row: {
-          agenda_id: string
-          created_at: string
-          user_id: string | null
-          viewer_key: string
-        }
-        Insert: {
-          agenda_id: string
-          created_at?: string
-          user_id?: string | null
-          viewer_key: string
-        }
-        Update: {
-          agenda_id?: string
-          created_at?: string
-          user_id?: string | null
-          viewer_key?: string
-        }
-        Relationships: []
-      }
-      claim_evaluations: {
-        Row: {
-          claim_id: string
-          created_at: string
-          evidence: string
-          perspective: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          claim_id: string
-          created_at?: string
-          evidence: string
-          perspective: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          claim_id?: string
-          created_at?: string
-          evidence?: string
-          perspective?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      claim_picks: {
-        Row: {
-          agenda_id: string
-          claim_id: string
-          created_at: string
-          id: string
-          issue_id: string | null
-          reason: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          agenda_id: string
-          claim_id: string
-          created_at?: string
-          id?: string
-          issue_id?: string | null
-          reason?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          agenda_id?: string
-          claim_id?: string
-          created_at?: string
-          id?: string
-          issue_id?: string | null
-          reason?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      activity_logs: {
-        Row: {
-          activity_type: string
-          created_at: string
-          description: string
-          id: string
-          metadata: Json | null
-          user_id: string | null
-        }
-        Insert: {
-          activity_type: string
-          created_at?: string
-          description: string
-          id?: string
-          metadata?: Json | null
-          user_id?: string | null
-        }
-        Update: {
-          activity_type?: string
-          created_at?: string
-          description?: string
-          id?: string
-          metadata?: Json | null
-          user_id?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agenda_interests_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agenda_issues: {
         Row: {
@@ -303,6 +252,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "agenda_statements_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_views: {
+        Row: {
+          agenda_id: string
+          created_at: string
+          user_id: string | null
+          viewer_key: string
+        }
+        Insert: {
+          agenda_id: string
+          created_at?: string
+          user_id?: string | null
+          viewer_key: string
+        }
+        Update: {
+          agenda_id?: string
+          created_at?: string
+          user_id?: string | null
+          viewer_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_views_agenda_id_fkey"
             columns: ["agenda_id"]
             isOneToOne: false
             referencedRelation: "agendas"
@@ -570,6 +548,96 @@ export type Database = {
           vote_share?: number | null
         }
         Relationships: []
+      }
+      claim_evaluations: {
+        Row: {
+          claim_id: string
+          created_at: string
+          evidence: string
+          perspective: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          claim_id: string
+          created_at?: string
+          evidence: string
+          perspective: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          claim_id?: string
+          created_at?: string
+          evidence?: string
+          perspective?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_evaluations_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      claim_picks: {
+        Row: {
+          agenda_id: string
+          claim_id: string
+          created_at: string
+          id: string
+          issue_id: string | null
+          reason: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          claim_id: string
+          created_at?: string
+          id?: string
+          issue_id?: string | null
+          reason?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          claim_id?: string
+          created_at?: string
+          id?: string
+          issue_id?: string | null
+          reason?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "claim_picks_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_picks_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "claim_picks_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_issues"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       news_articles: {
         Row: {
@@ -998,6 +1066,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age14_confirmed_at: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
@@ -1005,20 +1074,20 @@ export type Database = {
           identity_ci: string | null
           identity_provider: string | null
           identity_verified_at: string | null
+          nickname: string | null
           phone_number: string | null
           phone_verified_at: string | null
-          nickname: string | null
-          terms_agreed_at: string | null
-          privacy_agreed_at: string | null
-          age14_confirmed_at: string | null
           political_consent_at: string | null
+          privacy_agreed_at: string | null
           region_sido: string | null
           region_sigungu: string | null
+          terms_agreed_at: string | null
           updated_at: string
           user_id: string
           verification_level: Database["public"]["Enums"]["verification_level"]
         }
         Insert: {
+          age14_confirmed_at?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -1026,20 +1095,20 @@ export type Database = {
           identity_ci?: string | null
           identity_provider?: string | null
           identity_verified_at?: string | null
+          nickname?: string | null
           phone_number?: string | null
           phone_verified_at?: string | null
-          nickname?: string | null
-          terms_agreed_at?: string | null
-          privacy_agreed_at?: string | null
-          age14_confirmed_at?: string | null
           political_consent_at?: string | null
+          privacy_agreed_at?: string | null
           region_sido?: string | null
           region_sigungu?: string | null
+          terms_agreed_at?: string | null
           updated_at?: string
           user_id: string
           verification_level?: Database["public"]["Enums"]["verification_level"]
         }
         Update: {
+          age14_confirmed_at?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
@@ -1047,15 +1116,14 @@ export type Database = {
           identity_ci?: string | null
           identity_provider?: string | null
           identity_verified_at?: string | null
+          nickname?: string | null
           phone_number?: string | null
           phone_verified_at?: string | null
-          nickname?: string | null
-          terms_agreed_at?: string | null
-          privacy_agreed_at?: string | null
-          age14_confirmed_at?: string | null
           political_consent_at?: string | null
+          privacy_agreed_at?: string | null
           region_sido?: string | null
           region_sigungu?: string | null
+          terms_agreed_at?: string | null
           updated_at?: string
           user_id?: string
           verification_level?: Database["public"]["Enums"]["verification_level"]
@@ -1496,70 +1564,14 @@ export type Database = {
       }
     }
     Functions: {
-      get_candidate_ranking: {
-        Args: never
-        Returns: {
-          agree: number
-          category: string | null
-          created_at: string
-          disagree: number
-          divisiveness: number
-          hold: number
-          id: string
-          interested: number
-          region_sido: string | null
-          score: number
-          title: string
-          votes: number
-        }[]
-      }
-      get_quick_agendas: { Args: { p_sido?: string | null }; Returns: Json }
-      check_nickname: { Args: { p_nickname: string }; Returns: string }
-      set_my_nickname: { Args: { p_nickname: string }; Returns: string }
       accept_required_terms: { Args: { p_age14: boolean }; Returns: undefined }
-      set_political_consent: { Args: { p_on: boolean }; Returns: Json }
-      get_my_political_data_count: { Args: Record<PropertyKey, never>; Returns: number }
-      delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined }
       admin_delete_user: { Args: { p_user: string }; Returns: undefined }
-      admin_political_stats: { Args: Record<PropertyKey, never>; Returns: Json }
-      delete_my_claim: { Args: { p_claim_id: string }; Returns: Json }
-      evaluate_claim: {
-        Args: { p_claim_id: string; p_evidence: string; p_perspective: string }
-        Returns: Json
+      admin_political_stats: { Args: never; Returns: Json }
+      agenda_effective_status: {
+        Args: { p_closes_at: string; p_status: string }
+        Returns: string
       }
-      find_similar_claims: {
-        Args: { p_agenda_id: string; p_issue_id: string | null; p_text: string }
-        Returns: {
-          body: string
-          id: string
-          similarity: number
-          status: string
-        }[]
-      }
-      get_agenda_claims: {
-        Args: { p_agenda_id: string; p_issue_id?: string | null }
-        Returns: Json
-      }
-      get_agenda_engagement: { Args: { p_agenda_id: string }; Returns: Json }
-      gonglon_claims_on: { Args: never; Returns: boolean }
-      import_issue_cards_as_claims: { Args: { p_agenda_id: string }; Returns: Json }
-      pick_claim: { Args: { p_claim_id: string; p_reason?: string }; Returns: Json }
-      post_claim: {
-        Args: {
-          p_agenda_id: string
-          p_body: string
-          p_counter?: string
-          p_issue_id: string | null
-          p_reason?: string
-          p_sources?: string[]
-        }
-        Returns: Json
-      }
-      record_agenda_view: {
-        Args: { p_agenda_id: string; p_client_id?: string | null }
-        Returns: undefined
-      }
-      toggle_agenda_interest: { Args: { p_agenda_id: string }; Returns: Json }
+      agenda_is_open: { Args: { p_agenda_id: string }; Returns: boolean }
       app_setting_on: { Args: { p_key: string }; Returns: boolean }
       cast_agenda_vote: {
         Args: {
@@ -1570,20 +1582,41 @@ export type Database = {
         }
         Returns: Json
       }
+      check_nickname: { Args: { p_nickname: string }; Returns: string }
+      delete_my_account: { Args: never; Returns: undefined }
+      delete_my_claim: { Args: { p_claim_id: string }; Returns: Json }
+      evaluate_claim: {
+        Args: { p_claim_id: string; p_evidence: string; p_perspective: string }
+        Returns: Json
+      }
+      find_similar_claims: {
+        Args: { p_agenda_id: string; p_issue_id: string; p_text: string }
+        Returns: {
+          body: string
+          id: string
+          similarity: number
+          status: string
+        }[]
+      }
+      get_agenda_claims: {
+        Args: { p_agenda_id: string; p_issue_id?: string }
+        Returns: Json
+      }
+      get_agenda_engagement: { Args: { p_agenda_id: string }; Returns: Json }
       get_agenda_list: {
         Args: { p_sido?: string }
         Returns: {
-          category: string | null
-          closes_at: string | null
+          category: string
+          closes_at: string
           created_at: string
           id: string
           is_featured: boolean
-          my_final: string | null
-          my_first: string | null
-          opens_at: string | null
+          my_final: string
+          my_first: string
+          opens_at: string
           participants: number
           pledge_count: number
-          region_sido: string | null
+          region_sido: string
           statement_count: number
           status: string
           summary: string
@@ -1617,32 +1650,58 @@ export type Database = {
           hold: number
           id: string
           is_mine: boolean
-          my_reaction: string | null
+          my_reaction: string
         }[]
       }
       get_agenda_summary: { Args: { p_agenda_id: string }; Returns: Json }
+      get_candidate_ranking: {
+        Args: never
+        Returns: {
+          agree: number
+          category: string
+          created_at: string
+          disagree: number
+          divisiveness: number
+          hold: number
+          id: string
+          interested: number
+          region_sido: string
+          score: number
+          title: string
+          votes: number
+        }[]
+      }
       get_daily_quiz_status: { Args: never; Returns: Json }
       get_linked_agendas: {
         Args: { p_pledge_ids?: string[]; p_policy_card_ids?: string[] }
         Returns: {
           agenda_id: string
-          closes_at: string | null
-          my_final: string | null
-          my_first: string | null
+          closes_at: string
+          my_final: string
+          my_first: string
           participants: number
-          pledge_id: string | null
-          policy_card_id: string | null
+          pledge_id: string
+          policy_card_id: string
           quiet_mode: boolean
           status: string
           title: string
         }[]
       }
+      get_my_political_data_count: { Args: never; Returns: number }
+      get_quick_agendas: { Args: { p_sido?: string }; Returns: Json }
+      gonglon_claims_on: { Args: never; Returns: boolean }
+      gonglon_visible: { Args: never; Returns: boolean }
+      has_political_consent: { Args: { p_user: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      import_issue_cards_as_claims: {
+        Args: { p_agenda_id: string }
+        Returns: Json
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_restricted_api_user: { Args: never; Returns: boolean }
@@ -1661,11 +1720,38 @@ export type Database = {
           updated_at: string
         }[]
       }
+      nickname_problem: { Args: { p: string }; Returns: string }
+      pick_claim: {
+        Args: { p_claim_id: string; p_reason?: string }
+        Returns: Json
+      }
+      post_claim: {
+        Args: {
+          p_agenda_id: string
+          p_body: string
+          p_counter?: string
+          p_issue_id: string
+          p_reason?: string
+          p_sources?: string[]
+        }
+        Returns: Json
+      }
+      record_agenda_view: {
+        Args: { p_agenda_id: string; p_client_id?: string }
+        Returns: undefined
+      }
+      set_my_nickname: { Args: { p_nickname: string }; Returns: string }
+      set_political_consent: { Args: { p_on: boolean }; Returns: Json }
       submit_daily_quiz: { Args: { p_answers: Json }; Returns: Json }
       submit_quiz_answer: {
         Args: { p_question_id: string; p_selected_index: number }
         Returns: Json
       }
+      text_bigram_similarity: {
+        Args: { a: string; b: string }
+        Returns: number
+      }
+      toggle_agenda_interest: { Args: { p_agenda_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
