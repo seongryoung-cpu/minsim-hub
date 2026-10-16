@@ -1,10 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { logActivity } from '@/lib/activityLogger';
+import { clearUserLocalData } from '@/lib/sessionCleanup';
 import type { User, AuthError } from '@supabase/supabase-js';
 import type { UserProfile, AuthState, VerificationLevel } from '@/types/auth';
 
+export interface SignUpConsents {
+  terms: boolean;
+  privacy: boolean;
+  age14: boolean;
+}
+
 export function useAuth() {
+  const queryClient = useQueryClient();
   const [state, setState] = useState<AuthState>({
     user: null,
     profile: null,
@@ -120,7 +129,7 @@ export function useAuth() {
     if (!error && data.user) {
       logActivity({
         activityType: 'login',
-        description: `이메일 로그인: ${email}`,
+        description: '이메일 로그인',
       });
     }
     
@@ -128,14 +137,23 @@ export function useAuth() {
   }, []);
 
   // 이메일 회원가입
-  const signUpWithEmail = useCallback(async (email: string, password: string, displayName?: string) => {
+  // 공개 닉네임과 필수 동의(약관·개인정보·만 14세)를 메타데이터로 넘기면 handle_new_user가 프로필에 기록한다.
+  const signUpWithEmail = useCallback(async (
+    email: string,
+    password: string,
+    nickname?: string,
+    consents?: SignUpConsents,
+  ) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
         data: {
-          full_name: displayName,
+          nickname: nickname?.trim() || undefined,
+          agree_terms: consents?.terms ?? false,
+          agree_privacy: consents?.privacy ?? false,
+          agree_age14: consents?.age14 ?? false,
         },
       },
     });
@@ -143,14 +161,14 @@ export function useAuth() {
     if (!error && data.user) {
       logActivity({
         activityType: 'signup',
-        description: `새 계정 생성: ${email}`,
+        description: '새 계정 생성',
       });
 
       // Notify admins about new user signup (fire and forget)
       supabase.functions.invoke('notify-admin-new-user', {
         body: {
           user_id: data.user.id,
-          display_name: displayName || email.split('@')[0]
+          display_name: nickname?.trim() || '새 회원'
         }
       }).catch(err => {
         console.error('Failed to notify admins:', err);
@@ -179,8 +197,11 @@ export function useAuth() {
     });
     
     const { error } = await supabase.auth.signOut();
+    // 같은 기기를 다른 사람이 쓰더라도 이전 계정의 화면 데이터가 남지 않게
+    queryClient.clear();
+    clearUserLocalData();
     return { error };
-  }, []);
+  }, [queryClient]);
 
   // 프로필 업데이트
   const updateProfile = useCallback(async (updates: Partial<UserProfile>) => {

@@ -10,6 +10,7 @@ import { Home } from '@/pages/Home';
 import NotFound from '@/pages/NotFound';
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary';
 import { GonglonGate } from '@/components/gonglon/GonglonGate';
+import { ConsentGate } from '@/components/privacy/ConsentGate';
 import { useRegion } from '@/hooks/useRegion';
 import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
@@ -28,6 +29,7 @@ const CandidateCompare = lazy(() => import('@/pages/CandidateCompare').then((m) 
 const QuizPage = lazy(() => import('@/pages/QuizPage').then((m) => ({ default: m.QuizPage })));
 const LeaderboardPage = lazy(() => import('@/pages/LeaderboardPage').then((m) => ({ default: m.LeaderboardPage })));
 const NotificationSettingsPage = lazy(() => import('@/pages/NotificationSettingsPage').then((m) => ({ default: m.NotificationSettingsPage })));
+const LegalPage = lazy(() => import('@/pages/LegalPage').then((m) => ({ default: m.LegalPage })));
 const FAQPage = lazy(() => import('@/pages/FAQPage').then((m) => ({ default: m.FAQPage })));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const AdminUsers = lazy(() => import('@/pages/admin/AdminUsers').then((m) => ({ default: m.AdminUsers })));
@@ -150,6 +152,8 @@ function Index() {
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/notification-settings" element={<NotificationSettingsPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/terms" element={<LegalPage doc="terms" />} />
+          <Route path="/privacy" element={<LegalPage doc="privacy" />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminDashboard />} />
@@ -176,6 +180,7 @@ function Index() {
         onSelect={handleRegionChange}
         currentRegion={region}
       />
+      <ConsentGate />
     </AppContainer>
   );
 }

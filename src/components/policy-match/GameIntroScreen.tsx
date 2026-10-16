@@ -143,7 +143,7 @@ export function GameIntroScreen({ onStart }: GameIntroScreenProps) {
         </motion.button>
         
         <p className="text-center text-xs text-muted-foreground mt-4">
-          약 3~5분 소요 • 익명으로 진행됩니다
+          약 3~5분 소요 • 결과는 동의해야만 계정에 저장돼요
         </p>
       </motion.div>
     </motion.div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Shield, Heart, Bell, Check, Share2, RotateCcw, User, Brain } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -9,12 +9,15 @@ interface SentimentShiftScreenProps {
   results: MatchResult[];
   userPreference: PreferredCandidate;
   onRestart: () => void;
+  /** 결과 아래 '계정에 저장할까요?' 카드 */
+  saveSlot?: ReactNode;
 }
 
 export function SentimentShiftScreen({ 
   results, 
   userPreference,
-  onRestart 
+  onRestart,
+  saveSlot,
 }: SentimentShiftScreenProps) {
   const navigate = useNavigate();
   const [selectedChoice, setSelectedChoice] = useState<SentimentChoice>(null);
@@ -164,7 +167,9 @@ export function SentimentShiftScreen({
           </motion.div>
         </div>
 
-        {/* Bottom Actions */}
+        {saveSlot}
+
+      {/* Bottom Actions */}
         <div className="flex gap-3">
           <button
             onClick={onRestart}

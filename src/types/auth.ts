@@ -10,6 +10,11 @@ export interface UserProfile {
   phone_verified_at: string | null;
   identity_verified_at: string | null;
   identity_provider: string | null;
+  nickname?: string | null;
+  terms_agreed_at?: string | null;
+  privacy_agreed_at?: string | null;
+  age14_confirmed_at?: string | null;
+  political_consent_at?: string | null;
   region_sido: string | null;
   region_sigungu: string | null;
   created_at: string;

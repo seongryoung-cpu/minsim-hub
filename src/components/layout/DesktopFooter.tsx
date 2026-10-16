@@ -105,7 +105,12 @@ export function DesktopFooter() {
                     이용약관
                   </a>
                 ) : (
-                  <span className="text-sm text-muted-foreground">이용약관</span>
+                  <button
+                    onClick={() => navigate('/terms')}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    이용약관
+                  </button>
                 )}
               </li>
               <li>
@@ -119,7 +124,12 @@ export function DesktopFooter() {
                     개인정보처리방침
                   </a>
                 ) : (
-                  <span className="text-sm text-muted-foreground">개인정보처리방침</span>
+                  <button
+                    onClick={() => navigate('/privacy')}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    개인정보처리방침
+                  </button>
                 )}
               </li>
               <li>

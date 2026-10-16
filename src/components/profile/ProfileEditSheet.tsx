@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { NICKNAME_MESSAGES, NICKNAME_RULE, useSetNickname } from '@/hooks/usePrivacy';
 
 interface ProfileEditSheetProps {
   isOpen: boolean;
@@ -17,7 +18,8 @@ interface ProfileEditSheetProps {
 
 export function ProfileEditSheet({ isOpen, onClose }: ProfileEditSheetProps) {
   const { user, profile, refreshProfile } = useAuthContext();
-  const [displayName, setDisplayName] = useState(profile?.display_name || '');
+  const [displayName, setDisplayName] = useState(profile?.nickname || '');
+  const setNickname = useSetNickname();
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -76,20 +78,22 @@ export function ProfileEditSheet({ isOpen, onClose }: ProfileEditSheetProps) {
   const handleSave = async () => {
     if (!user) return;
 
-    // Validate display name
     const trimmedName = displayName.trim();
-    if (trimmedName.length > 20) {
-      toast.error('닉네임은 20자 이하여야 합니다');
-      return;
-    }
-
     setIsSaving(true);
 
     try {
+      // 공개 닉네임은 서버 함수로 (형식·중복·운영진 사칭 확인)
+      if (trimmedName !== (profile?.nickname || '')) {
+        const code = await setNickname.mutateAsync(trimmedName);
+        if (code !== 'ok') {
+          toast.error(NICKNAME_MESSAGES[code]);
+          return;
+        }
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
-          display_name: trimmedName || null,
           avatar_url: avatarUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -116,7 +120,7 @@ export function ProfileEditSheet({ isOpen, onClose }: ProfileEditSheetProps) {
 
   // Reset state when sheet opens
   const handleSheetOpen = () => {
-    setDisplayName(profile?.display_name || '');
+    setDisplayName(profile?.nickname || '');
     setAvatarUrl(profile?.avatar_url || '');
   };
 
@@ -181,18 +185,19 @@ export function ProfileEditSheet({ isOpen, onClose }: ProfileEditSheetProps) {
           {/* Display Name Input */}
           <div className="space-y-2">
             <Label htmlFor="displayName" className="text-sm font-medium">
-              닉네임
+              공개 닉네임
             </Label>
             <Input
               id="displayName"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="닉네임을 입력하세요"
-              maxLength={20}
+              placeholder="다른 사람에게 보일 이름"
+              maxLength={12}
               className="h-12"
             />
-            <p className="text-xs text-muted-foreground text-right">
-              {displayName.length}/20
+            <p className="flex justify-between gap-2 text-xs text-muted-foreground">
+              <span>{NICKNAME_RULE} · 실명은 피해 주세요</span>
+              <span className="tabular-nums">{displayName.length}/12</span>
             </p>
           </div>
 

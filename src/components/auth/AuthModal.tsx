@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { Checkbox } from '@/components/ui/checkbox';
+import { checkNickname, NICKNAME_MESSAGES, NICKNAME_RULE } from '@/hooks/usePrivacy';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -18,6 +21,12 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // 필수 동의 (선택 동의는 가입 때 받지 않는다 — 정치 성향 저장은 결과를 본 뒤 따로 묻는다)
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAge14, setAgreeAge14] = useState(false);
+  const [nickError, setNickError] = useState<string | null>(null);
+  const allAgreed = agreeTerms && agreePrivacy && agreeAge14;
   
   const { signInWithEmail, signUpWithEmail } = useAuthContext();
 
@@ -39,14 +48,39 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   const handleEmailSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!allAgreed) {
+      toast.error('필수 항목에 모두 동의해 주세요');
+      return;
+    }
     setIsLoading(true);
-    
-    const { error } = await signUpWithEmail(email, password, displayName);
-    
+
+    const nick = displayName.trim();
+    try {
+      const code = await checkNickname(nick);
+      if (code !== 'ok') {
+        setNickError(NICKNAME_MESSAGES[code]);
+        setIsLoading(false);
+        return;
+      }
+    } catch {
+      /* 확인을 못 해도 가입은 진행 — 겹치면 나중에 닉네임을 다시 정하게 한다 */
+    }
+
+    const { data, error } = await signUpWithEmail(email, password, nick, {
+      terms: agreeTerms,
+      privacy: agreePrivacy,
+      age14: agreeAge14,
+    });
+
     if (error) {
       toast.error('회원가입 실패', { description: error.message });
+    } else if (!data?.session) {
+      // 이메일 확인이 켜져 있으면 세션 없이 돌아온다 — '완료'가 아니라 '확인 메일을 보냈다'가 맞다
+      toast.success('확인 메일을 보냈어요', { description: `${email}로 온 메일의 링크를 누르면 가입이 끝나요.` });
+      onClose();
+      resetForm();
     } else {
-      toast.success('회원가입 완료!', { description: '환영합니다!' });
+      toast.success('가입을 마쳤어요', { description: '환영해요!' });
       onClose();
       resetForm();
     }
@@ -58,6 +92,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setEmail('');
     setPassword('');
     setDisplayName('');
+    setAgreeTerms(false);
+    setAgreePrivacy(false);
+    setAgreeAge14(false);
+    setNickError(null);
   };
 
   if (!isOpen) return null;
@@ -75,7 +113,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
-          className="bg-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+          className="bg-card rounded-2xl shadow-xl w-full max-w-md max-h-[92vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -210,17 +248,25 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   onSubmit={handleEmailSignup}
                 >
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">닉네임</label>
+                    <label htmlFor="signup-nickname" className="text-sm font-medium">공개 닉네임</label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                       <Input
+                        id="signup-nickname"
                         type="text"
-                        placeholder="닉네임을 입력하세요"
+                        placeholder="다른 사람에게 보일 이름"
                         value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        onChange={(e) => { setDisplayName(e.target.value); setNickError(null); }}
                         className="pl-10"
+                        maxLength={12}
+                        required
+                        aria-invalid={!!nickError}
+                        aria-describedby="signup-nickname-help"
                       />
                     </div>
+                    <p id="signup-nickname-help" className={`text-xs ${nickError ? 'text-destructive' : 'text-muted-foreground'}`}>
+                      {nickError ?? `${NICKNAME_RULE}. 실명은 피해 주세요.`}
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -254,7 +300,39 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full h-12" disabled={isLoading}>
+                  <fieldset className="space-y-2.5 rounded-xl border border-border p-3">
+                    <legend className="sr-only">필수 동의</legend>
+                    <label className="flex items-center gap-2.5 border-b border-border/60 pb-2.5 text-sm font-semibold">
+                      <Checkbox
+                        checked={allAgreed}
+                        onCheckedChange={(v) => { const on = v === true; setAgreeTerms(on); setAgreePrivacy(on); setAgreeAge14(on); }}
+                      />
+                      모두 동의 (필수)
+                    </label>
+                    <label className="flex items-center gap-2.5 text-sm">
+                      <Checkbox checked={agreeAge14} onCheckedChange={(v) => setAgreeAge14(v === true)} />
+                      만 14세 이상이에요
+                    </label>
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <label className="flex items-center gap-2.5">
+                        <Checkbox checked={agreeTerms} onCheckedChange={(v) => setAgreeTerms(v === true)} />
+                        이용약관 동의
+                      </label>
+                      <Link to="/terms" onClick={onClose} className="text-xs text-muted-foreground underline">보기</Link>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <label className="flex items-center gap-2.5">
+                        <Checkbox checked={agreePrivacy} onCheckedChange={(v) => setAgreePrivacy(v === true)} />
+                        개인정보 수집·이용 동의
+                      </label>
+                      <Link to="/privacy" onClick={onClose} className="text-xs text-muted-foreground underline">보기</Link>
+                    </div>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      정치 성향 결과 저장은 여기서 묻지 않아요. 테스트 결과를 본 뒤 따로 여쭤봐요.
+                    </p>
+                  </fieldset>
+
+                  <Button type="submit" className="w-full h-12" disabled={isLoading || !allAgreed}>
                     {isLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Share2, RefreshCw, Home, Sparkles, Target, TrendingUp } from 'lucide-react';
@@ -19,6 +20,8 @@ interface SpectrumResultScreenProps {
   totalAnswers: number;
   onRestart: () => void;
   onShare: () => void;
+  /** 결과 아래 '계정에 저장할까요?' 카드 */
+  saveSlot?: ReactNode;
 }
 
 export function SpectrumResultScreen({ 
@@ -26,7 +29,8 @@ export function SpectrumResultScreen({
   uncertainty, 
   totalAnswers,
   onRestart, 
-  onShare 
+  onShare,
+  saveSlot,
 }: SpectrumResultScreenProps) {
   const navigate = useNavigate();
   const radarData = createRadarData(scores, uncertainty);
@@ -169,6 +173,8 @@ export function SpectrumResultScreen({
             );
           })}
         </motion.div>
+
+        {saveSlot && <div className="pt-2">{saveSlot}</div>}
 
         {/* Actions */}
         <motion.div

@@ -1007,6 +1007,11 @@ export type Database = {
           identity_verified_at: string | null
           phone_number: string | null
           phone_verified_at: string | null
+          nickname: string | null
+          terms_agreed_at: string | null
+          privacy_agreed_at: string | null
+          age14_confirmed_at: string | null
+          political_consent_at: string | null
           region_sido: string | null
           region_sigungu: string | null
           updated_at: string
@@ -1023,6 +1028,11 @@ export type Database = {
           identity_verified_at?: string | null
           phone_number?: string | null
           phone_verified_at?: string | null
+          nickname?: string | null
+          terms_agreed_at?: string | null
+          privacy_agreed_at?: string | null
+          age14_confirmed_at?: string | null
+          political_consent_at?: string | null
           region_sido?: string | null
           region_sigungu?: string | null
           updated_at?: string
@@ -1039,6 +1049,11 @@ export type Database = {
           identity_verified_at?: string | null
           phone_number?: string | null
           phone_verified_at?: string | null
+          nickname?: string | null
+          terms_agreed_at?: string | null
+          privacy_agreed_at?: string | null
+          age14_confirmed_at?: string | null
+          political_consent_at?: string | null
           region_sido?: string | null
           region_sigungu?: string | null
           updated_at?: string
@@ -1499,6 +1514,13 @@ export type Database = {
         }[]
       }
       get_quick_agendas: { Args: { p_sido?: string | null }; Returns: Json }
+      check_nickname: { Args: { p_nickname: string }; Returns: string }
+      set_my_nickname: { Args: { p_nickname: string }; Returns: string }
+      accept_required_terms: { Args: { p_age14: boolean }; Returns: undefined }
+      set_political_consent: { Args: { p_on: boolean }; Returns: Json }
+      get_my_political_data_count: { Args: Record<PropertyKey, never>; Returns: number }
+      delete_my_account: { Args: Record<PropertyKey, never>; Returns: undefined }
+      admin_delete_user: { Args: { p_user: string }; Returns: undefined }
       delete_my_claim: { Args: { p_claim_id: string }; Returns: Json }
       evaluate_claim: {
         Args: { p_claim_id: string; p_evidence: string; p_perspective: string }

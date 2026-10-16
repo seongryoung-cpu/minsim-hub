@@ -172,6 +172,27 @@ export function useSaveSpectrumAnswer() {
   });
 }
 
+// 답변 여러 개를 한 번에 저장 (결과 화면에서 저장 동의를 받은 뒤)
+export function useSaveSpectrumAnswers() {
+  const { user } = useAuthContext();
+
+  return useMutation({
+    mutationFn: async (data: { answers: { questionId: string; value: number }[]; sessionId: string }) => {
+      if (!user) throw new Error('로그인이 필요합니다');
+      if (data.answers.length === 0) return;
+      const { error } = await supabase.from('spectrum_answers').insert(
+        data.answers.map((a) => ({
+          user_id: user.id,
+          question_id: a.questionId,
+          answer_value: a.value,
+          session_id: data.sessionId,
+        })),
+      );
+      if (error) throw error;
+    },
+  });
+}
+
 // 사용자 답변 히스토리 조회
 export function useSpectrumAnswers(sessionId?: string) {
   const { user } = useAuthContext();

@@ -69,7 +69,8 @@ export function AdminUsers() {
     try {
       let query = supabase
         .from('profiles')
-        .select('*')
+        // 본인인증 CI·전화번호 같은 식별 정보는 목록에 불러오지 않는다
+        .select('id, user_id, display_name, nickname, avatar_url, verification_level, region_sido, region_sigungu, created_at, updated_at, terms_agreed_at, political_consent_at')
         .order('created_at', { ascending: false });
 
       if (filterLevel !== 'all') {
@@ -112,7 +113,7 @@ export function AdminUsers() {
     const query = searchQuery.toLowerCase();
     return (
       user.display_name?.toLowerCase().includes(query) ||
-      user.phone_number?.includes(query) ||
+      user.nickname?.toLowerCase().includes(query) ||
       user.region_sido?.toLowerCase().includes(query)
     );
   });
@@ -177,23 +178,19 @@ export function AdminUsers() {
     setIsDeleting(true);
 
     try {
-      // Delete user roles first
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', deletingUser.user_id);
-
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', deletingUser.user_id);
-
-      if (profileError) throw profileError;
-
-      toast.success('사용자가 삭제되었습니다');
-      setDeletingUser(null);
-      fetchUsers(); // Refresh list
+      // 서버 함수가 auth 계정을 지우고, FK CASCADE로 그 사람의 데이터가 함께 지워진다
+      const { error } = await supabase.rpc('admin_delete_user', { p_user: deletingUser.user_id });
+      if (error) {
+        const msg = error.message.includes('cannot_delete_self') ? '본인 계정은 여기서 지울 수 없어요'
+          : error.message.includes('last_admin') ? '마지막 관리자는 지울 수 없어요'
+          : error.message.includes('user_not_found') ? '이미 없는 사용자예요'
+          : '삭제에 실패했습니다';
+        toast.error(msg);
+      } else {
+        toast.success('사용자와 그 사용자의 데이터를 삭제했습니다');
+        setDeletingUser(null);
+        fetchUsers();
+      }
     } catch (error) {
       console.error('Failed to delete user:', error);
       toast.error('삭제에 실패했습니다');
@@ -283,7 +280,7 @@ export function AdminUsers() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">{user.display_name || '익명'}</p>
+                      <p className="font-medium">{user.nickname || '닉네임 없음'}</p>
                       <VerificationBadge level={user.verification_level} size="sm" showLabel={false} />
                       {user.isAdmin && (
                         <span className="px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded-md font-medium">
@@ -292,7 +289,7 @@ export function AdminUsers() {
                       )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {user.phone_number || '전화번호 미등록'}
+                      {user.terms_agreed_at ? '필수 동의 완료' : '필수 동의 전'} · 성향 저장 {user.political_consent_at ? '동의' : '미동의'}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {new Date(user.created_at).toLocaleDateString('ko-KR')} 가입
@@ -442,7 +439,7 @@ export function AdminUsers() {
           <AlertDialogHeader>
             <AlertDialogTitle>사용자 삭제</AlertDialogTitle>
             <AlertDialogDescription>
-              <span className="font-medium text-foreground">{deletingUser?.display_name || '익명'}</span> 사용자를 정말 삭제하시겠습니까?
+              <span className="font-medium text-foreground">{deletingUser?.nickname || '닉네임 없음'}</span> 사용자를 정말 삭제하시겠습니까? 계정과 그 사람의 투표·주장·결과 기록이 모두 지워지고 되돌릴 수 없어요.
               <br />
               이 작업은 되돌릴 수 없습니다.
             </AlertDialogDescription>
@@ -450,7 +447,7 @@ export function AdminUsers() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(e) => { e.preventDefault(); void handleDelete(); }}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

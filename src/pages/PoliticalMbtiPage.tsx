@@ -6,7 +6,9 @@ import { toast } from 'sonner';
 import { SpectrumIntroScreen } from '@/components/political-mbti/SpectrumIntroScreen';
 import { SpectrumSwipeCard, SpectrumSwipeControls } from '@/components/political-mbti/SpectrumSwipeCard';
 import { SpectrumResultScreen } from '@/components/political-mbti/SpectrumResultScreen';
-import { useSpectrumQuestions, useSaveSpectrum, useSaveSpectrumAnswer } from '@/hooks/useSpectrumTest';
+import { useSpectrumQuestions, useSaveSpectrum, useSaveSpectrumAnswers } from '@/hooks/useSpectrumTest';
+import { usePoliticalConsent } from '@/hooks/usePrivacy';
+import { PoliticalSaveCard } from '@/components/privacy/PoliticalSaveCard';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
 import { 
@@ -26,8 +28,11 @@ type GameStep = 'intro' | 'swipe' | 'result';
 export function PoliticalMbtiPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthContext();
+  const { hasConsent } = usePoliticalConsent();
   const saveSpectrum = useSaveSpectrum();
-  const saveAnswer = useSaveSpectrumAnswer();
+  const saveAnswers = useSaveSpectrumAnswers();
+  // 답변은 화면 안에만 들고 있다가, 저장 동의가 있을 때만 결과와 함께 서버에 쓴다
+  const [answers, setAnswers] = useState<{ questionId: string; value: number }[]>([]);
 
   const [currentStep, setCurrentStep] = useState<GameStep>('intro');
   const [scores, setScores] = useState<SpectrumScores>(getInitialSpectrumScores());
@@ -83,16 +88,16 @@ export function PoliticalMbtiPage() {
     setScores(newScores);
     setUncertainty(newUncertainty);
     setAnsweredIds(prev => new Set([...prev, currentQuestion.id]));
+    setAnswers(prev => [...prev, { questionId: currentQuestion.id, value }]);
+  }, [currentQuestion, scores, uncertainty]);
 
-    // 답변 저장 (비동기)
-    if (isAuthenticated) {
-      saveAnswer.mutate({
-        questionId: currentQuestion.id,
-        value,
-        sessionId,
-      });
-    }
-  }, [currentQuestion, scores, uncertainty, isAuthenticated, saveAnswer, sessionId]);
+  // 서버에 결과·답변 저장 (동의가 있는 경우에만 부른다 — DB도 동의 없으면 막는다)
+  const persist = useCallback(async () => {
+    if (hasSaved) return;
+    await saveSpectrum.mutateAsync({ scores, uncertainty, totalAnswers: answeredIds.size, sessionId });
+    await saveAnswers.mutateAsync({ answers, sessionId });
+    setHasSaved(true);
+  }, [hasSaved, saveSpectrum, saveAnswers, scores, uncertainty, answeredIds.size, sessionId, answers]);
 
   // 완료 처리
   const handleComplete = useCallback(async () => {
@@ -105,28 +110,22 @@ export function PoliticalMbtiPage() {
       metadata: { totalAnswers: answeredIds.size },
     });
 
-    // 결과 저장 (로그인 사용자만)
-    if (isAuthenticated && !hasSaved) {
+    // 이미 저장에 동의한 사람만 바로 저장. 아니면 결과 화면에서 묻는다.
+    if (isAuthenticated && hasConsent && !hasSaved) {
       try {
-        await saveSpectrum.mutateAsync({
-          scores,
-          uncertainty,
-          totalAnswers: answeredIds.size,
-          sessionId,
-        });
-        setHasSaved(true);
-        toast.success('결과가 저장되었습니다');
+        await persist();
       } catch (error) {
         console.error('Failed to save spectrum result:', error);
       }
     }
-  }, [isAuthenticated, hasSaved, scores, uncertainty, answeredIds.size, saveSpectrum, sessionId]);
+  }, [isAuthenticated, hasConsent, hasSaved, answeredIds.size, persist]);
 
   // 재시작
   const handleRestart = useCallback(() => {
     setScores(getInitialSpectrumScores());
     setUncertainty(getInitialUncertainty());
     setAnsweredIds(new Set());
+    setAnswers([]);
     setCurrentQuestion(null);
     setCurrentStep('swipe');
     setHasSaved(false);
@@ -194,6 +193,7 @@ export function PoliticalMbtiPage() {
         totalAnswers={totalAnswers}
         onRestart={handleRestart}
         onShare={handleShare}
+        saveSlot={<PoliticalSaveCard save={persist} saved={hasSaved} />}
       />
     );
   }

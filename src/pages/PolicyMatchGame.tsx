@@ -20,10 +20,11 @@ import {
 } from '@/types/policy';
 import { usePolicyCards } from '@/hooks/usePolicyCards';
 import { useSavePolicyMatchResult } from '@/hooks/usePolicyMatchResults';
+import { usePoliticalConsent } from '@/hooks/usePrivacy';
+import { PoliticalSaveCard } from '@/components/privacy/PoliticalSaveCard';
 import { useCandidates } from '@/hooks/useCandidates';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { logActivity } from '@/lib/activityLogger';
-import { toast } from 'sonner';
 import type { Region } from '@/types/region';
 
 export type GameStep = 'intro' | 'swipe' | 'pre-reveal' | 'result' | 'sentiment';
@@ -39,6 +40,7 @@ export function PolicyMatchGame({ region, onChangeRegion }: PolicyMatchGameProps
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthContext();
   const saveResult = useSavePolicyMatchResult();
+  const { hasConsent } = usePoliticalConsent();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [choices, setChoices] = useState<UserChoice[]>([]);
   const [currentStep, setCurrentStep] = useState<GameStep>('intro');
@@ -238,7 +240,8 @@ export function PolicyMatchGame({ region, onChangeRegion }: PolicyMatchGameProps
     logActivity({
       activityType: 'policy_match_complete',
       description: `정책 매칭 완료: ${policyCards.length}개 질문`,
-      metadata: { totalQuestions: policyCards.length, preference },
+      // 어떤 후보를 골랐는지는 정치 성향이라 로그에 남기지 않는다
+      metadata: { totalQuestions: policyCards.length },
     });
   }, [policyCards.length]);
 
@@ -258,32 +261,35 @@ export function PolicyMatchGame({ region, onChangeRegion }: PolicyMatchGameProps
     return scoresMap;
   }, [candidates, calculateCategoryScores]);
 
+  // 서버에 결과 저장 (정치 성향 저장 동의가 있을 때만 — DB도 동의 없으면 막는다)
+  const persist = useCallback(async () => {
+    if (hasSaved || results.length === 0) return;
+    const topMatch = results[0];
+    await saveResult.mutateAsync({
+      region_name: region?.sido || '전국',
+      top_match_candidate_id: topMatch.candidateId,
+      top_match_candidate_name: topMatch.candidateName,
+      top_match_score: topMatch.matchScore,
+      preferred_candidate_id: userPreference?.candidateId || null,
+      preferred_candidate_name: userPreference?.candidateName || null,
+      results: results,
+      choices: choices,
+      total_questions: policyCards.length,
+    });
+    setHasSaved(true);
+  }, [hasSaved, results, userPreference, region?.sido, choices, policyCards.length, saveResult]);
+
   const handleContinueToSentiment = useCallback(async () => {
     setCurrentStep('sentiment');
-    
-    // 결과 저장 (로그인한 사용자만, 한 번만)
-    if (isAuthenticated && !hasSaved && results.length > 0) {
-      const topMatch = results[0];
+    // 이미 동의한 사람만 바로 저장. 아니면 다음 화면에서 묻는다.
+    if (isAuthenticated && hasConsent && !hasSaved) {
       try {
-        await saveResult.mutateAsync({
-          region_name: region?.sido || '전국',
-          top_match_candidate_id: topMatch.candidateId,
-          top_match_candidate_name: topMatch.candidateName,
-          top_match_score: topMatch.matchScore,
-          preferred_candidate_id: userPreference?.candidateId || null,
-          preferred_candidate_name: userPreference?.candidateName || null,
-          results: results,
-          choices: choices,
-          total_questions: policyCards.length,
-        });
-        setHasSaved(true);
-        toast.success('결과가 저장되었습니다');
+        await persist();
       } catch (error) {
         console.error('Failed to save result:', error);
-        toast.error('결과를 저장하지 못했어요. 결과는 이 화면에서 계속 볼 수 있어요.');
       }
     }
-  }, [isAuthenticated, hasSaved, results, userPreference, region?.sido, choices, policyCards.length, saveResult]);
+  }, [isAuthenticated, hasConsent, hasSaved, persist]);
 
   // 로딩 상태
   if (isLoading) {
@@ -383,6 +389,7 @@ export function PolicyMatchGame({ region, onChangeRegion }: PolicyMatchGameProps
         results={results}
         userPreference={userPreference}
         onRestart={handleRestart}
+        saveSlot={<PoliticalSaveCard save={persist} saved={hasSaved} />}
       />
     );
   }

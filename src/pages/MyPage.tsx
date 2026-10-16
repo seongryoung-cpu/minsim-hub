@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, HelpCircle, ChevronRight, ChevronDown, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Trash2, Loader2, Bell, Pencil } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { User, HelpCircle, ChevronRight, MapPin, Share2, Moon, Sun, LogOut, Shield, Settings, Mail, Phone, ExternalLink, Loader2, Bell, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { PQStatsCard } from '@/components/quiz/PQStatsCard';
@@ -14,6 +13,10 @@ import { AuthModal } from '@/components/auth/AuthModal';
 import { VerificationBadge } from '@/components/auth/VerificationBadge';
 import { IdentityVerificationModal } from '@/components/auth/IdentityVerificationModal';
 import { ProfileEditSheet } from '@/components/profile/ProfileEditSheet';
+import { PrivacySettingsCard } from '@/components/privacy/PrivacySettingsCard';
+import { clearUserLocalData, unsubscribeWebPush } from '@/lib/sessionCleanup';
+import { publicName } from '@/hooks/usePrivacy';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -45,6 +48,7 @@ const menuItems = [
 
 export function MyPage({ region, onRegionChange }: MyPageProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
@@ -88,36 +92,37 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
     await refreshProfile();
   };
 
+  // 탈퇴: 서버에서 계정을 지우면(FK CASCADE) 계정에 딸린 데이터가 함께 지워진다.
   const handleDeleteAccount = async () => {
+    if (!user) return;
     setIsDeleting(true);
-    
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('로그인이 필요합니다');
+      // 프로필 사진은 저장소 파일이라 DB CASCADE로 안 지워진다 — 먼저 지운다 (실패해도 탈퇴는 진행)
+      const { data: files } = await supabase.storage.from('avatars').list(user.id);
+      if (files?.length) {
+        await supabase.storage.from('avatars').remove(files.map((f) => `${user.id}/${f.name}`));
+      }
+
+      const { error } = await supabase.rpc('delete_my_account');
+      if (error) {
+        toast.error(error.message.includes('last_admin')
+          ? '마지막 관리자는 탈퇴할 수 없어요. 다른 관리자를 먼저 지정해 주세요.'
+          : '회원 탈퇴에 실패했어요. 잠시 뒤 다시 해 주세요.');
         setIsDeleting(false);
         return;
       }
 
-      const response = await supabase.functions.invoke('delete-account', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (response.error) {
-        throw response.error;
-      }
-
-      toast.success('회원 탈퇴가 완료되었습니다');
+      await unsubscribeWebPush();
+      await supabase.auth.signOut({ scope: 'local' });
+      queryClient.clear();
+      clearUserLocalData();
       setIsDeleteDialogOpen(false);
+      toast.success('탈퇴했어요. 그동안 함께해 주셔서 고마워요.');
       navigate('/');
     } catch (error) {
       console.error('Failed to delete account:', error);
-      toast.error('회원 탈퇴에 실패했습니다');
+      toast.error('회원 탈퇴에 실패했어요. 잠시 뒤 다시 해 주세요.');
     }
-    
     setIsDeleting(false);
   };
 
@@ -166,7 +171,7 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-foreground text-lg">
-                      {profile?.display_name || user?.email?.split('@')[0] || '시민'} 님
+                      {publicName(profile)} 님
                     </h2>
                     <VerificationBadge level={profile?.verification_level ?? 'social'} size="sm" showLabel={false} />
                   </div>
@@ -464,62 +469,27 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           </motion.div>
         )}
 
-        {/* Legal Links */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="flex items-center justify-center gap-4 flex-wrap"
-        >
-          {appSettings?.link_terms && (
+        {/* 개인정보 · 약관 · 탈퇴 */}
+        {isAuthenticated ? (
+          <PrivacySettingsCard onRequestDeleteAccount={() => setIsDeleteDialogOpen(true)} />
+        ) : (
+          <div className="flex items-center justify-center gap-4 text-xs">
             <a
-              href={appSettings.link_terms}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              href={appSettings?.link_terms || '/terms'}
+              onClick={(e) => { if (!appSettings?.link_terms) { e.preventDefault(); navigate('/terms'); } }}
+              className="text-muted-foreground underline hover:text-foreground"
             >
               이용약관
             </a>
-          )}
-          {appSettings?.link_privacy && appSettings?.link_terms && (
             <span className="text-muted-foreground/50">|</span>
-          )}
-          {appSettings?.link_privacy && (
             <a
-              href={appSettings.link_privacy}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
+              href={appSettings?.link_privacy || '/privacy'}
+              onClick={(e) => { if (!appSettings?.link_privacy) { e.preventDefault(); navigate('/privacy'); } }}
+              className="text-muted-foreground underline hover:text-foreground"
             >
               개인정보처리방침
             </a>
-          )}
-        </motion.div>
-
-        {/* Advanced Settings - Hidden Delete Account */}
-        {isAuthenticated && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.42 }}
-          >
-            <Collapsible>
-              <CollapsibleTrigger className="w-full flex items-center justify-center gap-1 py-2 text-[10px] text-muted-foreground/30 hover:text-muted-foreground/50 transition-colors">
-                <span>고급 설정</span>
-                <ChevronDown size={10} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-2">
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                    className="text-[10px] text-muted-foreground/30 hover:text-destructive/50 transition-colors"
-                  >
-                    회원탈퇴
-                  </button>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </motion.div>
+          </div>
         )}
 
         {/* App Info */}
@@ -573,15 +543,13 @@ export function MyPage({ region, onRegionChange }: MyPageProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>회원 탈퇴</AlertDialogTitle>
             <AlertDialogDescription>
-              정말로 탈퇴하시겠습니까?
-              <br /><br />
-              탈퇴 시 모든 데이터(프로필, 정책 매칭 결과, 퀴즈 기록 등)가 삭제되며, 이 작업은 되돌릴 수 없습니다.
+              탈퇴하면 계정과 함께 프로필, 공론 투표·주장, 성향·정책 매칭 결과, 퀴즈 기록, 관심 후보, 알림 설정이 모두 지워지고 되돌릴 수 없어요.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>취소</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteAccount}
+              onClick={(e) => { e.preventDefault(); void handleDeleteAccount(); }}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
