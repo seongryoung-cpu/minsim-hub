@@ -21,7 +21,7 @@ export function AgendaMetaLine({
 }) {
   const { data: engagement } = useAgendaEngagement(agendaId);
   const toggle = useToggleAgendaInterest();
-  const { handleError, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
   const interested = engagement?.my_interest ?? false;
 
   const parts = [`참여 ${participants.toLocaleString()}명`];
@@ -35,7 +35,7 @@ export function AgendaMetaLine({
         <button
           type="button"
           aria-pressed={interested}
-          onClick={() => toggle.mutate(agendaId, { onError: handleError })}
+          onClick={() => requireLogin('interest', () => toggle.mutate(agendaId, { onError: handleError }))}
           disabled={toggle.isPending}
           className={cn(
             'flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] font-semibold transition-colors',

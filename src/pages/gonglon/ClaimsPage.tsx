@@ -16,7 +16,6 @@ import {
   type EvidenceRating,
   type PerspectiveRating,
 } from '@/hooks/useClaims';
-import { useAuthContext } from '@/contexts/AuthContext';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import { ClaimWriteSheet } from '@/components/gonglon/ClaimWriteSheet';
 import { PageLoading } from '@/components/ui/loading-state';
@@ -56,6 +55,8 @@ export function ClaimsPage() {
   const { data, isLoading } = useAgendaClaims(agendaId, issueId);
   const [expandAll, setExpandAll] = useState(false);
   const [writeOpen, setWriteOpen] = useState(false);
+  const { requireLogin, loginModal } = useLoginPrompt();
+  const openWrite = () => requireLogin('write', () => setWriteOpen(true));
 
   if (agendaLoading || isLoading) return <PageLoading />;
 
@@ -139,14 +140,14 @@ export function ClaimsPage() {
             claims={claims}
             myPick={data.my_pick ?? null}
             isOpen={isOpen}
-            onWrite={() => setWriteOpen(true)}
+            onWrite={openWrite}
           />
         )}
 
         {isOpen && claims.length === 0 && (
           <button
             type="button"
-            onClick={() => setWriteOpen(true)}
+            onClick={openWrite}
             className="h-12 w-full rounded-xl bg-primary text-sm font-bold text-primary-foreground"
           >
             첫 주장 쓰기
@@ -155,6 +156,7 @@ export function ClaimsPage() {
       </main>
 
       <ClaimWriteSheet open={writeOpen} onOpenChange={setWriteOpen} agendaId={agendaId!} issueId={issueId} />
+      {loginModal}
     </div>
   );
 }
@@ -178,7 +180,7 @@ function ClaimCard({
   const [open, setOpen] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const remove = useDeleteMyClaim();
-  const { handleError, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
   const expanded = open || forceOpen;
   const hasDetail = !!claim.reason || !!claim.counter || claim.sources.length > 0;
   const perspective = perspectiveLabel(claim);
@@ -284,7 +286,7 @@ function ClaimCard({
             <button
               type="button"
               aria-expanded={evaluating}
-              onClick={() => setEvaluating((v) => !v)}
+              onClick={() => (evaluating ? setEvaluating(false) : requireLogin('evaluate', () => setEvaluating(true)))}
               className="h-9 rounded-full border border-border px-3 text-xs font-semibold text-foreground/80 hover:bg-secondary"
             >
               {claim.my_evaluation ? '내 평가 바꾸기' : '이 주장 평가하기'}
@@ -401,11 +403,10 @@ function PickSection({
   isOpen: boolean;
   onWrite: () => void;
 }) {
-  const { isAuthenticated } = useAuthContext();
   const [selected, setSelected] = useState<string | null>(myPick?.claim_id ?? null);
   const [reason, setReason] = useState(myPick?.reason ?? '');
   const pick = usePickClaim();
-  const { handleError, openLogin, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
 
   // 서버 값이 늦게 오거나 바뀌면 따라간다
   useEffect(() => {
@@ -417,14 +418,13 @@ function PickSection({
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (!isAuthenticated) {
-      openLogin();
-      return;
-    }
     if (!selected) return;
-    pick.mutate(
-      { agendaId, claimId: selected, reason },
-      { onSuccess: () => toast.success(myPick ? '선택을 바꿨어요' : '선택했어요'), onError: handleError },
+    const claimId = selected;
+    requireLogin('pick', () =>
+      pick.mutate(
+        { agendaId, claimId, reason },
+        { onSuccess: () => toast.success(myPick ? '선택을 바꿨어요' : '선택했어요'), onError: handleError },
+      ),
     );
   };
 

@@ -27,15 +27,17 @@ interface AgendaLinkCardProps {
  */
 export function AgendaLinkCard({ agenda, from }: AgendaLinkCardProps) {
   const vote = useCastAgendaVote();
-  const { handleError, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
   const [rechoosing, setRechoosing] = useState(false);
   const to = `/gonglon/${agenda.agenda_id}`;
   const state = { from };
 
   const choose = (choice: AgendaChoice) => {
-    vote.mutate(
-      { agendaId: agenda.agenda_id, stage: 'first', choice, source: 'pledge_card' },
-      { onSuccess: () => setRechoosing(false), onError: handleError },
+    requireLogin('vote', () =>
+      vote.mutate(
+        { agendaId: agenda.agenda_id, stage: 'first', choice, source: 'pledge_card' },
+        { onSuccess: () => setRechoosing(false), onError: handleError },
+      ),
     );
   };
 

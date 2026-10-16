@@ -28,7 +28,7 @@ export function QuickVoteDeck({ sido }: { sido?: string }) {
   const { data: list } = useQuickAgendas(sido);
   const vote = useQuickVote();
   const interest = useQuickInterest();
-  const { handleError, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
   const reduceMotion = useReducedMotion();
 
   const [skipped, setSkipped] = useState<string[]>([]);
@@ -42,9 +42,11 @@ export function QuickVoteDeck({ sido }: { sido?: string }) {
   const votedCount = list.filter((a) => a.my_vote).length;
 
   const cast = (agenda: QuickAgenda, choice: AgendaChoice) => {
-    vote.mutate(
-      { agendaId: agenda.id, choice },
-      { onSuccess: () => setJustVoted({ id: agenda.id, choice }), onError: handleError },
+    requireLogin('vote', () =>
+      vote.mutate(
+        { agendaId: agenda.id, choice },
+        { onSuccess: () => setJustVoted({ id: agenda.id, choice }), onError: handleError },
+      ),
     );
   };
 
@@ -109,7 +111,7 @@ export function QuickVoteDeck({ sido }: { sido?: string }) {
                 type="button"
                 aria-pressed={showing.my_interest}
                 disabled={interest.isPending}
-                onClick={() => interest.mutate(showing.id, { onError: handleError })}
+                onClick={() => requireLogin('interest', () => interest.mutate(showing.id, { onError: handleError }))}
                 className={cn(
                   'flex h-10 items-center gap-1 rounded-full border px-3 text-[13px] font-semibold transition-colors',
                   showing.my_interest

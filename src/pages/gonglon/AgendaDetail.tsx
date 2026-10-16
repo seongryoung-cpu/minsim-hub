@@ -482,7 +482,7 @@ function safeHost(url: string) {
 function MyOpinionSection({ agenda, status }: { agenda: Agenda; status: string }) {
   const { data: summary } = useAgendaSummary(agenda.id);
   const vote = useCastAgendaVote();
-  const { handleError, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
   const isOpen = status === 'open';
   const isClosed = status === 'closed';
   const myFirst = summary?.my_first ?? null;
@@ -490,7 +490,9 @@ function MyOpinionSection({ agenda, status }: { agenda: Agenda; status: string }
   const finalCount = summary?.final_participants ?? 0;
 
   const choose = (choice: AgendaChoice) =>
-    vote.mutate({ agendaId: agenda.id, stage: 'final', choice, source: 'agenda' }, { onError: handleError });
+    requireLogin('vote', () =>
+      vote.mutate({ agendaId: agenda.id, stage: 'final', choice, source: 'agenda' }, { onError: handleError }),
+    );
 
   const heading = isClosed
     ? '공론 결과'
@@ -553,7 +555,7 @@ function StatementsSection({ agendaId, isOpen }: { agendaId: string; isOpen: boo
   const [body, setBody] = useState('');
   const { statements, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage } = useAgendaStatements(agendaId, sort);
   const post = usePostStatement();
-  const { handleError, loginModal } = useLoginPrompt();
+  const { requireLogin, handleError, loginModal } = useLoginPrompt();
 
   const trimmed = body.trim();
   const canSubmit = trimmed.length >= STATEMENT_MIN && trimmed.length <= STATEMENT_MAX && !post.isPending;
@@ -561,16 +563,18 @@ function StatementsSection({ agendaId, isOpen }: { agendaId: string; isOpen: boo
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    post.mutate(
-      { agendaId, body: trimmed },
-      {
-        onSuccess: () => {
-          setBody('');
-          setSort('latest');
-          toast.success('의견을 남겼어요');
+    requireLogin('write', () =>
+      post.mutate(
+        { agendaId, body: trimmed },
+        {
+          onSuccess: () => {
+            setBody('');
+            setSort('latest');
+            toast.success('의견을 남겼어요');
+          },
+          onError: handleError,
         },
-        onError: handleError,
-      },
+      ),
     );
   };
 
