@@ -1,6 +1,6 @@
 // Election Status Schema - 선거 상태 표준 데이터 구조
 
-export type ElectionPhase = 'preliminary' | 'primary' | 'general' | 'confirmed';
+export type ElectionPhase = string;
 
 export interface ElectionMilestone {
   id: ElectionPhase;
@@ -65,22 +65,6 @@ export const sortByElectionResult = <T extends Pick<Candidate, 'electionResult' 
     return ra - rb || (b.voteShare ?? 0) - (a.voteShare ?? 0);
   });
 
-export interface ElectionStatus {
-  regionId: string;
-  regionName: string;
-  electionType: '지방선거' | '국회의원선거' | '대통령선거' | '보궐선거';
-  electionLevel: 'metropolitan' | 'district'; // 광역 vs 기초
-  currentPhase: ElectionPhase;
-  electionDate: string;
-  dDay: number;
-  milestones: ElectionMilestone[];
-  candidates: Candidate[];
-}
-
-// 현재 추적 중인 선거(2026 지방선거)와 다음 예정 선거
-export const CURRENT_ELECTION = { name: '2026 지방선거', date: '2026-06-03' } as const;
-export const NEXT_ELECTION = { name: '2028 총선', fullName: '제23대 국회의원 선거', date: '2028-04-12' } as const;
-
 // 'YYYY-MM-DD'를 사용자 현지 날짜 기준 자정으로 변환 (UTC 파싱으로 하루 밀리는 문제 방지)
 const toLocalDate = (ymd: string): Date => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -94,17 +78,15 @@ export const calculateDDayTo = (ymd: string): number => {
   return Math.round((toLocalDate(ymd).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 };
 
-// D-Day 계산 함수 (현재 추적 중인 선거 기준)
-export const calculateDDay = (): number => calculateDDayTo(CURRENT_ELECTION.date);
-
-export const isCurrentElectionOver = (): boolean => calculateDDay() < 0;
-
 // D-Day 표기: D-12 / D-DAY / 종료
 export const formatDDay = (dDay: number): string => {
   if (dDay > 0) return `D-${dDay}`;
   if (dDay === 0) return 'D-DAY';
   return '종료';
 };
+
+/** 'YYYY-MM-DD' → 'YYYY.MM.DD' */
+export const formatYmd = (ymd: string | null | undefined): string => (ymd ? ymd.replace(/-/g, '.') : '');
 
 // 정당 색상 맵
 export const PARTY_COLORS: Record<string, string> = {
@@ -118,97 +100,29 @@ export const PARTY_COLORS: Record<string, string> = {
   '무소속': '#808080',
 };
 
-// 선거 진행 마일스톤 원본 (날짜 = 해당 단계 시작일)
-const BASE_MILESTONES: Omit<ElectionMilestone, 'isComplete' | 'isCurrent' | 'isLocked'>[] = [
-  { id: 'preliminary', label: '예비후보 등록', shortLabel: '예비후보', date: '2026-03-01' },
-  { id: 'primary', label: '당내 경선', shortLabel: '당내경선', date: '2026-04-15' },
-  { id: 'general', label: '본선 대결', shortLabel: '본선대결', date: '2026-05-20' },
-  { id: 'confirmed', label: '당선 확정', shortLabel: '당선확정', date: '2026-06-03' },
-];
-
-// 오늘 날짜 기준으로 각 단계의 진행 상태 계산 (선거일이 지나면 전 단계 완료)
-export const getElectionMilestones = (): ElectionMilestone[] => {
-  const over = isCurrentElectionOver();
+/** DB 진행 단계 항목 → 오늘 기준 진행 상태 (선거일이 지나면 전 단계 완료) */
+export const buildMilestones = (
+  items: { id: string; title: string; short_label: string | null; start_date: string | null }[],
+  electionDate: string,
+): ElectionMilestone[] => {
+  const over = calculateDDayTo(electionDate) < 0;
   let currentIdx = -1;
   if (!over) {
-    BASE_MILESTONES.forEach((m, i) => {
-      if (calculateDDayTo(m.date) <= 0) currentIdx = i;
+    items.forEach((m, i) => {
+      if (m.start_date && calculateDDayTo(m.start_date) <= 0) currentIdx = i;
     });
     if (currentIdx === -1) currentIdx = 0;
   }
-  return BASE_MILESTONES.map((m, i) => ({
-    ...m,
+  return items.map((m, i) => ({
+    id: m.id,
+    label: m.title,
+    shortLabel: m.short_label || m.title,
+    date: m.start_date ?? '',
     isComplete: over || i < currentIdx,
     isCurrent: !over && i === currentIdx,
     isLocked: !over && i > currentIdx,
   }));
 };
-
-export const getCurrentPhase = (): ElectionPhase => {
-  const milestones = getElectionMilestones();
-  return (milestones.find((m) => m.isCurrent) ?? milestones[milestones.length - 1]).id;
-};
-
-// 기존 코드 호환용 (모듈 로드 시점 기준 값)
-export const PRELIMINARY_PHASE_MILESTONES: ElectionMilestone[] = getElectionMilestones();
-
-// 광역단체장 선거 상태 (서울/경기 MVP)
-export const METROPOLITAN_ELECTION_STATUS: Record<string, ElectionStatus> = {
-  '서울특별시': {
-    regionId: 'seoul-metro',
-    regionName: '서울특별시',
-    electionType: '지방선거',
-    electionLevel: 'metropolitan',
-    currentPhase: 'preliminary',
-    electionDate: '2026-06-03',
-    dDay: calculateDDay(),
-    milestones: PRELIMINARY_PHASE_MILESTONES,
-    candidates: [],
-  },
-  '경기도': {
-    regionId: 'gyeonggi-metro',
-    regionName: '경기도',
-    electionType: '지방선거',
-    electionLevel: 'metropolitan',
-    currentPhase: 'preliminary',
-    electionDate: '2026-06-03',
-    dDay: calculateDDay(),
-    milestones: PRELIMINARY_PHASE_MILESTONES,
-    candidates: [],
-  },
-};
-
-// 지역 키 생성 함수
-export const getRegionKey = (sido: string, sigungu: string): string => `${sido}-${sigungu}`;
-
-// 광역단체장 선거 상태 가져오기 (MVP: 서울/경기 우선)
-export const getElectionStatus = (sido: string, sigungu: string): ElectionStatus => {
-  // MVP: 서울시와 경기도는 광역단체장 선거 정보 반환
-  if (METROPOLITAN_ELECTION_STATUS[sido]) {
-    return {
-      ...METROPOLITAN_ELECTION_STATUS[sido],
-      dDay: calculateDDay(), // 항상 현재 날짜 기준으로 계산
-      currentPhase: getCurrentPhase(),
-      milestones: getElectionMilestones(),
-    };
-  }
-  
-  // 기타 지역은 기본 정보 반환
-  return getDefaultElectionStatus(`${sido} ${sigungu}`);
-};
-
-// 기본 선거 상태 (지역 데이터가 없을 때)
-export const getDefaultElectionStatus = (regionName: string): ElectionStatus => ({
-  regionId: 'default',
-  regionName,
-  electionType: '지방선거',
-  electionLevel: 'district',
-  currentPhase: getCurrentPhase(),
-  electionDate: CURRENT_ELECTION.date,
-  dDay: calculateDDay(),
-  milestones: getElectionMilestones(),
-  candidates: [],
-});
 
 // 광주광역시·전라남도는 2026-07-01 전남광주통합특별시로 통합됨 (선거도 하나)
 const MERGED_ELECTION_REGION: Record<string, string> = {

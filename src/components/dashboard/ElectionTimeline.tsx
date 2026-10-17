@@ -1,14 +1,15 @@
 import { motion } from 'framer-motion';
 import { CheckCircle2, Lock } from 'lucide-react';
-import type { ElectionMilestone, ElectionPhase } from '@/types/election';
-import { CURRENT_ELECTION } from '@/types/election';
+import type { ElectionMilestone } from '@/types/election';
+import { useElectionSchedule } from '@/hooks/useElections';
 
 interface ElectionTimelineProps {
   milestones: ElectionMilestone[];
-  currentPhase: ElectionPhase;
+  currentPhase?: string;
 }
 
-export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineProps) {
+export function ElectionTimeline({ milestones }: ElectionTimelineProps) {
+  const { current, isLoading } = useElectionSchedule();
   const currentIndex = milestones.findIndex(m => m.isCurrent);
   const allComplete = milestones.length > 0 && milestones.every(m => m.isComplete);
   const progressIndex = allComplete ? milestones.length - 1 : currentIndex;
@@ -18,10 +19,13 @@ export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineP
       <div className="flex items-center justify-between mb-4 sm:mb-5">
         <h3 className="text-sm sm:text-base font-semibold text-foreground">선거 진행 단계</h3>
         <span className="text-xs sm:text-sm text-muted-foreground">
-          {CURRENT_ELECTION.name}{allComplete && ' · 종료'}
+          {current?.name}{allComplete && ' · 종료'}
         </span>
       </div>
 
+      {milestones.length === 0 ? (
+        <p className="text-sm text-muted-foreground py-4 text-center">{isLoading ? '일정을 불러오는 중이에요' : '등록된 선거 일정이 없어요'}</p>
+      ) : (
       <div className="relative">
         {/* Progress line background */}
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-border" />
@@ -31,7 +35,7 @@ export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineP
           className="absolute top-4 left-0 h-0.5 bg-primary"
           initial={{ width: '0%' }}
           animate={{
-            width: progressIndex >= 0 ? `${(progressIndex / (milestones.length - 1)) * 100}%` : '0%',
+            width: progressIndex >= 0 && milestones.length > 1 ? `${(progressIndex / (milestones.length - 1)) * 100}%` : '0%',
           }}
           transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 }}
         />
@@ -129,6 +133,7 @@ export function ElectionTimeline({ milestones, currentPhase }: ElectionTimelineP
           })}
         </div>
       </div>
+      )}
     </div>
   );
 }

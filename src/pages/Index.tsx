@@ -41,6 +41,7 @@ const AdminMbti = lazy(() => import('@/pages/admin/AdminMbti').then((m) => ({ de
 const PoliticalMbtiPage = lazy(() => import('@/pages/PoliticalMbtiPage').then((m) => ({ default: m.PoliticalMbtiPage })));
 const AdminCandidateImport = lazy(() => import('@/pages/admin/AdminCandidateImport'));
 const AdminAgendas = lazy(() => import('@/pages/admin/AdminAgendas').then((m) => ({ default: m.AdminAgendas })));
+const AdminElections = lazy(() => import('@/pages/admin/AdminElections').then((m) => ({ default: m.AdminElections })));
 
 function PageFallback() {
   return (
@@ -165,6 +166,7 @@ function Index() {
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
           <Route path="/admin/agendas" element={<AdminAgendas />} />
+          <Route path="/admin/elections" element={<AdminElections />} />
 
           {/* 404: 알 수 없는 경로 */}
           <Route path="*" element={<NotFound />} />

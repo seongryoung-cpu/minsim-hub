@@ -3,13 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, CalendarClock } from 'lucide-react';
 import { CandidateImage } from '@/components/dashboard/CandidateCard';
 import { candidatePath } from '@/hooks/useCandidates';
-import {
-  CURRENT_ELECTION,
-  NEXT_ELECTION,
-  calculateDDayTo,
-  formatDDay,
-  type Candidate,
-} from '@/types/election';
+import { formatDDay, formatYmd, type Candidate } from '@/types/election';
+import { useElectionSchedule } from '@/hooks/useElections';
 
 interface ElectedOfficialCardProps {
   /** 이 지역 후보 전체 (결과가 들어 있는) */
@@ -26,7 +21,7 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
   const finalists = candidates
     .filter((c) => (c.electionResult === 'elected' || c.electionResult === 'defeated') && c.voteShare != null)
     .sort((a, b) => (b.voteShare ?? 0) - (a.voteShare ?? 0));
-  const nextDDay = calculateDDayTo(NEXT_ELECTION.date);
+  const { current, next, nextDDay } = useElectionSchedule();
 
   return (
     <motion.section
@@ -37,7 +32,7 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
     >
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-foreground">우리 지역 {officeTitle}</h2>
-        <span className="text-xs text-muted-foreground">{CURRENT_ELECTION.name} 결과</span>
+        <span className="text-xs text-muted-foreground">{current?.name} 결과</span>
       </div>
 
       {isLoading ? (
@@ -97,11 +92,13 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
         <p className="text-sm text-muted-foreground py-3">이 지역의 선거 결과는 아직 준비 중이에요.</p>
       )}
 
-      <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2 text-xs text-muted-foreground">
-        <CalendarClock size={14} />
-        <span>다음 선거 · {NEXT_ELECTION.name} ({NEXT_ELECTION.date.replace(/-/g, '.')})</span>
-        <span className="ml-auto font-semibold text-primary">{formatDDay(nextDDay)}</span>
-      </div>
+      {next && nextDDay != null && (
+        <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2 text-xs text-muted-foreground">
+          <CalendarClock size={14} />
+          <span>다음 선거 · {next.name} ({formatYmd(next.election_date)})</span>
+          <span className="ml-auto font-semibold text-primary">{formatDDay(nextDDay)}</span>
+        </div>
+      )}
     </motion.section>
   );
 }

@@ -10,6 +10,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { APP_MODE_OPTIONS, resolveAppMode, type AppModeSetting } from '@/hooks/useAppMode';
+import { useElectionSchedule } from '@/hooks/useElections';
 
 interface AppSettings {
   app_name: string;
@@ -35,6 +36,7 @@ interface AppSettings {
 export function AdminSettings() {
   const navigate = useNavigate();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const { isOver: electionOver } = useElectionSchedule();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -413,7 +415,7 @@ export function AdminSettings() {
             <p className="text-sm text-muted-foreground">
               평상시 모드에서는 홈과 선거 탭이 당선인·지난 선거 결과 중심으로 바뀌고, 투표소 안내가 숨겨집니다.
               지금 적용: <span className="font-medium text-foreground">
-                {resolveAppMode(settings.app_mode as AppModeSetting) === 'normal' ? '평상시 모드' : '선거 모드'}
+                {resolveAppMode(settings.app_mode as AppModeSetting, electionOver) === 'normal' ? '평상시 모드' : '선거 모드'}
               </span>
             </p>
             <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="앱 모드">

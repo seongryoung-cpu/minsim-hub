@@ -639,6 +639,89 @@ export type Database = {
           },
         ]
       }
+      election_schedule_items: {
+        Row: {
+          created_at: string
+          election_id: string
+          end_date: string | null
+          id: string
+          kind: string
+          link_url: string | null
+          short_label: string | null
+          sort_order: number
+          start_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          election_id: string
+          end_date?: string | null
+          id?: string
+          kind: string
+          link_url?: string | null
+          short_label?: string | null
+          sort_order?: number
+          start_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          election_id?: string
+          end_date?: string | null
+          id?: string
+          kind?: string
+          link_url?: string | null
+          short_label?: string | null
+          sort_order?: number
+          start_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "election_schedule_items_election_id_fkey"
+            columns: ["election_id"]
+            isOneToOne: false
+            referencedRelation: "elections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      elections: {
+        Row: {
+          created_at: string
+          election_date: string
+          full_name: string
+          id: string
+          name: string
+          role: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          election_date: string
+          full_name?: string
+          id?: string
+          name: string
+          role?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          election_date?: string
+          full_name?: string
+          id?: string
+          name?: string
+          role?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       news_articles: {
         Row: {
           article_url: string | null
