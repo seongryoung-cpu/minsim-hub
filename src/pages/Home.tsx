@@ -14,7 +14,8 @@ import { FeaturedAgendaBanner } from '@/components/gonglon/FeaturedAgendaBanner'
 import { QuickVoteEntry } from '@/components/gonglon/QuickVoteEntry';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { ElectedOfficialCard } from '@/components/dashboard/ElectedOfficialCard';
-import { getElectionStatus, getMetropolitanTitle, formatDDay, sortByElectionResult, CURRENT_ELECTION } from '@/types/election';
+import { getMetropolitanTitle, formatDDay, sortByElectionResult } from '@/types/election';
+import { useElectionSchedule } from '@/hooks/useElections';
 import { useAppMode } from '@/hooks/useAppMode';
 import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import type { Region } from '@/types/region';
@@ -34,9 +35,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const { data: dbCandidates, isLoading: candidatesLoading } = useCandidates(region.sido);
 
   // 광역단체 선거 상태 데이터 로드 (타임라인용)
-  const electionStatus = useMemo(() => {
-    return getElectionStatus(region.sido, region.sigungu);
-  }, [region.sido, region.sigungu]);
+  const schedule = useElectionSchedule();
+  const electionStatus = { dDay: schedule.dDay, milestones: schedule.milestones, currentPhase: undefined };
 
   // 광역단체장 타이틀
   const metropolitanTitle = useMemo(() => {
@@ -68,7 +68,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
   const remainingCount = shuffledCandidates.length - initialCount;
   const candidatesTitle = isNormal ? `지난 선거 ${metropolitanTitle} 후보` : `${metropolitanTitle} 후보`;
   const orderNote = isNormal
-    ? `※ ${CURRENT_ELECTION.name} 기준, 당선·득표순으로 표시됩니다`
+    ? `※ ${schedule.current?.name ?? '지난 선거'} 기준, 당선·득표순으로 표시됩니다`
     : '※ 후보자 순서는 공정성을 위해 무작위로 표시됩니다';
 
   const handleViewAllCandidates = useCallback(() => {
@@ -165,7 +165,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             <DashboardSection
               title={`${metropolitanTitle} 선거 진행 현황`}
               icon="🗳️"
-              badge={formatDDay(electionStatus.dDay)}
+              badge={electionStatus.dDay != null ? formatDDay(electionStatus.dDay) : undefined}
               delay={0.1}
             >
               <ElectionTimeline
@@ -289,7 +289,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               <DashboardSection
                 title={`${metropolitanTitle} 선거 진행 현황`}
                 icon="🗳️"
-                badge={formatDDay(electionStatus.dDay)}
+                badge={electionStatus.dDay != null ? formatDDay(electionStatus.dDay) : undefined}
                 delay={0.1}
               >
                 <ElectionTimeline
