@@ -1,4 +1,3 @@
-import { AdminElections } from '@/pages/admin/AdminElections';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -42,6 +41,7 @@ const AdminMbti = lazy(() => import('@/pages/admin/AdminMbti').then((m) => ({ de
 const PoliticalMbtiPage = lazy(() => import('@/pages/PoliticalMbtiPage').then((m) => ({ default: m.PoliticalMbtiPage })));
 const AdminCandidateImport = lazy(() => import('@/pages/admin/AdminCandidateImport'));
 const AdminAgendas = lazy(() => import('@/pages/admin/AdminAgendas').then((m) => ({ default: m.AdminAgendas })));
+const AdminElections = lazy(() => import('@/pages/admin/AdminElections').then((m) => ({ default: m.AdminElections })));
 
 function PageFallback() {
   return (
