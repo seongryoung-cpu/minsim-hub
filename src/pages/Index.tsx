@@ -1,3 +1,4 @@
+import { AdminElections } from '@/pages/admin/AdminElections';
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -165,6 +166,7 @@ function Index() {
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
           <Route path="/admin/agendas" element={<AdminAgendas />} />
+          <Route path="/admin/elections" element={<AdminElections />} />
 
           {/* 404: 알 수 없는 경로 */}
           <Route path="*" element={<NotFound />} />

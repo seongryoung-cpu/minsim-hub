@@ -1,3 +1,4 @@
+import { CalendarDays } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -189,6 +190,7 @@ export function AdminDashboard() {
     { icon: FileText, label: '콘텐츠 관리', description: '후보자, 뉴스, 퀴즈 관리', path: '/admin/content' },
     { icon: MessageSquare, label: '신고/문의 관리', description: '사용자 신고 및 문의 처리', path: '/admin/reports' },
     { icon: MessagesSquare, label: '공론 의제 관리', description: '의제·쟁점 작성, 공약 연결, 한 줄 의견 숨김', path: '/admin/agendas' },
+    { icon: CalendarDays, label: '선거 일정 관리', description: '선거일·진행 단계·투표 일정·체크리스트', path: '/admin/elections' },
     { icon: Settings, label: '시스템 설정', description: '앱 설정 및 환경 구성', path: '/admin/settings' },
     { icon: BarChart3, label: '기획서', description: '앱 기능 명세 확인', path: '/app-info' },
   ];
