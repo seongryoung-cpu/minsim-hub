@@ -36,6 +36,7 @@ interface AppSettings {
 export function AdminSettings() {
   const navigate = useNavigate();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const { isOver: electionOver } = useElectionSchedule();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);

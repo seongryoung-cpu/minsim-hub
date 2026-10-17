@@ -7,17 +7,8 @@ import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/Can
 import { DashboardSection } from '@/components/dashboard/DashboardSection';
 import { useRegion } from '@/hooks/useRegion';
 import { useCandidates, candidatePath } from '@/hooks/useCandidates';
-import { 
-  calculateDDay, 
-  calculateDDayTo,
-  formatDDay,
-  getElectionMilestones,
-  getCurrentPhase,
-  getMetropolitanTitle,
-  CURRENT_ELECTION,
-  NEXT_ELECTION,
-  sortByElectionResult,
-} from '@/types/election';
+import { formatDDay, formatYmd, getMetropolitanTitle, sortByElectionResult } from '@/types/election';
+import { useElectionSchedule } from '@/hooks/useElections';
 import { useAppMode } from '@/hooks/useAppMode';
 
 export function Election() {
@@ -28,28 +19,22 @@ export function Election() {
   const { data: candidates, isLoading: isCandidatesLoading } = useCandidates(region?.sido);
   const isNormal = useAppMode() === 'normal';
   const [showOthers, setShowOthers] = useState(false);
+  const schedule = useElectionSchedule();
 
   const electionStatus = useMemo(() => {
     if (!region) return null;
     
-    const dDay = calculateDDay();
     const regionName = region.sido;
-    
     return {
-      regionId: `${regionName}-metro`,
       regionName,
-      electionType: '지방선거' as const,
-      electionLevel: 'metropolitan' as const,
-      currentPhase: getCurrentPhase(),
-      electionDate: CURRENT_ELECTION.date,
-      dDay,
-      isOver: dDay < 0,
-      nextDDay: calculateDDayTo(NEXT_ELECTION.date),
-      milestones: getElectionMilestones(),
+      dDay: schedule.dDay,
+      isOver: schedule.isOver,
+      nextDDay: schedule.nextDDay,
+      milestones: schedule.milestones,
       candidates: isNormal ? sortByElectionResult(candidates || []) : candidates || [],
       title: getMetropolitanTitle(regionName),
     };
-  }, [region, candidates, isNormal]);
+  }, [region, candidates, isNormal, schedule.dDay, schedule.isOver, schedule.nextDDay, schedule.milestones]);
 
   const finalists = electionStatus?.candidates.filter(
     (c) => c.electionResult === 'elected' || c.electionResult === 'defeated',
@@ -107,24 +92,28 @@ export function Election() {
             <Calendar size={32} className="text-primary" />
           </div>
           <h2 className="text-xl font-bold text-foreground mb-1">
-            {CURRENT_ELECTION.name}{electionStatus.isOver && ' 종료'}
+            {schedule.current?.name ?? '선거 정보 준비 중'}{electionStatus.isOver && ' 종료'}
           </h2>
           {electionStatus.isOver ? (
             <div className="mb-4">
               <p className="text-sm text-muted-foreground mb-2">
-                {CURRENT_ELECTION.date.replace(/-/g, '.')} 선거가 마무리되었습니다
+                {formatYmd(schedule.current?.election_date)} 선거가 마무리되었습니다
               </p>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10">
-                <span className="text-sm text-foreground">다음 선거 · {NEXT_ELECTION.name}</span>
-                <span className="text-lg font-bold text-primary">{formatDDay(electionStatus.nextDDay)}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                {NEXT_ELECTION.fullName} · {NEXT_ELECTION.date.replace(/-/g, '.')}
-              </p>
+              {schedule.next && electionStatus.nextDDay != null && (
+                <>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10">
+                    <span className="text-sm text-foreground">다음 선거 · {schedule.next.name}</span>
+                    <span className="text-lg font-bold text-primary">{formatDDay(electionStatus.nextDDay)}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {schedule.next.full_name} · {formatYmd(schedule.next.election_date)}
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <p className="text-2xl font-bold text-primary mb-4">
-              {formatDDay(electionStatus.dDay)}
+              {electionStatus.dDay != null ? formatDDay(electionStatus.dDay) : '-'}
             </p>
           )}
           <div className="bg-secondary rounded-xl p-4 text-center">
@@ -184,7 +173,6 @@ export function Election() {
           <DashboardSection title="선거 진행 단계" icon="📊" delay={0.1}>
             <ElectionTimeline
               milestones={electionStatus.milestones}
-              currentPhase={electionStatus.currentPhase}
             />
           </DashboardSection>
 
@@ -245,43 +233,32 @@ export function Election() {
               </div>
           
               <div className="space-y-3">
-                <motion.a
-                  href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <MapPin size={16} className="text-primary" />
+                {schedule.voting.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-2">등록된 투표 일정이 없어요</p>
+                )}
+                {schedule.voting.map((v, i) => (
+                  <motion.a
+                    key={v.id}
+                    href={v.link_url ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${i === 0 ? 'bg-primary/10' : 'bg-accent/10'}`}>
+                        {i === 0 ? <MapPin size={16} className="text-primary" /> : <Vote size={16} className="text-accent" />}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground text-sm">{v.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatYmd(v.start_date)}{v.end_date ? ` ~ ${formatYmd(v.end_date).slice(5)}` : ''}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground text-sm">사전투표소 찾기</p>
-                      <p className="text-xs text-muted-foreground">2026.05.29 ~ 05.30</p>
-                    </div>
-                  </div>
-                  <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                </motion.a>
-
-                <motion.a
-                  href="https://www.nec.go.kr/site/nec/ex/bbs/View.do?cbIdx=1090&bcIdx=188037"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center">
-                      <Vote size={16} className="text-accent" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground text-sm">선거일 투표소 찾기</p>
-                      <p className="text-xs text-muted-foreground">2026.06.03</p>
-                    </div>
-                  </div>
-                  <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
-                </motion.a>
+                    {v.link_url && <ExternalLink size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />}
+                  </motion.a>
+                ))}
               </div>
 
               <p className="text-xs text-muted-foreground text-center mt-4">
@@ -298,9 +275,9 @@ export function Election() {
             >
               <h3 className="font-semibold text-foreground mb-3">📋 선거 준비 체크리스트</h3>
               <ul className="space-y-3">
-                {['선거인명부 확인', '투표소 위치 확인', '후보자 정책 비교'].map((item, i) => (
+                {schedule.checklist.map((row, i) => (
                   <motion.li
-                    key={i}
+                    key={row.id}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + i * 0.1 }}
@@ -310,7 +287,7 @@ export function Election() {
                     <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-medium">
                       {i + 1}
                     </div>
-                    {item}
+                    {row.title}
                   </motion.li>
                 ))}
               </ul>
