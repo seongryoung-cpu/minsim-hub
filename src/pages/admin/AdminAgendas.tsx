@@ -895,7 +895,7 @@ function BillsEditor({ agendaId }: { agendaId: string }) {
     <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
       <h2 className="text-lg font-semibold">관련 법안 {linked && linked.length > 0 && `(${linked.length})`}</h2>
       <p className="text-xs text-muted-foreground">
-        국회(22대) 의안을 이름으로 찾아 연결해요. 연결하면 진행 단계·표결을 가져오고, 매일 아침 다시 확인해요.
+        국회(22대) 의안을 이름으로 찾아 연결해요. 연결하면 진행 단계·표결을 가져오고, 매일 오전 9시에 다시 확인해요.
         시민에게는 승인한 요약(무엇이 바뀌나·누가·언제부터)만 보여요. 평가나 찬반 표현은 넣지 마세요. 출처: 열린국회정보
       </p>
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronRight, CircleHelp, Landmark, MapPin, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SIDO_LIST, type Region } from '@/types/region';
+import { SIDO_LIST, SIDO_SHORT, type Region } from '@/types/region';
 import { useAppMode } from '@/hooks/useAppMode';
 import { useAgendaList, useGonglonAccess } from '@/hooks/useAgendas';
 import {
@@ -14,7 +14,6 @@ import {
   sortRows,
   useAssemblyMembers,
   useMetroHeads,
-  type PoliticianKind,
   type PoliticianRow,
 } from '@/hooks/usePoliticians';
 import { PersonPhoto } from '@/components/politicians/PersonPhoto';
@@ -25,7 +24,7 @@ import { Election } from '@/pages/Election';
 type View = 'local' | 'all' | 'election';
 const VIEWS: { id: View; label: string }[] = [
   { id: 'local', label: '우리 동네' },
-  { id: 'all', label: '전체' },
+  { id: 'all', label: '찾아보기' },
   { id: 'election', label: '선거' },
 ];
 
@@ -34,7 +33,7 @@ interface Props {
   onRegionClick: () => void;
 }
 
-/** 정치인 탭: 우리를 대표하는 사람들 (우리 동네 · 전체 · 선거) */
+/** 정치인 탭: 우리를 대표하는 사람들 (우리 동네 · 찾아보기 · 선거) */
 export function Politicians({ region, onRegionClick }: Props) {
   const [params, setParams] = useSearchParams();
   const appMode = useAppMode();
@@ -45,7 +44,8 @@ export function Politicians({ region, onRegionClick }: Props) {
 
   const setView = (v: View, extra?: Record<string, string>) => {
     const next = new URLSearchParams({ view: v, ...(extra ?? {}) });
-    setParams(next, { replace: true });
+    // 분류를 고르는 건 뒤로 가기로 돌아올 수 있게 기록을 남긴다
+    setParams(next, { replace: v !== 'all' || !extra?.by });
     window.scrollTo({ top: 0 });
   };
 
@@ -88,9 +88,13 @@ export function Politicians({ region, onRegionClick }: Props) {
       ) : view === 'election' ? (
         <Election embedded />
       ) : view === 'all' ? (
-        <AllView initialKind={(params.get('kind') as PoliticianKind | null) ?? undefined} />
+        <BrowseView
+          by={(BY_ORDER as string[]).includes(params.get('by') ?? '') ? (params.get('by') as By) : null}
+          val={params.get('val')}
+          onPick={(b, v) => setView('all', b && v ? { by: b, val: v } : {})}
+        />
       ) : (
-        <LocalView region={region} onRegionClick={onRegionClick} onShowPr={() => setView('all', { kind: 'assembly_pr' })} />
+        <LocalView region={region} onRegionClick={onRegionClick} onShowPr={() => setView('all', { by: 'kind', val: 'assembly_pr' })} />
       )}
     </div>
   );
@@ -111,7 +115,7 @@ function OrderHelp() {
           광역단체장 → 지역구 국회의원 → 비례대표 국회의원 순서예요. 인기나 정당에 따라 순서를 바꾸지 않아요.
         </p>
         <p className="text-muted-foreground">
-          국회의원 정보는 국회(열린국회정보)에서 매일 아침 확인해요. 시장·군수·구청장과 지방의원은 준비 중이에요.
+          국회의원 정보는 국회(열린국회정보)에서 매일 오전 9시에 확인해요. 시장·군수·구청장과 지방의원은 준비 중이에요.
         </p>
       </PopoverContent>
     </Popover>
@@ -203,41 +207,56 @@ function LocalView({ region, onRegionClick, onShowPr }: { region: Region; onRegi
 }
 
 // ─────────────────────────────────────────────────────────────
-// 전체
+// 찾아보기: 처음엔 목록 없이 검색 + 분류만. 분류를 고르면 그 사람들만 보여 준다
 // ─────────────────────────────────────────────────────────────
-function AllView({ initialKind }: { initialKind?: PoliticianKind }) {
+type By = 'sido' | 'party' | 'committee' | 'kind';
+const BY_LABELS: Record<By, string> = { sido: '지역으로', party: '정당으로', committee: '위원회로', kind: '직책으로' };
+const BY_ORDER: By[] = ['sido', 'party', 'committee', 'kind'];
+
+function BrowseView({ by, val, onPick }: { by: By | null; val: string | null; onPick: (by: By | null, val: string | null) => void }) {
   const members = useAssemblyMembers();
   const heads = useMetroHeads();
   const [q, setQ] = useState('');
-  const [kind, setKind] = useState<PoliticianKind | ''>(initialKind && KIND_ORDER.includes(initialKind) ? initialKind : '');
-  const [party, setParty] = useState('');
-  const [sido, setSido] = useState('');
-  const [committee, setCommittee] = useState('');
 
   const rows = useMemo(
     () => sortRows([...(heads.data ?? []).map(headToRow), ...(members.data ?? []).map(memberToRow)]),
     [heads.data, members.data],
   );
-  const parties = useMemo(() => uniqueSorted(rows.map((r) => r.party)), [rows]);
-  const committees = useMemo(
-    () => uniqueSorted(rows.flatMap((r) => r.committees)),
-    [rows],
-  );
+
+  // 분류별 인원 (가나다순으로 늘어놓는다. 인원 많은 순으로 하면 큰 정당이 늘 앞에 와서)
+  const groups = useMemo(() => {
+    const count = (keys: string[]) => {
+      const m = new Map<string, number>();
+      for (const k of keys) m.set(k, (m.get(k) ?? 0) + 1);
+      return m;
+    };
+    const sido = count(rows.flatMap((r) => r.sidos));
+    const party = count(rows.map((r) => r.party ?? '').filter(Boolean));
+    const committee = count(rows.flatMap((r) => r.committees));
+    const kind = count(rows.map((r) => r.kind));
+    return {
+      sido: SIDO_LIST.filter((x) => sido.has(x)).map((x) => ({ value: x, label: SIDO_SHORT[x], n: sido.get(x)! })),
+      party: [...party].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([x, n]) => ({ value: x, label: x, n })),
+      committee: [...committee].sort((a, b) => a[0].localeCompare(b[0], 'ko')).map(([x, n]) => ({ value: x, label: x.replace(/위원회$/, ''), n })),
+      kind: KIND_ORDER.filter((k) => kind.has(k)).map((k) => ({ value: k, label: KIND_LABELS[k], n: kind.get(k)! })),
+    } satisfies Record<By, { value: string; label: string; n: number }[]>;
+  }, [rows]);
 
   const query = q.trim();
-  const filtered = rows.filter(
-    (r) =>
-      (!query || r.name.includes(query)) &&
-      (!kind || r.kind === kind) &&
-      (!party || r.party === party) &&
-      (!sido || r.sidos.includes(sido)) &&
-      (!committee || r.committees.includes(committee)),
-  );
-  const filtering = !!(query || kind || party || sido || committee);
+  const picked = by && val
+    ? rows.filter((r) =>
+        by === 'sido' ? r.sidos.includes(val)
+          : by === 'party' ? r.party === val
+            : by === 'committee' ? r.committees.includes(val)
+              : r.kind === val)
+    : null;
+  const searched = query ? rows.filter((r) => r.name.includes(query)) : null;
+  const pickedLabel = by && val ? groups[by].find((g) => g.value === val)?.label ?? val : '';
   const lastSync = (members.data ?? []).map((m) => m.synced_at).sort().at(-1);
+  const loading = members.isLoading || heads.isLoading;
 
   return (
-    <main className="mx-auto max-w-2xl space-y-4 px-4 pt-4">
+    <main className="mx-auto max-w-2xl space-y-5 px-4 pt-4">
       <label className="relative block">
         <span className="sr-only">이름으로 찾기</span>
         <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
@@ -250,39 +269,44 @@ function AllView({ initialKind }: { initialKind?: PoliticianKind }) {
         />
       </label>
 
-      <div className="grid grid-cols-2 gap-2">
-        <FilterSelect label="직책" value={kind} onChange={(v) => setKind(v as PoliticianKind | '')}
-          options={KIND_ORDER.map((k) => ({ value: k, label: KIND_LABELS[k] }))} />
-        <FilterSelect label="정당" value={party} onChange={setParty} options={parties.map((p) => ({ value: p, label: p }))} />
-        <FilterSelect label="지역" value={sido} onChange={setSido} options={SIDO_LIST.map((s) => ({ value: s, label: s }))} />
-        <FilterSelect label="위원회" value={committee} onChange={setCommittee} options={committees.map((c) => ({ value: c, label: c }))} />
-      </div>
-
-      {filtering && (
-        <div className="flex items-center justify-between text-[13px]">
-          <span className="text-muted-foreground">{filtered.length}명</span>
-          <button
-            type="button"
-            onClick={() => { setQ(''); setKind(''); setParty(''); setSido(''); setCommittee(''); }}
-            className="h-9 px-2 font-semibold text-primary"
-          >
-            조건 지우기
-          </button>
-        </div>
-      )}
-
-      {members.isLoading || heads.isLoading ? (
+      {loading ? (
         <ListSkeleton />
+      ) : searched ? (
+        <ResultGroups rows={searched} empty={`'${query}' 이름의 정치인이 없어요`} />
+      ) : picked ? (
+        <section className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-[17px] font-bold">
+              {pickedLabel} <span className="text-sm font-normal text-muted-foreground">{picked.length}명</span>
+            </h3>
+            <button type="button" onClick={() => onPick(null, null)} className="h-9 rounded-full px-3 text-[13px] font-semibold text-primary hover:bg-primary/5">
+              다른 분류 보기
+            </button>
+          </div>
+          <ResultGroups rows={picked} empty="이 분류에 해당하는 사람이 없어요" />
+        </section>
       ) : (
-        <div className="space-y-6">
-          {KIND_ORDER.map((k) => {
-            const list = filtered.filter((r) => r.kind === k);
-            if (list.length === 0) return null;
-            return <Group key={k} title={`${KIND_LABELS[k]} ${list.length}명`} rows={list} />;
-          })}
-          {filtered.length === 0 && (
-            <p className="py-10 text-center text-sm text-muted-foreground">조건에 맞는 사람이 없어요</p>
-          )}
+        <div className="space-y-5">
+          {BY_ORDER.map((b) => (
+            <section key={b} aria-labelledby={`by-${b}`} className="space-y-2">
+              <h3 id={`by-${b}`} className="text-[15px] font-bold">{BY_LABELS[b]}</h3>
+              <ul className="flex flex-wrap gap-2">
+                {groups[b].map((g) => (
+                  <li key={g.value}>
+                    <button
+                      type="button"
+                      onClick={() => onPick(b, g.value)}
+                      className="flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 text-sm font-medium hover:border-primary hover:text-primary"
+                    >
+                      {g.label}
+                      <span className="text-xs text-muted-foreground">{g.n}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          <p className="text-xs text-muted-foreground">지역 인원에는 광역단체장과 지역구 국회의원이 들어가요. 비례대표는 '직책으로'에서 볼 수 있어요.</p>
         </div>
       )}
 
@@ -291,30 +315,17 @@ function AllView({ initialKind }: { initialKind?: PoliticianKind }) {
   );
 }
 
-function uniqueSorted(list: (string | null | undefined)[]) {
-  return [...new Set(list.filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, 'ko'));
-}
-
-function FilterSelect({
-  label, value, onChange, options,
-}: { label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[] }) {
+/** 직책별로 묶어서, 많으면 20명씩 */
+function ResultGroups({ rows, empty }: { rows: PoliticianRow[]; empty: string }) {
+  if (rows.length === 0) return <p className="py-10 text-center text-sm text-muted-foreground">{empty}</p>;
   return (
-    <label className="block">
-      <span className="sr-only">{label}</span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={cn(
-          'h-11 w-full truncate rounded-xl border bg-card px-3 text-sm outline-none focus:border-primary',
-          value ? 'border-primary font-semibold text-primary' : 'border-border text-foreground',
-        )}
-      >
-        <option value="">{label} 전체</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </label>
+    <div className="space-y-6">
+      {KIND_ORDER.map((k) => {
+        const list = rows.filter((r) => r.kind === k);
+        if (list.length === 0) return null;
+        return <Group key={k} title={`${KIND_LABELS[k]} ${list.length}명`} rows={list} pageSize={20} />;
+      })}
+    </div>
   );
 }
 
@@ -322,8 +333,11 @@ function FilterSelect({
 // 공통
 // ─────────────────────────────────────────────────────────────
 function Group({
-  title, rows, loading, error, empty,
-}: { title: string; rows: PoliticianRow[]; loading?: boolean; error?: boolean; empty?: string }) {
+  title, rows, loading, error, empty, pageSize,
+}: { title: string; rows: PoliticianRow[]; loading?: boolean; error?: boolean; empty?: string; pageSize?: number }) {
+  const [shown, setShown] = useState(pageSize ?? Infinity);
+  const visible = rows.slice(0, shown);
+  const rest = rows.length - visible.length;
   return (
     <section className="space-y-2">
       <h3 className="text-[15px] font-bold">{title}</h3>
@@ -335,12 +349,21 @@ function Group({
         </p>
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-          {rows.map((r) => (
+          {visible.map((r) => (
             <li key={r.key}>
               <PersonRow row={r} />
             </li>
           ))}
         </ul>
+      )}
+      {rest > 0 && (
+        <button
+          type="button"
+          onClick={() => setShown((n) => n + (pageSize ?? 20))}
+          className="h-11 w-full rounded-xl border border-dashed border-border text-sm font-semibold text-primary hover:bg-primary/5"
+        >
+          {Math.min(rest, pageSize ?? 20)}명 더 보기 <span className="font-normal text-muted-foreground">(남은 {rest}명)</span>
+        </button>
       )}
     </section>
   );
@@ -349,7 +372,7 @@ function Group({
 function PersonRow({ row }: { row: PoliticianRow }) {
   return (
     <Link to={row.path} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50">
-      <PersonPhoto src={row.photo} initial={row.initial} size={40} />
+      <PersonPhoto src={row.photo} initial={row.initial} width={48} />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-1.5">
           <span className="text-[15px] font-semibold">{row.name}</span>

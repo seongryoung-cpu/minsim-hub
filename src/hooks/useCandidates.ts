@@ -130,9 +130,9 @@ export function useCandidates(regionName?: string) {
   });
 }
 
-/** 후보 상세 경로. slug가 비어 있는 후보도 있어(실데이터 확인) 그때는 UUID로 연다. */
+/** 인물 페이지 경로 (후보·당선인). slug가 비어 있는 후보도 있어(실데이터 확인) 그때는 UUID로 연다. */
 export const candidatePath = (c: { id: string; slug?: string | null }) =>
-  `/candidate/${encodeURIComponent(c.slug?.trim() || c.id)}`;
+  `/politicians/c/${encodeURIComponent(c.slug?.trim() || c.id)}`;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

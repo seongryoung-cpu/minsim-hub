@@ -24,8 +24,9 @@ export interface AssemblyMember {
   email: string | null;
   homepage: string | null;
   office: string | null;
-  career: string | null;
   photo_version: number | null;
+  /** null = 96·240 폴더, 'v2' = 160·480 폴더 */
+  photo_set: string | null;
   synced_at: string;
   /** 선거구 → 앱 지역 (화면에서 계산: src/lib/districts.ts) */
   place: DistrictPlace;
@@ -67,10 +68,11 @@ export const KIND_ORDER: PoliticianKind[] = ['metro_head', 'assembly_district', 
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? 'https://zdgpxmtapbviwrpcleqi.supabase.co';
 
-/** 국회의원 사진 (우리 저장소에 줄여 둔 것). 96: 목록, 240: 인물 페이지 */
-export function memberPhotoUrl(m: { mona_cd: string; photo_version: number | null }, size: 96 | 240) {
+/** 국회의원 사진 (우리 저장소에 줄여 둔 것). small: 목록(48×64), large: 인물 페이지(120×160)·크게 보기 */
+export function memberPhotoUrl(m: { mona_cd: string; photo_version: number | null; photo_set: string | null }, size: 'small' | 'large') {
   if (!m.photo_version) return null;
-  return `${SUPABASE_URL}/storage/v1/object/public/politician-photos/${size}/${encodeURIComponent(m.mona_cd)}.webp?v=${m.photo_version}`;
+  const folder = m.photo_set === 'v2' ? (size === 'small' ? 160 : 480) : (size === 'small' ? 96 : 240);
+  return `${SUPABASE_URL}/storage/v1/object/public/politician-photos/${folder}/${encodeURIComponent(m.mona_cd)}.webp?v=${m.photo_version}`;
 }
 
 /** 단체장 사진: 우리 저장소 사진이면 작게 줄여서 받는다 */
@@ -78,7 +80,7 @@ export function headPhotoUrl(url: string | null, width: number) {
   if (!url) return null;
   const marker = '/storage/v1/object/public/';
   if (!url.startsWith(SUPABASE_URL) || !url.includes(marker)) return url;
-  return `${url.replace(marker, '/storage/v1/render/image/public/')}${url.includes('?') ? '&' : '?'}width=${width}&height=${Math.round((width * 4) / 3)}&resize=cover&quality=75`;
+  return `${url.replace(marker, '/storage/v1/render/image/public/')}${url.includes('?') ? '&' : '?'}width=${width}&height=${Math.round((width * 4) / 3)}&resize=cover&quality=82`;
 }
 
 /** 통합 광역단체 → 앱 시·도 */
@@ -105,14 +107,14 @@ export function memberToRow(m: AssemblyMember): PoliticianRow {
     sidos: m.place.sido ? [m.place.sido] : [],
     committees: m.committees,
     initial: m.name.slice(0, 1),
-    photo: memberPhotoUrl(m, 96),
+    photo: memberPhotoUrl(m, 'small'),
   };
 }
 
 export function headToRow(h: MetroHead): PoliticianRow {
   return {
     key: h.id,
-    path: `/politicians/c/${h.id}`,
+    path: `/politicians/c/${encodeURIComponent(h.slug?.trim() || h.id)}`,
     kind: 'metro_head',
     name: h.name,
     party: h.party,
@@ -121,7 +123,7 @@ export function headToRow(h: MetroHead): PoliticianRow {
     sidos: metroHeadSidos(h.region_name),
     committees: [],
     initial: h.name.slice(0, 1),
-    photo: headPhotoUrl(h.image_url, 96),
+    photo: headPhotoUrl(h.image_url, 160),
   };
 }
 
@@ -140,12 +142,26 @@ export function useAssemblyMembers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('assembly_members')
-        .select('mona_cd, name, party, district, elect_type, committees, committee_role, reelection, units, tel, email, homepage, office, career, photo_version, synced_at')
+        .select('mona_cd, name, party, district, elect_type, committees, committee_role, reelection, units, tel, email, homepage, office, photo_version, photo_set, synced_at')
         .eq('is_current', true);
       if (error) throw error;
       return ((data ?? []) as Omit<AssemblyMember, 'place'>[])
         .map((m) => ({ ...m, place: parseDistrict(m.district) }))
         .sort(byName);
+    },
+    staleTime: 60 * 60_000,
+  });
+}
+
+/** 인물 페이지에서만 쓰는 긴 내용 (약력). 목록에서는 받지 않는다 */
+export function useMemberCareer(code: string | undefined) {
+  return useQuery({
+    queryKey: ['assembly-member-career', code ?? ''],
+    enabled: !!code,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('assembly_members').select('career').eq('mona_cd', code!).maybeSingle();
+      if (error) throw error;
+      return (data?.career as string | null) ?? null;
     },
     staleTime: 60 * 60_000,
   });

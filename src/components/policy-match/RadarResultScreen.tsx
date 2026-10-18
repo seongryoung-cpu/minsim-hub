@@ -276,7 +276,7 @@ export function RadarResultScreen({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.1 }}
-        onClick={() => navigate(`/candidate/${topMatch.candidateId}`)}
+        onClick={() => navigate(`/politicians/c/${topMatch.candidateId}`)}
         className="w-full py-4 rounded-xl font-semibold text-white flex items-center justify-center gap-2 mb-4 shadow-lg"
         style={{ backgroundColor: topMatch.partyColor }}
         whileHover={{ scale: 1.02 }}

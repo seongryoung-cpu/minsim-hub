@@ -53,7 +53,7 @@ export function AgendaBillsSection({ agendaId }: { agendaId: string }) {
             <CircleHelp size={17} aria-hidden />
           </PopoverTrigger>
           <PopoverContent align="start" className="w-80 space-y-2 text-[13px] leading-relaxed">
-            <p className="font-semibold text-foreground">국회 기록을 매일 아침 확인해요</p>
+            <p className="font-semibold text-foreground">국회 기록을 매일 오전 9시에 확인해요</p>
             <p className="text-muted-foreground">
               진행 단계와 표결은 국회 의안정보를 그대로 보여 줘요. "무엇이 바뀌나"는 운영진이 법안 원문을 읽고 쉬운 말로 옮긴 거예요.
               정확한 내용은 원문을 확인해 주세요.

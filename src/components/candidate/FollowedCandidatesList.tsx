@@ -87,7 +87,7 @@ export function FollowedCandidatesList() {
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              onClick={() => navigate(`/candidate/${candidate.slug}`)}
+              onClick={() => navigate(`/politicians/c/${candidate.slug}`)}
               className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary active:scale-[0.98] transition-all"
             >
               {/* Avatar */}

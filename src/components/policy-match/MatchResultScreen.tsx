@@ -126,7 +126,7 @@ export function MatchResultScreen({ results, onRestart }: MatchResultScreenProps
             </div>
 
             <button
-              onClick={() => navigate(`/candidate/${topMatch.candidateId}`)}
+              onClick={() => navigate(`/politicians/c/${topMatch.candidateId}`)}
               className="w-full py-3 rounded-xl font-semibold text-white flex items-center justify-center gap-2"
               style={{ backgroundColor: topMatch.partyColor }}
             >
@@ -152,7 +152,7 @@ export function MatchResultScreen({ results, onRestart }: MatchResultScreenProps
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.8 + index * 0.1 }}
-              onClick={() => navigate(`/candidate/${match.candidateId}`)}
+              onClick={() => navigate(`/politicians/c/${match.candidateId}`)}
               className="w-full bg-card rounded-2xl p-4 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow"
             >
               <div className="text-lg font-bold text-muted-foreground w-6">

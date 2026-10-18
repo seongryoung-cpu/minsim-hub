@@ -23,7 +23,7 @@ const AgendaDetail = lazy(() => import('@/pages/gonglon/AgendaDetail').then((m) 
 const ClaimsPage = lazy(() => import('@/pages/gonglon/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
 const MyPage = lazy(() => import('@/pages/MyPage').then((m) => ({ default: m.MyPage })));
 const AppInfoPage = lazy(() => import('@/pages/AppInfoPage').then((m) => ({ default: m.AppInfoPage })));
-const CandidateDetail = lazy(() => import('@/pages/CandidateDetail').then((m) => ({ default: m.CandidateDetail })));
+const CandidateRedirect = lazy(() => import('@/pages/PoliticianDetail').then((m) => ({ default: m.CandidateRedirect })));
 const PolicyMatchGame = lazy(() => import('@/pages/PolicyMatchGame').then((m) => ({ default: m.PolicyMatchGame })));
 const NewsFeed = lazy(() => import('@/pages/NewsFeed').then((m) => ({ default: m.NewsFeed })));
 const CandidateCompare = lazy(() => import('@/pages/CandidateCompare').then((m) => ({ default: m.CandidateCompare })));
@@ -131,7 +131,7 @@ function Index() {
           />
           <Route path="/politicians" element={<Politicians region={currentRegion} onRegionClick={() => setIsRegionSheetOpen(true)} />} />
           <Route path="/politicians/m/:code" element={<PoliticianDetail />} />
-          <Route path="/politicians/c/:id" element={<PoliticianDetail />} />
+          <Route path="/politicians/c/:key" element={<PoliticianDetail />} />
           {/* 예전 선거 탭 주소: 정치인 탭의 '선거' 보기로 */}
           <Route path="/election" element={<Navigate to="/politicians?view=election" replace />} />
           {/* 공론: 공개 전에는 관리자만 (GonglonGate가 관리자 설정 '공론 공개'를 확인) */}
@@ -146,7 +146,8 @@ function Index() {
             }
           />
           <Route path="/app-info" element={<AppInfoPage />} />
-          <Route path="/candidate/:id" element={<CandidateDetail />} />
+          {/* 예전 후보 상세 주소 → 인물 페이지로 통일 */}
+          <Route path="/candidate/:id" element={<CandidateRedirect />} />
           <Route
             path="/policy-match"
             element={<PolicyMatchGame region={currentRegion} onChangeRegion={() => setIsRegionSheetOpen(true)} />}
