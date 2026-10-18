@@ -328,9 +328,10 @@ async function savePhoto(db: SupabaseClient, code: string, src: string) {
       if (put.error) throw put.error;
     }
   } finally {
-    // 예전 크기(96·240) 파일도 함께 지운다
-    await db.storage.from(PHOTO_BUCKET).remove([tmp, `96/${code}.webp`, `240/${code}.webp`]);
+    await db.storage.from(PHOTO_BUCKET).remove([tmp]);
   }
+  // 새 크기를 모두 저장한 뒤에만 예전 크기(96·240) 파일을 지운다 (실패하면 예전 사진이 그대로 보이게)
+  await db.storage.from(PHOTO_BUCKET).remove([`96/${code}.webp`, `240/${code}.webp`]);
   return original.length;
 }
 
@@ -347,9 +348,9 @@ async function syncPhotos(db: SupabaseClient, limit: number) {
   const todo = (data ?? []).filter((m) => m.photo_src !== m.photo_saved_src).slice(0, limit);
   let saved = 0;
   const failed: { code: string; error: string }[] = [];
-  // 국회 서버가 느려서 3명씩 동시에
-  for (let i = 0; i < todo.length; i += 3) {
-    await Promise.all(todo.slice(i, i + 3).map(async (m) => {
+  // 국회 서버가 느리고 이미지 변환에 횟수 제한(429)이 있어서 2명씩 동시에
+  for (let i = 0; i < todo.length; i += 2) {
+    await Promise.all(todo.slice(i, i + 2).map(async (m) => {
       try {
         try {
           await savePhoto(db, m.mona_cd, m.photo_src!);
@@ -422,7 +423,7 @@ serve(async (req) => {
     }
 
     if (action === 'photos') {
-      return json({ ok: true, ...(await syncPhotos(db, 9)) });
+      return json({ ok: true, ...(await syncPhotos(db, 8)) });
     }
 
     if (!(await isAdmin(req))) return json({ error: 'forbidden' }, 403);
