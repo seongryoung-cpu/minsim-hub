@@ -349,7 +349,13 @@ async function syncPhotos(db: SupabaseClient, limit: number) {
   for (let i = 0; i < todo.length; i += 3) {
     await Promise.all(todo.slice(i, i + 3).map(async (m) => {
       try {
-        await savePhoto(db, m.mona_cd, m.photo_src!);
+        try {
+          await savePhoto(db, m.mona_cd, m.photo_src!);
+        } catch (e) {
+          // 원본 해상도가 너무 크면 이미지 변환이 거절한다 → 국회의 예전 형식 작은 사진(의원 코드.jpg)으로 대신
+          if (!String(e).includes('resolution')) throw e;
+          await savePhoto(db, m.mona_cd, `https://www.assembly.go.kr/static/portal/img/openassm/${encodeURIComponent(m.mona_cd)}.jpg`);
+        }
         await db.from('assembly_members').update({
           photo_saved_src: m.photo_src, photo_version: Math.floor(Date.now() / 1000), photo_failed_at: null,
         }).eq('mona_cd', m.mona_cd);
