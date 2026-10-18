@@ -41,6 +41,63 @@ export type Database = {
         }
         Relationships: []
       }
+      agenda_bills: {
+        Row: {
+          agenda_id: string
+          bill_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          plain_approved_at: string | null
+          plain_draft: Json | null
+          plain_what: string | null
+          plain_when: string | null
+          plain_who: string | null
+          sort_order: number
+        }
+        Insert: {
+          agenda_id: string
+          bill_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plain_approved_at?: string | null
+          plain_draft?: Json | null
+          plain_what?: string | null
+          plain_when?: string | null
+          plain_who?: string | null
+          sort_order?: number
+        }
+        Update: {
+          agenda_id?: string
+          bill_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          plain_approved_at?: string | null
+          plain_draft?: Json | null
+          plain_what?: string | null
+          plain_when?: string | null
+          plain_who?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_bills_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_bills_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "assembly_bills"
+            referencedColumns: ["bill_id"]
+          },
+        ]
+      }
       agenda_claims: {
         Row: {
           agenda_id: string
@@ -134,60 +191,6 @@ export type Database = {
           },
         ]
       }
-      agenda_positions: {
-        Row: {
-          agenda_id: string
-          candidate_id: string | null
-          created_at: string
-          created_by: string | null
-          id: string
-          is_hidden: boolean
-          party: string | null
-          person_name: string
-          role_kind: string
-          role_label: string
-          source_kind: string
-          source_url: string
-          spoken_on: string
-          summary: string
-          updated_at: string
-        }
-        Insert: {
-          agenda_id: string
-          candidate_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_hidden?: boolean
-          party?: string | null
-          person_name: string
-          role_kind: string
-          role_label: string
-          source_kind: string
-          source_url: string
-          spoken_on: string
-          summary: string
-          updated_at?: string
-        }
-        Update: {
-          agenda_id?: string
-          candidate_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_hidden?: boolean
-          party?: string | null
-          person_name?: string
-          role_kind?: string
-          role_label?: string
-          source_kind?: string
-          source_url?: string
-          spoken_on?: string
-          summary?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       agenda_issues: {
         Row: {
           agenda_id: string
@@ -274,6 +277,75 @@ export type Database = {
             columns: ["policy_card_id"]
             isOneToOne: false
             referencedRelation: "policy_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_positions: {
+        Row: {
+          agenda_id: string
+          candidate_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_hidden: boolean
+          party: string | null
+          person_name: string
+          role_kind: string
+          role_label: string
+          source_kind: string
+          source_url: string
+          spoken_on: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          agenda_id: string
+          candidate_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_hidden?: boolean
+          party?: string | null
+          person_name: string
+          role_kind: string
+          role_label: string
+          source_kind: string
+          source_url: string
+          spoken_on: string
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          agenda_id?: string
+          candidate_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_hidden?: boolean
+          party?: string | null
+          person_name?: string
+          role_kind?: string
+          role_label?: string
+          source_kind?: string
+          source_url?: string
+          spoken_on?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_positions_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agenda_positions_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
             referencedColumns: ["id"]
           },
         ]
@@ -460,6 +532,222 @@ export type Database = {
           value?: string | null
         }
         Relationships: []
+      }
+      assembly_bill_events: {
+        Row: {
+          bill_id: string
+          detected_at: string
+          event_on: string | null
+          id: number
+          stage: string
+        }
+        Insert: {
+          bill_id: string
+          detected_at?: string
+          event_on?: string | null
+          id?: never
+          stage: string
+        }
+        Update: {
+          bill_id?: string
+          detected_at?: string
+          event_on?: string | null
+          id?: never
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assembly_bill_events_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "assembly_bills"
+            referencedColumns: ["bill_id"]
+          },
+        ]
+      }
+      assembly_bill_votes: {
+        Row: {
+          bill_id: string
+          district: string | null
+          member_name: string
+          mona_cd: string
+          party: string | null
+          vote: string
+        }
+        Insert: {
+          bill_id: string
+          district?: string | null
+          member_name: string
+          mona_cd: string
+          party?: string | null
+          vote: string
+        }
+        Update: {
+          bill_id?: string
+          district?: string | null
+          member_name?: string
+          mona_cd?: string
+          party?: string | null
+          vote?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assembly_bill_votes_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "assembly_bills"
+            referencedColumns: ["bill_id"]
+          },
+        ]
+      }
+      assembly_bills: {
+        Row: {
+          age: number | null
+          bill_id: string
+          bill_name: string
+          bill_no: string | null
+          cmt_proc_dt: string | null
+          cmt_proc_result: string | null
+          committee: string | null
+          committee_dt: string | null
+          committee_id: string | null
+          detail_link: string | null
+          gov_transfer_dt: string | null
+          law_proc_dt: string | null
+          plenary_dt: string | null
+          proc_result: string | null
+          promulgation_dt: string | null
+          propose_dt: string | null
+          proposer: string | null
+          publ_proposer: string | null
+          rst_mona_cd: string | null
+          rst_proposer: string | null
+          stage: string
+          stage_changed_on: string | null
+          synced_at: string
+          vote_blank: number | null
+          vote_date: string | null
+          vote_member_total: number | null
+          vote_no: number | null
+          vote_total: number | null
+          vote_yes: number | null
+        }
+        Insert: {
+          age?: number | null
+          bill_id: string
+          bill_name: string
+          bill_no?: string | null
+          cmt_proc_dt?: string | null
+          cmt_proc_result?: string | null
+          committee?: string | null
+          committee_dt?: string | null
+          committee_id?: string | null
+          detail_link?: string | null
+          gov_transfer_dt?: string | null
+          law_proc_dt?: string | null
+          plenary_dt?: string | null
+          proc_result?: string | null
+          promulgation_dt?: string | null
+          propose_dt?: string | null
+          proposer?: string | null
+          publ_proposer?: string | null
+          rst_mona_cd?: string | null
+          rst_proposer?: string | null
+          stage?: string
+          stage_changed_on?: string | null
+          synced_at?: string
+          vote_blank?: number | null
+          vote_date?: string | null
+          vote_member_total?: number | null
+          vote_no?: number | null
+          vote_total?: number | null
+          vote_yes?: number | null
+        }
+        Update: {
+          age?: number | null
+          bill_id?: string
+          bill_name?: string
+          bill_no?: string | null
+          cmt_proc_dt?: string | null
+          cmt_proc_result?: string | null
+          committee?: string | null
+          committee_dt?: string | null
+          committee_id?: string | null
+          detail_link?: string | null
+          gov_transfer_dt?: string | null
+          law_proc_dt?: string | null
+          plenary_dt?: string | null
+          proc_result?: string | null
+          promulgation_dt?: string | null
+          propose_dt?: string | null
+          proposer?: string | null
+          publ_proposer?: string | null
+          rst_mona_cd?: string | null
+          rst_proposer?: string | null
+          stage?: string
+          stage_changed_on?: string | null
+          synced_at?: string
+          vote_blank?: number | null
+          vote_date?: string | null
+          vote_member_total?: number | null
+          vote_no?: number | null
+          vote_total?: number | null
+          vote_yes?: number | null
+        }
+        Relationships: []
+      }
+      assembly_sync_runs: {
+        Row: {
+          detail: Json | null
+          finished_at: string | null
+          id: number
+          kind: string
+          ok: boolean | null
+          started_at: string
+        }
+        Insert: {
+          detail?: Json | null
+          finished_at?: string | null
+          id?: never
+          kind: string
+          ok?: boolean | null
+          started_at?: string
+        }
+        Update: {
+          detail?: Json | null
+          finished_at?: string | null
+          id?: never
+          kind?: string
+          ok?: boolean | null
+          started_at?: string
+        }
+        Relationships: []
+      }
+      bill_alert_subscriptions: {
+        Row: {
+          bill_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          bill_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          bill_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_alert_subscriptions_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "assembly_bills"
+            referencedColumns: ["bill_id"]
+          },
+        ]
       }
       candidate_careers: {
         Row: {
@@ -1710,6 +1998,10 @@ export type Database = {
       }
       agenda_is_open: { Args: { p_agenda_id: string }; Returns: boolean }
       app_setting_on: { Args: { p_key: string }; Returns: boolean }
+      assembly_districts_for: {
+        Args: { p_sido_short: string; p_sigungu: string }
+        Returns: string[]
+      }
       cast_agenda_vote: {
         Args: {
           p_agenda_id: string
@@ -1735,6 +2027,10 @@ export type Database = {
           status: string
         }[]
       }
+      get_agenda_bills: {
+        Args: { p_agenda_id: string; p_districts?: string[] }
+        Returns: Json
+      }
       get_agenda_claims: {
         Args: { p_agenda_id: string; p_issue_id?: string }
         Returns: Json
@@ -1746,9 +2042,9 @@ export type Database = {
           category: string
           closes_at: string
           created_at: string
+          elected_pledge_count: number
           id: string
           is_featured: boolean
-          elected_pledge_count: number
           my_final: string
           my_first: string
           opens_at: string
@@ -1891,6 +2187,7 @@ export type Database = {
         Returns: number
       }
       toggle_agenda_interest: { Args: { p_agenda_id: string }; Returns: Json }
+      toggle_bill_alert: { Args: { p_bill_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
