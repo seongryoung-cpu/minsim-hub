@@ -725,9 +725,11 @@ export type Database = {
           name: string
           office: string | null
           party: string | null
+          photo_failed_at: string | null
+          photo_saved_src: string | null
+          photo_src: string | null
+          photo_version: number | null
           reelection: string | null
-          sido: string | null
-          sigungu_tokens: string[]
           synced_at: string
           tel: string | null
           units: string | null
@@ -745,9 +747,11 @@ export type Database = {
           name: string
           office?: string | null
           party?: string | null
+          photo_failed_at?: string | null
+          photo_saved_src?: string | null
+          photo_src?: string | null
+          photo_version?: number | null
           reelection?: string | null
-          sido?: string | null
-          sigungu_tokens?: string[]
           synced_at?: string
           tel?: string | null
           units?: string | null
@@ -765,9 +769,11 @@ export type Database = {
           name?: string
           office?: string | null
           party?: string | null
+          photo_failed_at?: string | null
+          photo_saved_src?: string | null
+          photo_src?: string | null
+          photo_version?: number | null
           reelection?: string | null
-          sido?: string | null
-          sigungu_tokens?: string[]
           synced_at?: string
           tel?: string | null
           units?: string | null
