@@ -413,7 +413,7 @@ export function AdminSettings() {
           >
             <h2 className="font-semibold text-lg">앱 모드</h2>
             <p className="text-sm text-muted-foreground">
-              평상시 모드에서는 홈과 선거 탭이 당선인·지난 선거 결과 중심으로 바뀌고, 투표소 안내가 숨겨집니다.
+              평상시 모드에서는 홈과 정치인 탭의 선거 화면이 당선인·지난 선거 결과 중심으로 바뀌고, 투표소 안내가 숨겨집니다.
               지금 적용: <span className="font-medium text-foreground">
                 {resolveAppMode(settings.app_mode as AppModeSetting, electionOver) === 'normal' ? '평상시 모드' : '선거 모드'}
               </span>

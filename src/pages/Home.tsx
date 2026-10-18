@@ -453,7 +453,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 <motion.button
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.99 }}
-                  onClick={() => navigate('/election')}
+                  onClick={() => navigate('/politicians?view=election')}
                   className="w-full mt-3 py-2 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors flex items-center justify-center gap-1"
                 >
                   전체 후보 보기

@@ -7,10 +7,8 @@ CREATE TABLE IF NOT EXISTS public.assembly_members (
   mona_cd text PRIMARY KEY,                       -- 국회 의원 코드
   name text NOT NULL,
   party text,
-  district text,                                  -- 국회 선거구 이름 그대로 (예: 경기 수원시갑, 비례대표)
+  district text,                                  -- 국회 선거구 이름 그대로 (예: 경기 수원시갑, 비례대표). 앱 지역으로 바꾸기는 src/lib/districts.ts
   elect_type text,                                -- 지역구 / 비례대표
-  sido text,                                      -- 앱 시·도 이름 (비례대표는 null)
-  sigungu_tokens text[] NOT NULL DEFAULT '{}',    -- 선거구에 들어 있는 시·군·구 (예: {동구,군위군})
   committees text[] NOT NULL DEFAULT '{}',
   committee_role text,                            -- 위원장·간사·위원
   reelection text,                                -- 초선·재선…
@@ -24,7 +22,6 @@ CREATE TABLE IF NOT EXISTS public.assembly_members (
   synced_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS assembly_members_sido_idx ON public.assembly_members (sido) WHERE is_current;
 CREATE INDEX IF NOT EXISTS assembly_members_name_idx ON public.assembly_members (name);
 
 ALTER TABLE public.assembly_members ENABLE ROW LEVEL SECURITY;
@@ -103,3 +100,7 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
     )
   ) $$;
 GRANT EXECUTE ON FUNCTION public.get_politician_activity(text, uuid) TO anon, authenticated;
+
+-- 처음 적용 때 만들었던 서버 쪽 지역 칸은 쓰지 않는다 (화면에서 계산)
+DROP INDEX IF EXISTS public.assembly_members_sido_idx;
+ALTER TABLE public.assembly_members DROP COLUMN IF EXISTS sido, DROP COLUMN IF EXISTS sigungu_tokens;

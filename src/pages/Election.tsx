@@ -13,7 +13,8 @@ import { useAppMode } from '@/hooks/useAppMode';
 import { AppModePending } from '@/components/dashboard/AppModePending';
 import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 
-export function Election() {
+/** embedded: 정치인 탭의 '선거' 보기로 들어갈 때 (머리글 없이) */
+export function Election({ embedded = false }: { embedded?: boolean } = {}) {
   const navigate = useNavigate();
   const { region } = useRegion();
   
@@ -73,8 +74,9 @@ export function Election() {
       animate="animate"
       exit="exit"
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="min-h-screen bg-background pb-20"
+      className={embedded ? 'bg-background' : 'min-h-screen bg-background pb-20'}
     >
+      {!embedded && (
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-xl border-b border-border/50">
         <div className="h-14 flex items-center justify-between px-4">
           <div className="flex items-center gap-2">
@@ -87,8 +89,9 @@ export function Election() {
           </div>
         </div>
       </header>
+      )}
 
-      <main className="p-4 space-y-5">
+      <main className={embedded ? 'mx-auto max-w-2xl p-4 space-y-5' : 'p-4 space-y-5'}>
         {/* Election Info Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

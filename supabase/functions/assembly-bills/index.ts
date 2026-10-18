@@ -228,27 +228,7 @@ async function summarize(db: SupabaseClient, agendaBillId: string) {
 // ─────────────────────────────────────────────────────────────
 // 국회의원 명단 (정치인 탭)
 // ─────────────────────────────────────────────────────────────
-// 국회 선거구 앞머리 → 앱 시·도 이름
-const PREFIX_SIDO: Record<string, string> = {
-  서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시', 광주: '광주광역시',
-  대전: '대전광역시', 울산: '울산광역시', 세종: '세종특별자치시', 경기: '경기도', 강원: '강원특별자치도',
-  충북: '충청북도', 충남: '충청남도', 전북: '전북특별자치도', 전남: '전라남도', 경북: '경상북도',
-  경남: '경상남도', 제주: '제주특별자치도',
-};
-
-/** "경기 수원시갑" → { sido: '경기도', tokens: ['수원시'] }, "대구 동구군위군을" → ['동구','군위군'] */
-export function parseDistrict(orig: string | null): { sido: string | null; tokens: string[] } {
-  const s = (orig ?? '').trim();
-  if (!s || s.includes('비례')) return { sido: null, tokens: [] };
-  if (s.startsWith('세종')) return { sido: '세종특별자치시', tokens: ['세종시'] };
-  const sp = s.indexOf(' ');
-  if (sp < 0) return { sido: null, tokens: [] };
-  const sido = PREFIX_SIDO[s.slice(0, sp)] ?? null;
-  const rest = s.slice(sp + 1).replace(/[갑을병정무]$/, '');
-  const tokens = rest.match(/[가-힣]+?(?:시|군|구)/g) ?? [];
-  return { sido, tokens: [...new Set(tokens)] };
-}
-
+// 선거구 → 앱 지역(시·도, 시·군·구) 계산은 화면에서 한다: src/lib/districts.ts (앱의 시·군·구 목록이 필요해서)
 const splitList = (v: unknown) => (str(v) ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 
 async function syncMembers(db: SupabaseClient) {
@@ -258,15 +238,12 @@ async function syncMembers(db: SupabaseClient) {
   const members = rows
     .filter((r) => str(r.MONA_CD) && str(r.HG_NM))
     .map((r) => {
-      const { sido, tokens } = parseDistrict(str(r.ORIG_NM));
       return {
         mona_cd: str(r.MONA_CD)!,
         name: str(r.HG_NM)!,
         party: str(r.POLY_NM),
         district: str(r.ORIG_NM),
         elect_type: str(r.ELECT_GBN_NM),
-        sido,
-        sigungu_tokens: tokens,
         committees: splitList(r.CMITS ?? r.CMIT_NM),
         committee_role: str(r.JOB_RES_NM),
         reelection: str(r.REELE_GBN_NM),

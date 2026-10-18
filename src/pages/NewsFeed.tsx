@@ -109,7 +109,7 @@ export function NewsFeed() {
                   </button>
                 )}
                 <button
-                  onClick={() => navigate('/election')}
+                  onClick={() => navigate('/politicians?view=election')}
                   className="text-xs text-primary font-medium"
                 >
                   관리
@@ -191,7 +191,7 @@ export function NewsFeed() {
                   title="관심 후보자를 팔로우하세요"
                   description="후보자를 팔로우하면 관련 뉴스를 모아서 볼 수 있어요"
                   actionLabel="후보자 둘러보기"
-                  onAction={() => navigate('/election')}
+                  onAction={() => navigate('/politicians?view=election')}
                 />
               ) : displayedPersonalizedNews.length === 0 ? (
                 <EmptyState

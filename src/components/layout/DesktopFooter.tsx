@@ -52,10 +52,10 @@ export function DesktopFooter() {
               </li>
               <li>
                 <button 
-                  onClick={() => navigate('/election')} 
+                  onClick={() => navigate('/politicians?view=election')} 
                   className="text-sm text-muted-foreground hover:text-primary transition-colors"
                 >
-                  선거 정보
+                  정치인
                 </button>
               </li>
               {/* 공론: 공개 전에는 관리자만 (BottomTabBar와 동일) */}

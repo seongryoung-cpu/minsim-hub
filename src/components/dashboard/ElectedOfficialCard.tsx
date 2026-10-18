@@ -34,10 +34,10 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
         <h2 className="text-sm font-semibold text-foreground">우리 지역 단체장</h2>
         <button
           type="button"
-          onClick={() => navigate('/election')}
+          onClick={() => navigate('/politicians?view=election')}
           className="text-xs text-muted-foreground underline-offset-2 hover:underline"
         >
-          지난 선거 결과는 선거 탭에서
+          지난 선거 결과 보기
         </button>
       </div>
 

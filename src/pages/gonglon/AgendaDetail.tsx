@@ -897,10 +897,10 @@ function RelatedPledgesSection({ agendaId, agendaTitle }: { agendaId: string; ag
       )}
       {isNormal && pastCount > 0 && (
         <Link
-          to="/election"
+          to="/politicians?view=election"
           className="flex min-h-12 items-center justify-between rounded-xl bg-secondary/60 px-4 text-sm text-foreground/85 hover:bg-secondary"
         >
-          <span>지난 선거에서 이 의제와 관련된 공약 {pastCount}개 · 선거 탭에서 보기</span>
+          <span>지난 선거에서 이 의제와 관련된 공약 {pastCount}개 · 정치인 탭 선거에서 보기</span>
           <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden />
         </Link>
       )}

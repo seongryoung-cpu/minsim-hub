@@ -16,7 +16,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import type { Region } from '@/types/region';
 
 // 페이지별 코드 분할: 첫 화면(Home) 외에는 해당 페이지에 들어갈 때 불러옴
-const Election = lazy(() => import('@/pages/Election').then((m) => ({ default: m.Election })));
+const Politicians = lazy(() => import('@/pages/Politicians').then((m) => ({ default: m.Politicians })));
+const PoliticianDetail = lazy(() => import('@/pages/PoliticianDetail').then((m) => ({ default: m.PoliticianDetail })));
 const GonglonHub = lazy(() => import('@/pages/gonglon/GonglonHub').then((m) => ({ default: m.GonglonHub })));
 const AgendaDetail = lazy(() => import('@/pages/gonglon/AgendaDetail').then((m) => ({ default: m.AgendaDetail })));
 const ClaimsPage = lazy(() => import('@/pages/gonglon/ClaimsPage').then((m) => ({ default: m.ClaimsPage })));
@@ -128,7 +129,11 @@ function Index() {
               <Home region={currentRegion} onRegionChange={handleRegionChange} />
             }
           />
-          <Route path="/election" element={<Election />} />
+          <Route path="/politicians" element={<Politicians region={currentRegion} onRegionClick={() => setIsRegionSheetOpen(true)} />} />
+          <Route path="/politicians/m/:code" element={<PoliticianDetail />} />
+          <Route path="/politicians/c/:id" element={<PoliticianDetail />} />
+          {/* 예전 선거 탭 주소: 정치인 탭의 '선거' 보기로 */}
+          <Route path="/election" element={<Navigate to="/politicians?view=election" replace />} />
           {/* 공론: 공개 전에는 관리자만 (GonglonGate가 관리자 설정 '공론 공개'를 확인) */}
           <Route path="/gonglon" element={<GonglonGate><GonglonHub region={currentRegion} /></GonglonGate>} />
           <Route path="/gonglon/:id" element={<GonglonGate><AgendaDetail /></GonglonGate>} />
