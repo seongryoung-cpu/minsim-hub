@@ -7,6 +7,7 @@
 //   summarize (관리자)  { agenda_bill_id }          제안이유를 읽고 '시민의 말' 요약 초안 → plain_draft
 //   sync      (누구나)  {}                          연결된 법안 전부 + 국회의원 명단 다시 확인. 20시간 안에 이미 돌았으면 건너뜀 (매일 예약 실행용)
 //   members   (누구나)  {}                          국회의원 명단만 다시 받기. 6시간 안에 이미 받았으면 건너뜀
+//   photos    (누구나)  {}                          사진이 새로 생기거나 바뀐 의원 몇 명씩 사진 줄여 저장 (할 일이 없으면 바로 끝남)
 //
 // 비밀값: ASSEMBLY_API_KEY(국회), FIRECRAWL_API_KEY(제안이유 읽기), LOVABLE_API_KEY(AI)
 // 국회 자료는 바꾸지 않고 저장한다. 출처: 열린국회정보 (이용약관 제7조)
@@ -231,8 +232,33 @@ async function summarize(db: SupabaseClient, agendaBillId: string) {
 // 선거구 → 앱 지역(시·도, 시·군·구) 계산은 화면에서 한다: src/lib/districts.ts (앱의 시·군·구 목록이 필요해서)
 const splitList = (v: unknown) => (str(v) ?? '').split(',').map((x) => x.trim()).filter(Boolean);
 
+/** 국회의원 정보 통합(ALLNAMEMBER)에서 의원 코드 → 사진 주소. 역대 의원 전체라 1000명씩 나눠 받는다 */
+async function photoSources(): Promise<Map<string, string>> {
+  const key = Deno.env.get('ASSEMBLY_API_KEY');
+  if (!key) throw new Error('ASSEMBLY_API_KEY missing');
+  const map = new Map<string, string>();
+  for (let page = 1; page <= 10; page++) {
+    const qs = new URLSearchParams({ KEY: key, Type: 'json', pIndex: String(page), pSize: '1000' });
+    const res = await fetch(`${BASE}/ALLNAMEMBER?${qs}`);
+    if (!res.ok) throw new Error(`assembly ALLNAMEMBER http ${res.status}`);
+    const body = await res.json();
+    const block = body?.ALLNAMEMBER;
+    if (!Array.isArray(block)) break;
+    const total = Number(block[0]?.head?.[0]?.list_total_count ?? 0);
+    const rows = (block[1]?.row ?? []) as Row[];
+    for (const r of rows) {
+      const code = str(r.NAAS_CD);
+      const pic = str(r.NAAS_PIC);
+      if (code && pic && /^https?:\/\//.test(pic)) map.set(code, pic.replace(/^http:/, 'https:'));
+    }
+    if (rows.length === 0 || page * 1000 >= total) break;
+  }
+  return map;
+}
+
 async function syncMembers(db: SupabaseClient) {
   const rows = await assembly('nwvrqwxyaytdsfvhu', {}, 320);
+  const pics = await photoSources().catch((e) => { console.error('photo sources', e); return null; });
   if (rows.length < 250) throw new Error(`members_too_few ${rows.length}`); // 응답이 이상하면 기존 명단을 지우지 않는다
   const now = new Date().toISOString();
   const members = rows
@@ -255,6 +281,7 @@ async function syncMembers(db: SupabaseClient) {
         career: str(r.MEM_TITLE)?.replace(/&middot;/g, '·').replace(/\r\n/g, '\n').slice(0, 4000) ?? null,
         is_current: true,
         synced_at: now,
+        ...(pics ? { photo_src: pics.get(str(r.MONA_CD)!) ?? null } : {}),
       };
     });
   const { error } = await db.from('assembly_members').upsert(members);
@@ -265,7 +292,76 @@ async function syncMembers(db: SupabaseClient) {
     .eq('is_current', true).not('mona_cd', 'in', `(${codes.map((c) => `"${c}"`).join(',')})`);
   if (offErr) throw offErr;
   const { data: linked } = await db.rpc('backfill_position_mona');
-  return { members: members.length, positions_linked: linked ?? 0 };
+  return { members: members.length, positions_linked: linked ?? 0, photo_sources: pics ? members.filter((m) => m.photo_src).length : null };
+}
+
+// ─────────────────────────────────────────────────────────────
+// 의원 사진: 원본을 잠깐 올려 Supabase 이미지 변환으로 줄이고, 작은 파일만 남긴다
+// ─────────────────────────────────────────────────────────────
+const PHOTO_BUCKET = 'politician-photos';
+const PHOTO_SIZES = [96, 240]; // 가로 px, 세로는 3:4
+
+async function savePhoto(db: SupabaseClient, code: string, src: string) {
+  const res = await fetch(src, { signal: AbortSignal.timeout(30_000) });
+  const type = res.headers.get('content-type') ?? '';
+  if (!res.ok || !type.startsWith('image/')) throw new Error(`photo http ${res.status} ${type}`);
+  const original = new Uint8Array(await res.arrayBuffer());
+  // 경로에 시각을 넣어 이미지 변환 캐시가 예전 사진을 돌려주지 않게 한다
+  const tmp = `tmp/${code}-${Date.now()}.jpg`;
+  const up = await db.storage.from(PHOTO_BUCKET).upload(tmp, original, { contentType: type.split(';')[0], upsert: true });
+  if (up.error) throw up.error;
+  try {
+    const base = Deno.env.get('SUPABASE_URL')!;
+    for (const w of PHOTO_SIZES) {
+      const h = Math.round((w * 4) / 3);
+      const r = await fetch(`${base}/storage/v1/render/image/public/${PHOTO_BUCKET}/${tmp}?width=${w}&height=${h}&resize=cover&quality=75`, {
+        headers: { Accept: 'image/webp' },
+        signal: AbortSignal.timeout(30_000),
+      });
+      const t = r.headers.get('content-type') ?? '';
+      if (!r.ok || !t.startsWith('image/')) throw new Error(`resize ${w} http ${r.status} ${t}`);
+      const small = new Uint8Array(await r.arrayBuffer());
+      const put = await db.storage.from(PHOTO_BUCKET).upload(`${w}/${code}.webp`, small, {
+        contentType: 'image/webp', upsert: true, cacheControl: '604800',
+      });
+      if (put.error) throw put.error;
+    }
+  } finally {
+    await db.storage.from(PHOTO_BUCKET).remove([tmp]);
+  }
+  return original.length;
+}
+
+async function syncPhotos(db: SupabaseClient, limit: number) {
+  const retryAfter = new Date(Date.now() - 24 * 3600_000).toISOString();
+  const { data, error } = await db
+    .from('assembly_members')
+    .select('mona_cd, photo_src, photo_saved_src')
+    .eq('is_current', true)
+    .not('photo_src', 'is', null)
+    .or(`photo_failed_at.is.null,photo_failed_at.lt.${retryAfter}`)
+    .limit(400);
+  if (error) throw error;
+  const todo = (data ?? []).filter((m) => m.photo_src !== m.photo_saved_src).slice(0, limit);
+  let saved = 0;
+  const failed: { code: string; error: string }[] = [];
+  // 국회 서버가 느려서 3명씩 동시에
+  for (let i = 0; i < todo.length; i += 3) {
+    await Promise.all(todo.slice(i, i + 3).map(async (m) => {
+      try {
+        await savePhoto(db, m.mona_cd, m.photo_src!);
+        await db.from('assembly_members').update({
+          photo_saved_src: m.photo_src, photo_version: Math.floor(Date.now() / 1000), photo_failed_at: null,
+        }).eq('mona_cd', m.mona_cd);
+        saved++;
+      } catch (e) {
+        failed.push({ code: m.mona_cd, error: String(e instanceof Error ? e.message : e).slice(0, 200) });
+        await db.from('assembly_members').update({ photo_failed_at: new Date().toISOString() }).eq('mona_cd', m.mona_cd);
+      }
+    }));
+  }
+  const left = (data ?? []).filter((m) => m.photo_src !== m.photo_saved_src).length - saved - failed.length;
+  return { saved, failed, left };
 }
 
 async function isAdmin(req: Request) {
@@ -302,8 +398,10 @@ serve(async (req) => {
       }
       let members: unknown = null;
       try { members = await syncMembers(db); } catch (e) { ok = false; members = { error: String(e) }; }
-      await db.from('assembly_sync_runs').update({ finished_at: new Date().toISOString(), ok, detail: { count: ids.length, results, members } }).eq('id', run?.id);
-      return json({ ok, count: ids.length, members });
+      let photos: unknown = null;
+      try { photos = await syncPhotos(db, 12); } catch (e) { photos = { error: String(e) }; } // 사진 실패는 동기화 실패로 치지 않는다
+      await db.from('assembly_sync_runs').update({ finished_at: new Date().toISOString(), ok, detail: { count: ids.length, results, members, photos } }).eq('id', run?.id);
+      return json({ ok, count: ids.length, members, photos });
     }
 
     if (action === 'members') {
@@ -313,6 +411,10 @@ serve(async (req) => {
       const result = await syncMembers(db);
       await db.from('assembly_sync_runs').insert({ kind: 'members', ok: true, finished_at: new Date().toISOString(), detail: result });
       return json({ ok: true, ...result });
+    }
+
+    if (action === 'photos') {
+      return json({ ok: true, ...(await syncPhotos(db, 9)) });
     }
 
     if (!(await isAdmin(req))) return json({ error: 'forbidden' }, 403);
