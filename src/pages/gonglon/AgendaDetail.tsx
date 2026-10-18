@@ -37,6 +37,7 @@ import {
   type PositionSourceKind,
 } from '@/hooks/useAgendaPositions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AgendaBillsSection } from '@/components/gonglon/AgendaBillsSection';
 import { VoteChoiceButtons } from '@/components/gonglon/VoteChoiceButtons';
 import { CHOICE_SELECTED } from '@/components/gonglon/choiceStyles';
 import { ResultBars } from '@/components/gonglon/ResultBars';
@@ -196,6 +197,8 @@ export function AgendaDetail() {
         <MyOpinionSection agenda={agenda} status={status} />
 
         <StatementsSection agendaId={agenda.id} isOpen={isOpen} />
+
+        <AgendaBillsSection agendaId={agenda.id} />
 
         <PositionsSection agendaId={agenda.id} />
 

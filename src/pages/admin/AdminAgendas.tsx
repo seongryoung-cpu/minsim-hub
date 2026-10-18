@@ -44,6 +44,17 @@ import {
   type PositionRoleKind,
   type PositionSourceKind,
 } from '@/hooks/useAgendaPositions';
+import {
+  STAGE_LABELS,
+  useAdminAgendaBills,
+  useLinkBill,
+  useRefreshBill,
+  useSavePlainSummary,
+  useSearchBills,
+  useSummarizeBill,
+  useUnlinkBill,
+  type AdminAgendaBill,
+} from '@/hooks/useAgendaBills';
 import { SIDO_LIST } from '@/types/region';
 import type { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
@@ -373,6 +384,7 @@ function AgendaEditor({
             <IssuesEditor agendaId={id} issues={detail.issues} />
             <LinksEditor agendaId={id} links={detail.links} />
             <PositionsEditor agendaId={id} />
+            <BillsEditor agendaId={id} />
             <StatementsModeration agendaId={id} />
             <ClaimsModeration agendaId={id} />
           </>
@@ -700,7 +712,7 @@ function PositionsEditor({ agendaId }: { agendaId: string }) {
 
 const SOURCE_ORDER: PositionSourceKind[] = ['minutes', 'press', 'sns', 'news'];
 
-function PositionFormRow({ agendaId, initial, onDone }: { agendaId: string; initial: AgendaPosition | null; onDone: () => void }) {
+function PositionFormRow({ agendaId, initial, onDone }: { agendaId: string; initial: Partial<AgendaPosition> | null; onDone: () => void }) {
   const save = useSavePosition();
   const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
   const [form, setForm] = useState<PositionForm>(() => ({
@@ -798,6 +810,191 @@ function PositionFormRow({ agendaId, initial, onDone }: { agendaId: string; init
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 관련 법안 (열린국회정보 검색 → 연결 → 시민의 말 요약 승인)
+// ─────────────────────────────────────────────────────────────
+function BillsEditor({ agendaId }: { agendaId: string }) {
+  const { data: linked } = useAdminAgendaBills(agendaId);
+  const search = useSearchBills();
+  const link = useLinkBill(agendaId);
+  const [q, setQ] = useState('');
+  const linkedIds = new Set((linked ?? []).map((b) => b.bill_id));
+
+  const runSearch = () => {
+    const v = q.trim();
+    if (v.length < 2) return;
+    search.mutate(v, { onError: (err) => toast.error(errorMessage(err)) });
+  };
+
+  return (
+    <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
+      <h2 className="text-lg font-semibold">관련 법안 {linked && linked.length > 0 && `(${linked.length})`}</h2>
+      <p className="text-xs text-muted-foreground">
+        국회(22대) 의안을 이름으로 찾아 연결해요. 연결하면 진행 단계·표결을 가져오고, 매일 아침 다시 확인해요.
+        시민에게는 승인한 요약(무엇이 바뀌나·누가·언제부터)만 보여요. 평가나 찬반 표현은 넣지 마세요. 출처: 열린국회정보
+      </p>
+
+      {(linked ?? []).map((b) => (
+        <LinkedBillRow key={b.id} agendaId={agendaId} bill={b} />
+      ))}
+
+      <div className="flex gap-2">
+        <Input
+          value={q}
+          maxLength={40}
+          placeholder="법률 이름으로 검색 (예: 도시철도법, 노인복지법)"
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') runSearch(); }}
+        />
+        <Button size="sm" variant="outline" disabled={q.trim().length < 2 || search.isPending} onClick={runSearch}>
+          {search.isPending ? <Loader2 size={15} className="animate-spin" /> : '검색'}
+        </Button>
+      </div>
+      {search.data && (
+        search.data.length === 0 ? (
+          <p className="text-sm text-muted-foreground">검색 결과가 없어요. 법률 이름을 더 짧게 넣어 보세요.</p>
+        ) : (
+          <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-lg border border-border">
+            {search.data.map((r) => (
+              <li key={r.bill_id} className="flex items-start gap-2 p-3 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{r.bill_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.bill_no} · {r.proposer} · {r.committee ?? '위원회 미정'} · {r.propose_dt} · {r.proc_result ?? r.pass_gubun ?? ''}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={linkedIds.has(r.bill_id) || link.isPending}
+                  onClick={() => link.mutate(r.bill_id, { onSuccess: () => toast.success('연결했어요'), onError: (err) => toast.error(errorMessage(err)) })}
+                >
+                  {linkedIds.has(r.bill_id) ? '연결됨' : '연결'}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+    </section>
+  );
+}
+
+function LinkedBillRow({ agendaId, bill }: { agendaId: string; bill: AdminAgendaBill }) {
+  const refresh = useRefreshBill(agendaId);
+  const summarize = useSummarizeBill(agendaId);
+  const save = useSavePlainSummary(agendaId);
+  const unlink = useUnlinkBill(agendaId);
+  const [what, setWhat] = useState(bill.plain_what ?? '');
+  const [who, setWho] = useState(bill.plain_who ?? '');
+  const [when, setWhen] = useState(bill.plain_when ?? '');
+  const [addingPerson, setAddingPerson] = useState<string | null>(null);
+  const a = bill.assembly_bills;
+  const draft = bill.plain_draft;
+  const approved = !!bill.plain_approved_at;
+  const sponsors = (a?.rst_proposer ?? '').split(/[,ㆍ·]/).map((x) => x.trim()).filter((x) => x.length >= 2);
+
+  const loadDraft = () => {
+    if (!draft) return;
+    setWhat(draft.what ?? '');
+    setWho(draft.who ?? '');
+    setWhen(draft.when ?? '');
+  };
+  const persist = (approve: boolean) =>
+    save.mutate(
+      { id: bill.id, what, who, when, approve },
+      { onSuccess: () => toast.success(approve ? '승인했어요. 시민 화면에 보여요' : '저장했어요 (공개 안 함)'), onError: (err) => toast.error(errorMessage(err)) },
+    );
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border p-3">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="font-medium">{a?.bill_name ?? bill.bill_id}</p>
+          <p className="text-xs text-muted-foreground">
+            <Badge variant="secondary" className="mr-1.5">{a ? STAGE_LABELS[a.stage] : '-'}</Badge>
+            {a?.bill_no} · {a?.proposer} · {a?.committee ?? '위원회 미정'} · 마지막 확인 {a ? new Date(a.synced_at).toLocaleString('ko-KR') : '-'}
+          </p>
+        </div>
+        {a?.detail_link && (
+          <a href={a.detail_link} target="_blank" rel="noopener noreferrer" className="p-2 text-muted-foreground" aria-label="의안정보시스템에서 보기">
+            <ExternalLink size={15} />
+          </a>
+        )}
+        <Button size="sm" variant="ghost" disabled={refresh.isPending} onClick={() => refresh.mutate(bill.bill_id, { onSuccess: () => toast.success('다시 가져왔어요'), onError: (err) => toast.error(errorMessage(err)) })}>
+          {refresh.isPending ? <Loader2 size={15} className="animate-spin" /> : '다시 가져오기'}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          aria-label="연결 해제"
+          disabled={unlink.isPending}
+          onClick={() => { if (window.confirm('이 법안 연결을 지울까요?')) unlink.mutate(bill.id, { onError: (err) => toast.error(errorMessage(err)) }); }}
+        >
+          <X size={16} />
+        </Button>
+      </div>
+
+      <div className="space-y-2 rounded-lg bg-secondary/50 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold">
+            시민의 말로 쓴 요약 {approved ? <Badge className="ml-1">공개 중</Badge> : <Badge variant="outline" className="ml-1">공개 안 함</Badge>}
+          </p>
+          <div className="flex gap-1.5">
+            {draft && (
+              <Button size="sm" variant="outline" onClick={loadDraft}>AI 초안 불러오기</Button>
+            )}
+            <Button size="sm" variant="outline" disabled={summarize.isPending} onClick={() => summarize.mutate(bill.id, { onSuccess: () => toast.success('AI 초안을 만들었어요. 불러와서 고쳐 주세요'), onError: (err) => toast.error(errorMessage(err)) })}>
+              {summarize.isPending ? <Loader2 size={15} className="mr-1 animate-spin" /> : null}
+              {draft ? 'AI 초안 다시 만들기' : 'AI 초안 만들기'}
+            </Button>
+          </div>
+        </div>
+        {draft && !draft.read_reason && (
+          <p className="text-xs text-destructive">제안이유를 읽지 못해 법안 이름만으로 만든 초안이에요. 원문을 꼭 확인해 주세요.</p>
+        )}
+        <Field label="무엇이 바뀌나" hint={`${what.length}/200`}>
+          <Textarea rows={2} maxLength={200} value={what} onChange={(e) => setWhat(e.target.value)} />
+        </Field>
+        <div className="grid gap-2 md:grid-cols-2">
+          <Field label="누가 영향을 받나" hint={`${who.length}/120`}>
+            <Input maxLength={120} value={who} onChange={(e) => setWho(e.target.value)} />
+          </Field>
+          <Field label="언제부터" hint={`${when.length}/80`}>
+            <Input maxLength={80} value={when} onChange={(e) => setWhen(e.target.value)} />
+          </Field>
+        </div>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button size="sm" variant="ghost" disabled={save.isPending} onClick={() => persist(false)}>
+            {approved ? '공개 내리고 저장' : '저장만'}
+          </Button>
+          <Button size="sm" disabled={save.isPending || what.trim().length < 5} onClick={() => persist(true)}>
+            <Save size={15} className="mr-1" /> 승인하고 공개
+          </Button>
+        </div>
+      </div>
+
+      {sponsors.length > 0 && !addingPerson && (
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+          관련 인물 입장 후보:
+          {sponsors.map((name) => (
+            <Button key={name} size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setAddingPerson(name)}>
+              <Plus size={13} className="mr-0.5" /> {name} (대표발의자)
+            </Button>
+          ))}
+        </div>
+      )}
+      {addingPerson && (
+        <PositionFormRow
+          agendaId={agendaId}
+          initial={{ person_name: addingPerson, role_kind: 'bill_sponsor', role_label: `${a?.bill_name ?? '관련 법안'} 대표발의자`.slice(0, 40) }}
+          onDone={() => setAddingPerson(null)}
+        />
+      )}
     </div>
   );
 }

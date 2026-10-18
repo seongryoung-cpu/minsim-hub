@@ -1999,7 +1999,7 @@ export type Database = {
       agenda_is_open: { Args: { p_agenda_id: string }; Returns: boolean }
       app_setting_on: { Args: { p_key: string }; Returns: boolean }
       assembly_districts_for: {
-        Args: { p_sido_short: string; p_sigungu: string }
+        Args: { p_prefixes: string[]; p_sigungu: string }
         Returns: string[]
       }
       cast_agenda_vote: {

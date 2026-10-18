@@ -190,21 +190,22 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.get_agenda_bills(uuid, text[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_agenda_bills(uuid, text[]) TO anon, authenticated, service_role;
 
--- 우리 지역 선거구 이름 찾기 (표결 기록에 있는 선거구 중 시·도 + 시·군·구 이름이 들어간 것)
-CREATE OR REPLACE FUNCTION public.assembly_districts_for(p_sido_short text, p_sigungu text)
+-- 우리 지역 선거구 이름 찾기 (표결 기록에 있는 선거구 중 시·도 약칭으로 시작하고 시·군·구 이름이 들어간 것)
+-- 예: ({'경기'}, '수원시') → {'경기 수원시갑','경기 수원시을',…}. 통합 지역명(예: 전남광주통합특별시)은 약칭 목록에 함께 넣는다.
+CREATE OR REPLACE FUNCTION public.assembly_districts_for(p_prefixes text[], p_sigungu text)
 RETURNS text[]
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT coalesce(array_agg(DISTINCT district), '{}')
-  FROM assembly_bill_votes
-  WHERE district LIKE p_sido_short || ' %'
-    AND (p_sigungu IS NULL OR p_sigungu = '' OR district LIKE '%' || regexp_replace(p_sigungu, '(시|군|구)$', '') || '%');
+  SELECT coalesce(array_agg(DISTINCT v.district), '{}')
+  FROM assembly_bill_votes v
+  WHERE EXISTS (SELECT 1 FROM unnest(p_prefixes) p WHERE v.district LIKE p || ' %')
+    AND (coalesce(p_sigungu, '') = '' OR v.district LIKE '%' || p_sigungu || '%');
 $$;
-REVOKE EXECUTE ON FUNCTION public.assembly_districts_for(text, text) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.assembly_districts_for(text, text) TO anon, authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.assembly_districts_for(text[], text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.assembly_districts_for(text[], text) TO anon, authenticated, service_role;
 
 -- 알림 신청 토글
 CREATE OR REPLACE FUNCTION public.toggle_bill_alert(p_bill_id text)
