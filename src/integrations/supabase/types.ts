@@ -289,6 +289,7 @@ export type Database = {
           created_by: string | null
           id: string
           is_hidden: boolean
+          mona_cd: string | null
           party: string | null
           person_name: string
           role_kind: string
@@ -306,6 +307,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_hidden?: boolean
+          mona_cd?: string | null
           party?: string | null
           person_name: string
           role_kind: string
@@ -323,6 +325,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           is_hidden?: boolean
+          mona_cd?: string | null
           party?: string | null
           person_name?: string
           role_kind?: string
@@ -705,6 +708,69 @@ export type Database = {
           vote_no?: number | null
           vote_total?: number | null
           vote_yes?: number | null
+        }
+        Relationships: []
+      }
+      assembly_members: {
+        Row: {
+          career: string | null
+          committee_role: string | null
+          committees: string[]
+          district: string | null
+          elect_type: string | null
+          email: string | null
+          homepage: string | null
+          is_current: boolean
+          mona_cd: string
+          name: string
+          office: string | null
+          party: string | null
+          reelection: string | null
+          sido: string | null
+          sigungu_tokens: string[]
+          synced_at: string
+          tel: string | null
+          units: string | null
+        }
+        Insert: {
+          career?: string | null
+          committee_role?: string | null
+          committees?: string[]
+          district?: string | null
+          elect_type?: string | null
+          email?: string | null
+          homepage?: string | null
+          is_current?: boolean
+          mona_cd: string
+          name: string
+          office?: string | null
+          party?: string | null
+          reelection?: string | null
+          sido?: string | null
+          sigungu_tokens?: string[]
+          synced_at?: string
+          tel?: string | null
+          units?: string | null
+        }
+        Update: {
+          career?: string | null
+          committee_role?: string | null
+          committees?: string[]
+          district?: string | null
+          elect_type?: string | null
+          email?: string | null
+          homepage?: string | null
+          is_current?: boolean
+          mona_cd?: string
+          name?: string
+          office?: string | null
+          party?: string | null
+          reelection?: string | null
+          sido?: string | null
+          sigungu_tokens?: string[]
+          synced_at?: string
+          tel?: string | null
+          units?: string | null
         }
         Relationships: []
       }
@@ -2014,6 +2080,7 @@ export type Database = {
         Args: { p_prefixes: string[]; p_sigungu: string }
         Returns: string[]
       }
+      backfill_position_mona: { Args: never; Returns: number }
       cast_agenda_vote: {
         Args: {
           p_agenda_id: string
@@ -2135,6 +2202,10 @@ export type Database = {
         }[]
       }
       get_my_political_data_count: { Args: never; Returns: number }
+      get_politician_activity: {
+        Args: { p_candidate_id?: string; p_mona_cd?: string }
+        Returns: Json
+      }
       get_quick_agendas: { Args: { p_sido?: string }; Returns: Json }
       gonglon_claims_on: { Args: never; Returns: boolean }
       gonglon_visible: { Args: never; Returns: boolean }
