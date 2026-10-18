@@ -726,6 +726,8 @@ export type Database = {
           office: string | null
           party: string | null
           reelection: string | null
+          sido: string | null
+          sigungu_tokens: string[]
           synced_at: string
           tel: string | null
           units: string | null
@@ -744,6 +746,8 @@ export type Database = {
           office?: string | null
           party?: string | null
           reelection?: string | null
+          sido?: string | null
+          sigungu_tokens?: string[]
           synced_at?: string
           tel?: string | null
           units?: string | null
@@ -762,6 +766,8 @@ export type Database = {
           office?: string | null
           party?: string | null
           reelection?: string | null
+          sido?: string | null
+          sigungu_tokens?: string[]
           synced_at?: string
           tel?: string | null
           units?: string | null
