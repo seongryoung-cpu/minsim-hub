@@ -2100,10 +2100,6 @@ export type Database = {
           status: string
         }[]
       }
-      get_politician_activity: {
-        Args: { p_candidate_id?: string; p_mona_cd?: string }
-        Returns: Json
-      }
       get_agenda_bills: {
         Args: { p_agenda_id: string; p_districts?: string[] }
         Returns: Json
