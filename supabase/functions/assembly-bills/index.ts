@@ -319,7 +319,7 @@ async function savePhoto(db: SupabaseClient, code: string, src: string) {
         signal: AbortSignal.timeout(30_000),
       });
       const t = r.headers.get('content-type') ?? '';
-      if (!r.ok || !t.startsWith('image/')) throw new Error(`resize ${w} http ${r.status} ${t}`);
+      if (!r.ok || !t.startsWith('image/')) throw new Error(`resize ${w} http ${r.status} ${(await r.text().catch(() => '')).slice(0, 160)}`);
       const small = new Uint8Array(await r.arrayBuffer());
       const put = await db.storage.from(PHOTO_BUCKET).upload(`${w}/${code}.webp`, small, {
         contentType: 'image/webp', upsert: true, cacheControl: '604800',
