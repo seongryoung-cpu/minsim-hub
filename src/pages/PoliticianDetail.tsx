@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ExternalLink, Globe, Mail, Phone } from 'lucide-react';
-import { useAssemblyMembers, useMetroHeads, usePoliticianActivity, type PoliticianActivity } from '@/hooks/usePoliticians';
+import { headPhotoUrl, memberPhotoUrl, useAssemblyMembers, useMetroHeads, usePoliticianActivity, type PoliticianActivity } from '@/hooks/usePoliticians';
+import { PersonPhoto } from '@/components/politicians/PersonPhoto';
 import { candidatePath } from '@/hooks/useCandidates';
 import { SOURCE_KIND_LABELS, type PositionSourceKind } from '@/hooks/useAgendaPositions';
 import { STAGE_LABELS, type BillStage } from '@/hooks/useAgendaBills';
@@ -36,11 +37,14 @@ export function PoliticianDetail() {
           <div className="h-32 animate-pulse rounded-2xl bg-secondary motion-reduce:animate-none" role="status" aria-label="불러오는 중" />
         ) : member ? (
           <>
-            <section className="space-y-1.5">
+            <section className="flex items-center gap-4">
+              <PersonPhoto src={memberPhotoUrl(member, 240)} initial={member.name.slice(0, 1)} size={80} />
+              <div className="min-w-0 space-y-1.5">
               <h1 className="text-2xl font-bold">{member.name}</h1>
               <p className="text-[15px] text-foreground/80">
                 {['국회의원', member.elect_type === '비례대표' ? '비례대표' : member.district, member.party, member.reelection].filter(Boolean).join(' · ')}
               </p>
+              </div>
             </section>
 
             <dl className="space-y-3 rounded-2xl border border-border bg-card p-4 text-sm">
@@ -89,13 +93,16 @@ export function PoliticianDetail() {
               </details>
             )}
 
-            <p className="text-xs text-muted-foreground">출처: 열린국회정보 국회의원 인적사항 ({fmt(member.synced_at)} 확인)</p>
+            <p className="text-xs text-muted-foreground">출처: 열린국회정보 국회의원 인적사항·사진 ({fmt(member.synced_at)} 확인)</p>
           </>
         ) : head ? (
           <>
-            <section className="space-y-1.5">
-              <h1 className="text-2xl font-bold">{head.name}</h1>
-              <p className="text-[15px] text-foreground/80">{[head.position, head.party].filter(Boolean).join(' · ')}</p>
+            <section className="flex items-center gap-4">
+              <PersonPhoto src={headPhotoUrl(head.image_url, 240)} initial={head.name.slice(0, 1)} size={80} />
+              <div className="min-w-0 space-y-1.5">
+                <h1 className="text-2xl font-bold">{head.name}</h1>
+                <p className="text-[15px] text-foreground/80">{[head.position, head.party].filter(Boolean).join(' · ')}</p>
+              </div>
             </section>
 
             <Link

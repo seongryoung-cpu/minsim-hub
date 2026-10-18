@@ -25,6 +25,7 @@ export interface AssemblyMember {
   homepage: string | null;
   office: string | null;
   career: string | null;
+  photo_version: number | null;
   synced_at: string;
   /** 선거구 → 앱 지역 (화면에서 계산: src/lib/districts.ts) */
   place: DistrictPlace;
@@ -54,6 +55,7 @@ export interface PoliticianRow {
   sidos: string[];        // 앱 시·도 이름
   committees: string[];
   initial: string;
+  photo: string | null;   // 목록용 작은 사진 (없으면 이름 첫 글자)
 }
 
 export const KIND_LABELS: Record<PoliticianKind, string> = {
@@ -62,6 +64,22 @@ export const KIND_LABELS: Record<PoliticianKind, string> = {
   assembly_pr: '비례대표 국회의원',
 };
 export const KIND_ORDER: PoliticianKind[] = ['metro_head', 'assembly_district', 'assembly_pr'];
+
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? 'https://zdgpxmtapbviwrpcleqi.supabase.co';
+
+/** 국회의원 사진 (우리 저장소에 줄여 둔 것). 96: 목록, 240: 인물 페이지 */
+export function memberPhotoUrl(m: { mona_cd: string; photo_version: number | null }, size: 96 | 240) {
+  if (!m.photo_version) return null;
+  return `${SUPABASE_URL}/storage/v1/object/public/politician-photos/${size}/${encodeURIComponent(m.mona_cd)}.webp?v=${m.photo_version}`;
+}
+
+/** 단체장 사진: 우리 저장소 사진이면 작게 줄여서 받는다 */
+export function headPhotoUrl(url: string | null, width: number) {
+  if (!url) return null;
+  const marker = '/storage/v1/object/public/';
+  if (!url.startsWith(SUPABASE_URL) || !url.includes(marker)) return url;
+  return `${url.replace(marker, '/storage/v1/render/image/public/')}${url.includes('?') ? '&' : '?'}width=${width}&height=${Math.round((width * 4) / 3)}&resize=cover&quality=75`;
+}
 
 /** 통합 광역단체 → 앱 시·도 */
 export function metroHeadSidos(regionName: string | null): string[] {
@@ -87,6 +105,7 @@ export function memberToRow(m: AssemblyMember): PoliticianRow {
     sidos: m.place.sido ? [m.place.sido] : [],
     committees: m.committees,
     initial: m.name.slice(0, 1),
+    photo: memberPhotoUrl(m, 96),
   };
 }
 
@@ -102,6 +121,7 @@ export function headToRow(h: MetroHead): PoliticianRow {
     sidos: metroHeadSidos(h.region_name),
     committees: [],
     initial: h.name.slice(0, 1),
+    photo: headPhotoUrl(h.image_url, 96),
   };
 }
 
@@ -120,7 +140,7 @@ export function useAssemblyMembers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('assembly_members')
-        .select('mona_cd, name, party, district, elect_type, committees, committee_role, reelection, units, tel, email, homepage, office, career, synced_at')
+        .select('mona_cd, name, party, district, elect_type, committees, committee_role, reelection, units, tel, email, homepage, office, career, photo_version, synced_at')
         .eq('is_current', true);
       if (error) throw error;
       return ((data ?? []) as Omit<AssemblyMember, 'place'>[])

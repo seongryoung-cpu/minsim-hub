@@ -17,6 +17,7 @@ import {
   type PoliticianKind,
   type PoliticianRow,
 } from '@/hooks/usePoliticians';
+import { PersonPhoto } from '@/components/politicians/PersonPhoto';
 import { AppModePending } from '@/components/dashboard/AppModePending';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Election } from '@/pages/Election';
@@ -348,12 +349,7 @@ function Group({
 function PersonRow({ row }: { row: PoliticianRow }) {
   return (
     <Link to={row.path} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50">
-      <span
-        aria-hidden
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-[15px] font-bold text-foreground/70"
-      >
-        {row.initial}
-      </span>
+      <PersonPhoto src={row.photo} initial={row.initial} size={40} />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline gap-1.5">
           <span className="text-[15px] font-semibold">{row.name}</span>
