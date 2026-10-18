@@ -727,6 +727,7 @@ export type Database = {
           party: string | null
           photo_failed_at: string | null
           photo_saved_src: string | null
+          photo_set: string | null
           photo_src: string | null
           photo_version: number | null
           reelection: string | null
@@ -749,6 +750,7 @@ export type Database = {
           party?: string | null
           photo_failed_at?: string | null
           photo_saved_src?: string | null
+          photo_set?: string | null
           photo_src?: string | null
           photo_version?: number | null
           reelection?: string | null
@@ -771,6 +773,7 @@ export type Database = {
           party?: string | null
           photo_failed_at?: string | null
           photo_saved_src?: string | null
+          photo_set?: string | null
           photo_src?: string | null
           photo_version?: number | null
           reelection?: string | null
