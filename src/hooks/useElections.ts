@@ -46,6 +46,7 @@ export function useElectionSchedule() {
   return {
     isLoading: q.isLoading,
     isError: q.isError,
+    refetch: q.refetch,
     current,
     next,
     dDay,

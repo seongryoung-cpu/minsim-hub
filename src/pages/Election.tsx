@@ -10,6 +10,7 @@ import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import { formatDDay, formatYmd, getMetropolitanTitle, sortByElectionResult } from '@/types/election';
 import { useElectionSchedule } from '@/hooks/useElections';
 import { useAppMode } from '@/hooks/useAppMode';
+import { AppModePending } from '@/components/dashboard/AppModePending';
 
 export function Election() {
   const navigate = useNavigate();
@@ -17,7 +18,8 @@ export function Election() {
   
   // Fetch candidates from DB
   const { data: candidates, isLoading: isCandidatesLoading } = useCandidates(region?.sido);
-  const isNormal = useAppMode() === 'normal';
+  const appMode = useAppMode();
+  const isNormal = appMode.mode === 'normal';
   const [showOthers, setShowOthers] = useState(false);
   const schedule = useElectionSchedule();
 
@@ -57,6 +59,10 @@ export function Election() {
         <div className="text-muted-foreground">지역을 선택해주세요</div>
       </div>
     );
+  }
+
+  if (appMode.mode === null) {
+    return <AppModePending isError={appMode.isError} onRetry={appMode.retry} />;
   }
 
   return (

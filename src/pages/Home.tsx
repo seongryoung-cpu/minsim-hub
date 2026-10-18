@@ -17,6 +17,7 @@ import { ElectedOfficialCard } from '@/components/dashboard/ElectedOfficialCard'
 import { getMetropolitanTitle, formatDDay, sortByElectionResult } from '@/types/election';
 import { useElectionSchedule } from '@/hooks/useElections';
 import { useAppMode } from '@/hooks/useAppMode';
+import { AppModePending } from '@/components/dashboard/AppModePending';
 import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import type { Region } from '@/types/region';
 
@@ -43,18 +44,20 @@ export function Home({ region, onRegionChange }: HomeProps) {
     return getMetropolitanTitle(region.sido);
   }, [region.sido]);
 
-  const isNormal = useAppMode() === 'normal';
+  const appMode = useAppMode();
+  const isNormal = appMode.mode === 'normal';
 
   // 선거 모드: 공정성을 위해 매 세션 무작위. 평상시: 당선 → 낙선(득표순) → 본선 미진출
   const shuffledCandidates = useMemo(() => {
     const candidates = dbCandidates ? [...dbCandidates] : [];
+    if (appMode.mode === null) return [];
     if (isNormal) return sortByElectionResult(candidates);
     for (let i = candidates.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
     }
     return candidates;
-  }, [dbCandidates, isNormal]);
+  }, [dbCandidates, isNormal, appMode.mode]);
 
   // 평상시에는 본선 후보(당선·낙선)만 먼저 보여 주고 경선·예비후보는 접어 둔다
   const finalistCount = shuffledCandidates.filter(
@@ -100,6 +103,10 @@ export function Home({ region, onRegionChange }: HomeProps) {
       path: '/news',
     },
   ];
+
+  if (appMode.mode === null) {
+    return <AppModePending isError={appMode.isError} onRetry={appMode.retry} />;
+  }
 
   return (
     <motion.div
