@@ -228,7 +228,7 @@ END $$;
 REVOKE EXECUTE ON FUNCTION public.toggle_bill_alert(text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.toggle_bill_alert(text) TO authenticated, service_role;
 
--- 매일 확인 예약 (06:10 KST = 21:10 UTC). 함수는 20시간 안에 이미 돌았으면 건너뛴다.
+-- 매일 확인 예약 (처음 06:10 KST, 20261020020000 에서 09:01 KST로 바꿈). 함수는 20시간 안에 이미 돌았으면 건너뛴다.
 -- pg_net으로 Edge Function을 부른다. 예약 등록(cron.schedule)은 프로젝트 URL·공개 키가 필요해서 별도로 실행했다.
 CREATE EXTENSION IF NOT EXISTS pg_net;
 CREATE EXTENSION IF NOT EXISTS pg_cron;

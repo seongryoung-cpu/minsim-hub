@@ -299,7 +299,8 @@ async function syncMembers(db: SupabaseClient) {
 // 의원 사진: 원본을 잠깐 올려 Supabase 이미지 변환으로 줄이고, 작은 파일만 남긴다
 // ─────────────────────────────────────────────────────────────
 const PHOTO_BUCKET = 'politician-photos';
-const PHOTO_SIZES = [96, 240]; // 가로 px, 세로는 3:4
+const PHOTO_SET = 'v2'; // 저장한 크기 묶음 (화면이 어느 폴더를 볼지 정한다)
+const PHOTO_SIZES = [160, 480]; // 가로 px, 세로는 3:4. 160: 목록(48×64), 480: 인물 페이지(120×160)·크게 보기. 원본보다 크게 늘리지는 않는다
 
 async function savePhoto(db: SupabaseClient, code: string, src: string) {
   const res = await fetch(src, { signal: AbortSignal.timeout(30_000) });
@@ -314,7 +315,7 @@ async function savePhoto(db: SupabaseClient, code: string, src: string) {
     const base = Deno.env.get('SUPABASE_URL')!;
     for (const w of PHOTO_SIZES) {
       const h = Math.round((w * 4) / 3);
-      const r = await fetch(`${base}/storage/v1/render/image/public/${PHOTO_BUCKET}/${tmp}?width=${w}&height=${h}&resize=cover&quality=75`, {
+      const r = await fetch(`${base}/storage/v1/render/image/public/${PHOTO_BUCKET}/${tmp}?width=${w}&height=${h}&resize=cover&quality=82`, {
         headers: { Accept: 'image/webp' },
         signal: AbortSignal.timeout(30_000),
       });
@@ -327,7 +328,8 @@ async function savePhoto(db: SupabaseClient, code: string, src: string) {
       if (put.error) throw put.error;
     }
   } finally {
-    await db.storage.from(PHOTO_BUCKET).remove([tmp]);
+    // 예전 크기(96·240) 파일도 함께 지운다
+    await db.storage.from(PHOTO_BUCKET).remove([tmp, `96/${code}.webp`, `240/${code}.webp`]);
   }
   return original.length;
 }
@@ -357,7 +359,7 @@ async function syncPhotos(db: SupabaseClient, limit: number) {
           await savePhoto(db, m.mona_cd, `https://www.assembly.go.kr/static/portal/img/openassm/${encodeURIComponent(m.mona_cd)}.jpg`);
         }
         await db.from('assembly_members').update({
-          photo_saved_src: m.photo_src, photo_version: Math.floor(Date.now() / 1000), photo_failed_at: null,
+          photo_saved_src: m.photo_src, photo_version: Math.floor(Date.now() / 1000), photo_failed_at: null, photo_set: PHOTO_SET,
         }).eq('mona_cd', m.mona_cd);
         saved++;
       } catch (e) {
