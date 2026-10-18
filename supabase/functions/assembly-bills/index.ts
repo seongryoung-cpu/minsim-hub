@@ -5,7 +5,8 @@
 //   link      (관리자)  { agenda_id, bill_id }      의제에 연결 + 국회 자료 가져오기
 //   refresh   (관리자)  { bill_id }                 한 법안 다시 가져오기
 //   summarize (관리자)  { agenda_bill_id }          제안이유를 읽고 '시민의 말' 요약 초안 → plain_draft
-//   sync      (누구나)  {}                          연결된 법안 전부 다시 확인. 20시간 안에 이미 돌았으면 건너뜀 (매일 예약 실행용)
+//   sync      (누구나)  {}                          연결된 법안 전부 + 국회의원 명단 다시 확인. 20시간 안에 이미 돌았으면 건너뜀 (매일 예약 실행용)
+//   members   (누구나)  {}                          국회의원 명단만 다시 받기. 6시간 안에 이미 받았으면 건너뜀
 //
 // 비밀값: ASSEMBLY_API_KEY(국회), FIRECRAWL_API_KEY(제안이유 읽기), LOVABLE_API_KEY(AI)
 // 국회 자료는 바꾸지 않고 저장한다. 출처: 열린국회정보 (이용약관 제7조)
@@ -224,6 +225,72 @@ async function summarize(db: SupabaseClient, agendaBillId: string) {
   return plain_draft;
 }
 
+// ─────────────────────────────────────────────────────────────
+// 국회의원 명단 (정치인 탭)
+// ─────────────────────────────────────────────────────────────
+// 국회 선거구 앞머리 → 앱 시·도 이름
+const PREFIX_SIDO: Record<string, string> = {
+  서울: '서울특별시', 부산: '부산광역시', 대구: '대구광역시', 인천: '인천광역시', 광주: '광주광역시',
+  대전: '대전광역시', 울산: '울산광역시', 세종: '세종특별자치시', 경기: '경기도', 강원: '강원특별자치도',
+  충북: '충청북도', 충남: '충청남도', 전북: '전북특별자치도', 전남: '전라남도', 경북: '경상북도',
+  경남: '경상남도', 제주: '제주특별자치도',
+};
+
+/** "경기 수원시갑" → { sido: '경기도', tokens: ['수원시'] }, "대구 동구군위군을" → ['동구','군위군'] */
+export function parseDistrict(orig: string | null): { sido: string | null; tokens: string[] } {
+  const s = (orig ?? '').trim();
+  if (!s || s.includes('비례')) return { sido: null, tokens: [] };
+  if (s.startsWith('세종')) return { sido: '세종특별자치시', tokens: ['세종시'] };
+  const sp = s.indexOf(' ');
+  if (sp < 0) return { sido: null, tokens: [] };
+  const sido = PREFIX_SIDO[s.slice(0, sp)] ?? null;
+  const rest = s.slice(sp + 1).replace(/[갑을병정무]$/, '');
+  const tokens = rest.match(/[가-힣]+?(?:시|군|구)/g) ?? [];
+  return { sido, tokens: [...new Set(tokens)] };
+}
+
+const splitList = (v: unknown) => (str(v) ?? '').split(',').map((x) => x.trim()).filter(Boolean);
+
+async function syncMembers(db: SupabaseClient) {
+  const rows = await assembly('nwvrqwxyaytdsfvhu', {}, 320);
+  if (rows.length < 250) throw new Error(`members_too_few ${rows.length}`); // 응답이 이상하면 기존 명단을 지우지 않는다
+  const now = new Date().toISOString();
+  const members = rows
+    .filter((r) => str(r.MONA_CD) && str(r.HG_NM))
+    .map((r) => {
+      const { sido, tokens } = parseDistrict(str(r.ORIG_NM));
+      return {
+        mona_cd: str(r.MONA_CD)!,
+        name: str(r.HG_NM)!,
+        party: str(r.POLY_NM),
+        district: str(r.ORIG_NM),
+        elect_type: str(r.ELECT_GBN_NM),
+        sido,
+        sigungu_tokens: tokens,
+        committees: splitList(r.CMITS ?? r.CMIT_NM),
+        committee_role: str(r.JOB_RES_NM),
+        reelection: str(r.REELE_GBN_NM),
+        units: str(r.UNITS),
+        tel: str(r.TEL_NO),
+        email: str(r.E_MAIL),
+        homepage: str(r.HOMEPAGE)?.replace(/^http:/, 'https:') ?? null,
+        office: str(r.ASSEM_ADDR),
+        career: str(r.MEM_TITLE)?.replace(/&middot;/g, '·').replace(/\r\n/g, '\n').slice(0, 4000) ?? null,
+        is_current: true,
+        synced_at: now,
+      };
+    });
+  const { error } = await db.from('assembly_members').upsert(members);
+  if (error) throw error;
+  // 이번 명단에 없는 사람은 현직이 아니다 (사퇴·당선무효 등)
+  const codes = members.map((m) => m.mona_cd);
+  const { error: offErr } = await db.from('assembly_members').update({ is_current: false })
+    .eq('is_current', true).not('mona_cd', 'in', `(${codes.map((c) => `"${c}"`).join(',')})`);
+  if (offErr) throw offErr;
+  const { data: linked } = await db.rpc('backfill_position_mona');
+  return { members: members.length, positions_linked: linked ?? 0 };
+}
+
 async function isAdmin(req: Request) {
   const auth = req.headers.get('Authorization');
   if (!auth?.startsWith('Bearer ')) return false;
@@ -256,8 +323,19 @@ serve(async (req) => {
       for (const id of ids) {
         try { results.push(await refreshBill(db, id)); } catch (e) { ok = false; results.push({ bill_id: id, error: String(e) }); }
       }
-      await db.from('assembly_sync_runs').update({ finished_at: new Date().toISOString(), ok, detail: { count: ids.length, results } }).eq('id', run?.id);
-      return json({ ok, count: ids.length });
+      let members: unknown = null;
+      try { members = await syncMembers(db); } catch (e) { ok = false; members = { error: String(e) }; }
+      await db.from('assembly_sync_runs').update({ finished_at: new Date().toISOString(), ok, detail: { count: ids.length, results, members } }).eq('id', run?.id);
+      return json({ ok, count: ids.length, members });
+    }
+
+    if (action === 'members') {
+      const since = new Date(Date.now() - 6 * 3600_000).toISOString();
+      const { data: recent } = await db.from('assembly_sync_runs').select('id').eq('kind', 'members').eq('ok', true).gte('started_at', since).limit(1);
+      if (recent && recent.length > 0) return json({ skipped: true });
+      const result = await syncMembers(db);
+      await db.from('assembly_sync_runs').insert({ kind: 'members', ok: true, finished_at: new Date().toISOString(), detail: result });
+      return json({ ok: true, ...result });
     }
 
     if (!(await isAdmin(req))) return json({ error: 'forbidden' }, 403);
