@@ -185,14 +185,14 @@ export function Home({ region, onRegionChange }: HomeProps) {
           {/* Quiz Banner */}
           <QuizBanner />
 
-          {/* Policy Match Banner */}
-          <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
+          {/* Policy Match Banner (후보 공약 기반 → 평상시에는 선거 탭에서) */}
+          {!isNormal && <PolicyMatchBanner onPress={() => navigate('/policy-match')} />}
 
           {/* MBTI Banner */}
           <MbtiBanner onPress={() => navigate('/political-mbti')} />
 
-          {/* Mobile Candidates Section (평상시에 이 지역 후보 데이터가 없으면 숨김) */}
-          {(!isNormal || candidatesLoading || shuffledCandidates.length > 0) && (
+          {/* Mobile Candidates Section (선거 콘텐츠 → 평상시에는 선거 탭에서만) */}
+          {!isNormal && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -261,7 +261,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
           </motion.div>
           )}
 
-          {/* More Info Section */}
+          {/* More Info Section (후보 뉴스 → 평상시에는 숨김. 이슈 추적이 생기면 다시) */}
+          {!isNormal && (
           <DashboardSection
             title="더 알아보기"
             icon="✨"
@@ -276,6 +277,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               />
             </div>
           </DashboardSection>
+          )}
         </div>
 
         {/* Desktop Three Column Layout */}
@@ -310,12 +312,17 @@ export function Home({ region, onRegionChange }: HomeProps) {
             <QuizBanner />
 
             {/* Policy Match & MBTI Banners - Desktop Grid */}
-            <div className="grid grid-cols-2 gap-5">
-              <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
+            {isNormal ? (
               <MbtiBanner onPress={() => navigate('/political-mbti')} />
-            </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-5">
+                <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
+                <MbtiBanner onPress={() => navigate('/political-mbti')} />
+              </div>
+            )}
 
-            {/* Quick Actions */}
+            {/* Quick Actions (후보 비교·후보 뉴스 → 평상시에는 숨김) */}
+            {!isNormal && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -346,9 +353,10 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 ))}
               </div>
             </motion.div>
+            )}
 
-            {/* Desktop Candidates - Horizontal Cards */}
-            {(!isNormal || candidatesLoading || shuffledCandidates.length > 0) && (
+            {/* Desktop Candidates - Horizontal Cards (평상시에는 선거 탭에서만) */}
+            {!isNormal && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -406,7 +414,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
 
           {/* Right Column - Sidebar */}
           <div className="lg:col-span-4 space-y-6">
-            {/* Compact Candidate List */}
+            {/* Compact Candidate List (평상시에는 선거 탭에서만) */}
+            {!isNormal && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -452,6 +461,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 </motion.button>
               )}
             </motion.div>
+            )}
 
             {/* Tips Card */}
             <motion.div

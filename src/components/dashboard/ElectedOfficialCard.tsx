@@ -14,14 +14,14 @@ interface ElectedOfficialCardProps {
   isLoading?: boolean;
 }
 
-/** 평상시 모드 홈: 우리 지역 당선인 + 본선 결과 + 다음 선거 */
+/**
+ * 평상시 모드 홈: 우리 지역 단체장(현직) + 다음 선거.
+ * 선거 결과(득표율 등)는 선거 탭에서만 보여 준다 — 홈에서는 '현직 인물'로 다룬다.
+ */
 export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: ElectedOfficialCardProps) {
   const navigate = useNavigate();
   const winner = candidates.find((c) => c.electionResult === 'elected');
-  const finalists = candidates
-    .filter((c) => (c.electionResult === 'elected' || c.electionResult === 'defeated') && c.voteShare != null)
-    .sort((a, b) => (b.voteShare ?? 0) - (a.voteShare ?? 0));
-  const { current, next, nextDDay } = useElectionSchedule();
+  const { next, nextDDay } = useElectionSchedule();
 
   return (
     <motion.section
@@ -31,8 +31,14 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
       className="bg-card rounded-2xl p-4 shadow-sm border border-border/50"
     >
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-foreground">우리 지역 {officeTitle}</h2>
-        <span className="text-xs text-muted-foreground">{current?.name} 결과</span>
+        <h2 className="text-sm font-semibold text-foreground">우리 지역 단체장</h2>
+        <button
+          type="button"
+          onClick={() => navigate('/election')}
+          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+        >
+          지난 선거 결과는 선거 탭에서
+        </button>
       </div>
 
       {isLoading ? (
@@ -66,30 +72,14 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
                   {winner.party}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">{officeTitle} 당선인 · 공약과 경력 보기</p>
+              <p className="text-xs text-muted-foreground">{officeTitle} · 공약과 경력 보기</p>
             </div>
             <ChevronRight size={18} className="text-muted-foreground flex-shrink-0" />
           </button>
 
-          {finalists.length > 1 && (
-            <div className="mt-3 space-y-1.5">
-              {finalists.map((c) => (
-                <div key={c.id} className="flex items-center gap-2 text-xs">
-                  <span className="w-12 flex-shrink-0 truncate text-foreground">{c.name}</span>
-                  <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${c.voteShare}%`, backgroundColor: c.partyColor }}
-                    />
-                  </div>
-                  <span className="w-14 text-right tabular-nums text-muted-foreground">{c.voteShare!.toFixed(1)}%</span>
-                </div>
-              ))}
-            </div>
-          )}
         </>
       ) : (
-        <p className="text-sm text-muted-foreground py-3">이 지역의 선거 결과는 아직 준비 중이에요.</p>
+        <p className="text-sm text-muted-foreground py-3">이 지역 단체장 정보는 아직 준비 중이에요.</p>
       )}
 
       {next && nextDDay != null && (

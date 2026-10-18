@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, ChevronRight, CornerUpLeft, Hand, Share2, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight, CircleHelp, CornerUpLeft, ExternalLink, Hand, Share2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +28,15 @@ import {
   type StatementSort,
 } from '@/hooks/useAgendas';
 import { candidatePath } from '@/hooks/useCandidates';
+import { useAppMode } from '@/hooks/useAppMode';
+import {
+  ROLE_KIND_LABELS,
+  ROLE_ORDER,
+  SOURCE_KIND_LABELS,
+  useAgendaPositions,
+  type PositionSourceKind,
+} from '@/hooks/useAgendaPositions';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { VoteChoiceButtons } from '@/components/gonglon/VoteChoiceButtons';
 import { CHOICE_SELECTED } from '@/components/gonglon/choiceStyles';
 import { ResultBars } from '@/components/gonglon/ResultBars';
@@ -187,6 +196,8 @@ export function AgendaDetail() {
         <MyOpinionSection agenda={agenda} status={status} />
 
         <StatementsSection agendaId={agenda.id} isOpen={isOpen} />
+
+        <PositionsSection agendaId={agenda.id} />
 
         <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
       </main>
@@ -747,41 +758,124 @@ function StatementItem({
 }
 
 // ─────────────────────────────────────────────────────────────
-// 관련 공약 (연결된 공약이 있는 후보 전부, 같은 형식, 가나다순)
+// 관련 인물 입장 (운영진 입력 · 권한 순서 · 찬반 분류 없음)
+// ─────────────────────────────────────────────────────────────
+function PositionsSection({ agendaId }: { agendaId: string }) {
+  const { data: positions } = useAgendaPositions(agendaId);
+  if (!positions || positions.length === 0) return null;
+
+  return (
+    <section aria-labelledby="positions-title" className="space-y-2.5">
+      <div className="flex items-center gap-1">
+        <h2 id="positions-title" className="text-[17px] font-bold">
+          관련 인물 입장
+        </h2>
+        <Popover>
+          <PopoverTrigger
+            aria-label="어떤 순서로 보여 주나요?"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-secondary"
+          >
+            <CircleHelp size={17} aria-hidden />
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80 space-y-2 text-[13px] leading-relaxed">
+            <p className="font-semibold text-foreground">이 의제를 결정하는 데 가까운 순서로 보여 줘요</p>
+            <ol className="list-decimal space-y-0.5 pl-4 text-foreground/85">
+              {ROLE_ORDER.map((k) => (
+                <li key={k}>{ROLE_KIND_LABELS[k]}</li>
+              ))}
+            </ol>
+            <p className="text-muted-foreground">
+              같은 순서 안에서는 최근 발언이 먼저예요. 인기나 호감으로 정하지 않아요.
+            </p>
+            <p className="text-muted-foreground">
+              민심잇다는 발언을 찬성·반대로 나누지 않아요. 요지와 원문 출처를 함께 보여 드리니, 원문을 확인하고 판단해 주세요.
+            </p>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <ul className="space-y-2">
+        {positions.map((p) => (
+          <li key={p.id} className="space-y-1.5 rounded-xl border border-border bg-card p-3.5">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{p.person_name}</span>
+              {p.party ? ` · ${p.party}` : ''} · {p.role_label}
+            </p>
+            <p className="text-[15px] leading-relaxed">{p.summary}</p>
+            <a
+              href={p.source_url}
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="inline-flex min-h-8 items-center gap-1 text-xs text-primary underline"
+            >
+              {SOURCE_KIND_LABELS[p.source_kind as PositionSourceKind] ?? '출처'} · {p.spoken_on.replace(/-/g, '.')} · 원문 보기
+              <ExternalLink size={12} aria-hidden />
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 관련 공약
+//  - 선거 모드: 연결된 공약이 있는 후보 전부, 같은 형식, 가나다순
+//  - 평상시: 당선인 공약만 '이행 추적'으로, 나머지(지난 선거 공약)는 선거 탭 링크 한 줄
 // ─────────────────────────────────────────────────────────────
 function RelatedPledgesSection({ agendaId, agendaTitle }: { agendaId: string; agendaTitle: string }) {
   const { data: pledges } = useAgendaRelatedPledges(agendaId);
-  if (!pledges || pledges.length === 0) return null;
+  const appMode = useAppMode();
+  if (!pledges || pledges.length === 0 || appMode.mode === null) return null;
+
+  const isNormal = appMode.mode === 'normal';
+  const shown = isNormal ? pledges.filter((p) => p.election_result === 'elected') : pledges;
+  const pastCount = pledges.length - shown.length;
 
   return (
     <section className="space-y-2.5">
-      <h2 className="text-[17px] font-bold">이 의제와 관련된 공약</h2>
-      <p className="text-[13px] leading-relaxed text-muted-foreground">
-        연결된 공약이 있는 후보를 모두 같은 형식으로, 이름 가나다순으로 보여줘요. 후보의 찬반 입장을 뜻하지 않아요.
-      </p>
-      {pledges.map((p) => (
+      {shown.length > 0 && (
+        <>
+          <h2 className="text-[17px] font-bold">{isNormal ? '당선인 공약 · 이행 추적' : '이 의제와 관련된 공약'}</h2>
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
+            {isNormal
+              ? '이 의제와 주제가 같은 당선인의 공약이에요. 찬반 입장을 뜻하지 않아요.'
+              : '연결된 공약이 있는 후보를 모두 같은 형식으로, 이름 가나다순으로 보여줘요. 후보의 찬반 입장을 뜻하지 않아요.'}
+          </p>
+          {shown.map((p) => (
+            <Link
+              key={p.pledge_id}
+              to={`${candidatePath({ id: p.candidate_id, slug: p.candidate_slug })}?tab=pledges`}
+              state={{ fromAgenda: agendaTitle }}
+              className="flex min-h-16 items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-secondary/50"
+            >
+              <span
+                aria-hidden
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+              >
+                {p.candidate_name.slice(0, 1)}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-xs text-muted-foreground">
+                  {p.candidate_name}
+                  {p.party ? ` · ${p.party}` : ''}
+                </span>
+                <span className="truncate text-[15px] font-semibold">{p.pledge_title}</span>
+              </span>
+              <ChevronRight size={18} className="shrink-0 text-muted-foreground" aria-hidden />
+            </Link>
+          ))}
+        </>
+      )}
+      {isNormal && pastCount > 0 && (
         <Link
-          key={p.pledge_id}
-          to={`${candidatePath({ id: p.candidate_id, slug: p.candidate_slug })}?tab=pledges`}
-          state={{ fromAgenda: agendaTitle }}
-          className="flex min-h-16 items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:bg-secondary/50"
+          to="/election"
+          className="flex min-h-12 items-center justify-between rounded-xl bg-secondary/60 px-4 text-sm text-foreground/85 hover:bg-secondary"
         >
-          <span
-            aria-hidden
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
-          >
-            {p.candidate_name.slice(0, 1)}
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-xs text-muted-foreground">
-              {p.candidate_name}
-              {p.party ? ` · ${p.party}` : ''}
-            </span>
-            <span className="truncate text-[15px] font-semibold">{p.pledge_title}</span>
-          </span>
-          <ChevronRight size={18} className="shrink-0 text-muted-foreground" aria-hidden />
+          <span>지난 선거에서 이 의제와 관련된 공약 {pastCount}개 · 선거 탭에서 보기</span>
+          <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden />
         </Link>
-      ))}
+      )}
     </section>
   );
 }

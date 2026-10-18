@@ -12,8 +12,8 @@ interface OnboardingScreenProps {
 const features = [
   {
     icon: Vote,
-    title: '투표 정보',
-    description: '내 지역 선거 일정과 후보자 정보',
+    title: '우리 지역 정치',
+    description: '우리 지역 단체장·의원과 공약',
   },
   {
     icon: MessageCircle,

@@ -11,6 +11,7 @@ import { formatDDay, formatYmd, getMetropolitanTitle, sortByElectionResult } fro
 import { useElectionSchedule } from '@/hooks/useElections';
 import { useAppMode } from '@/hooks/useAppMode';
 import { AppModePending } from '@/components/dashboard/AppModePending';
+import { PolicyMatchBanner } from '@/components/dashboard/PolicyMatchBanner';
 
 export function Election() {
   const navigate = useNavigate();
@@ -130,6 +131,9 @@ export function Election() {
             </p>
           </div>
         </motion.div>
+
+        {/* 정책 매칭 (후보 공약 기반이라 평상시에는 홈이 아니라 여기서만) */}
+        <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
 
         {showResults ? (
           <DashboardSection

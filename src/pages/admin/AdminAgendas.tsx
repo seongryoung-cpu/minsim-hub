@@ -32,6 +32,18 @@ import {
   type ClaimStatus,
 } from '@/hooks/useClaims';
 import { useCandidateRanking } from '@/hooks/useQuickVote';
+import {
+  ROLE_KIND_LABELS,
+  ROLE_ORDER,
+  SOURCE_KIND_LABELS,
+  useAgendaPositions,
+  useDeletePosition,
+  useSavePosition,
+  type AgendaPosition,
+  type PositionForm,
+  type PositionRoleKind,
+  type PositionSourceKind,
+} from '@/hooks/useAgendaPositions';
 import { SIDO_LIST } from '@/types/region';
 import type { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
@@ -360,6 +372,7 @@ function AgendaEditor({
           <>
             <IssuesEditor agendaId={id} issues={detail.issues} />
             <LinksEditor agendaId={id} links={detail.links} />
+            <PositionsEditor agendaId={id} />
             <StatementsModeration agendaId={id} />
             <ClaimsModeration agendaId={id} />
           </>
@@ -612,6 +625,180 @@ function LinksEditor({ agendaId, links }: { agendaId: string; links: LinkRow[] }
         </Button>
       </div>
     </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 관련 인물 입장 (출처 필수 · 권한 순서 · 찬반 분류 없음)
+// ─────────────────────────────────────────────────────────────
+function PositionsEditor({ agendaId }: { agendaId: string }) {
+  const { data: positions } = useAgendaPositions(agendaId);
+  const [editing, setEditing] = useState<AgendaPosition | 'new' | null>(null);
+  const remove = useDeletePosition();
+
+  return (
+    <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">관련 인물 입장 {positions && positions.length > 0 && `(${positions.length})`}</h2>
+        {editing === null && (
+          <Button size="sm" variant="outline" onClick={() => setEditing('new')}>
+            <Plus size={15} className="mr-1" /> 입장 추가
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        인물 기준(현직 선출직, 직전 선거 후보, 정당 주요 당직, 지역위원장·당협위원장, 예비후보 등록자) 안의 사람만 넣어 주세요.
+        모든 정당에 같은 기준을 적용하고, 찬성·반대로 분류하지 말고 발언 요지만 적어요. 출처 링크가 없으면 저장되지 않아요.
+        화면에는 권한 순서({ROLE_ORDER.map((k) => ROLE_KIND_LABELS[k]).join(' → ')}), 같은 순서 안에서는 최근 발언 순으로 보여요.
+      </p>
+
+      {(positions ?? []).length === 0 && editing === null && (
+        <p className="text-sm text-muted-foreground">아직 넣은 입장이 없어요.</p>
+      )}
+      <ul className="space-y-2">
+        {(positions ?? []).map((p) =>
+          editing !== 'new' && editing?.id === p.id ? (
+            <li key={p.id}>
+              <PositionFormRow agendaId={agendaId} initial={p} onDone={() => setEditing(null)} />
+            </li>
+          ) : (
+            <li key={p.id} className="flex items-start gap-2 rounded-lg border border-border p-3 text-sm">
+              <div className="min-w-0 flex-1 space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  <Badge variant="secondary" className="mr-1.5">{ROLE_KIND_LABELS[p.role_kind as PositionRoleKind] ?? p.role_kind}</Badge>
+                  <span className="font-semibold text-foreground">{p.person_name}</span>
+                  {p.party ? ` · ${p.party}` : ''} · {p.role_label} · {p.spoken_on}
+                  {p.is_hidden && <span className="ml-1.5 text-destructive">숨김</span>}
+                </p>
+                <p>{p.summary}</p>
+                <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary underline">
+                  {SOURCE_KIND_LABELS[p.source_kind as PositionSourceKind] ?? p.source_kind} <ExternalLink size={12} />
+                </a>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>수정</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                aria-label="삭제"
+                disabled={remove.isPending}
+                onClick={() => {
+                  if (window.confirm(`${p.person_name}의 입장을 지울까요?`)) {
+                    remove.mutate({ id: p.id, agendaId }, { onError: (err) => toast.error(errorMessage(err)) });
+                  }
+                }}
+              >
+                <Trash2 size={15} />
+              </Button>
+            </li>
+          ),
+        )}
+      </ul>
+      {editing === 'new' && <PositionFormRow agendaId={agendaId} initial={null} onDone={() => setEditing(null)} />}
+    </section>
+  );
+}
+
+const SOURCE_ORDER: PositionSourceKind[] = ['minutes', 'press', 'sns', 'news'];
+
+function PositionFormRow({ agendaId, initial, onDone }: { agendaId: string; initial: AgendaPosition | null; onDone: () => void }) {
+  const save = useSavePosition();
+  const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+  const [form, setForm] = useState<PositionForm>(() => ({
+    id: initial?.id,
+    agenda_id: agendaId,
+    person_name: initial?.person_name ?? '',
+    role_kind: initial?.role_kind ?? 'other',
+    role_label: initial?.role_label ?? '',
+    party: initial?.party ?? '',
+    summary: initial?.summary ?? '',
+    source_url: initial?.source_url ?? '',
+    source_kind: initial?.source_kind ?? 'news',
+    spoken_on: initial?.spoken_on ?? today,
+    is_hidden: initial?.is_hidden ?? false,
+  }));
+  const set = <K extends keyof PositionForm>(k: K, v: PositionForm[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const urlOk = /^https?:\/\/\S+$/.test(form.source_url.trim());
+  const valid =
+    form.person_name.trim().length >= 2 &&
+    form.role_label.trim().length >= 2 &&
+    form.summary.trim().length >= 10 &&
+    urlOk &&
+    !!form.spoken_on &&
+    form.spoken_on <= today;
+
+  const submit = () =>
+    save.mutate(form, {
+      onSuccess: () => {
+        toast.success('저장했어요');
+        onDone();
+      },
+      onError: (err) => toast.error(errorMessage(err)),
+    });
+
+  return (
+    <div className="space-y-3 rounded-lg border border-primary/40 p-3">
+      <div className="grid gap-3 md:grid-cols-3">
+        <Field label="이름">
+          <Input maxLength={30} value={form.person_name} onChange={(e) => set('person_name', e.target.value)} />
+        </Field>
+        <Field label="정당 (무소속이면 비움)">
+          <Input maxLength={30} value={form.party ?? ''} onChange={(e) => set('party', e.target.value)} />
+        </Field>
+        <Field label="직책 표기" hint="예: 국회 국토교통위원장">
+          <Input maxLength={40} value={form.role_label} onChange={(e) => set('role_label', e.target.value)} />
+        </Field>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Field label="이 의제에 대한 권한 (정렬 순서)">
+          <Select value={form.role_kind} onValueChange={(v) => set('role_kind', v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {ROLE_ORDER.map((k, i) => (
+                <SelectItem key={k} value={k}>{i + 1}. {ROLE_KIND_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="출처 종류">
+          <Select value={form.source_kind} onValueChange={(v) => set('source_kind', v)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {SOURCE_ORDER.map((k) => (
+                <SelectItem key={k} value={k}>{SOURCE_KIND_LABELS[k]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="발언 날짜">
+          <Input type="date" max={today} value={form.spoken_on} onChange={(e) => set('spoken_on', e.target.value)} />
+        </Field>
+      </div>
+      <Field label="발언 요지 (찬반으로 분류하지 말고, 말한 내용 그대로 요약)" hint={`${form.summary.length}/300`}>
+        <Textarea rows={3} maxLength={300} value={form.summary} onChange={(e) => set('summary', e.target.value)} />
+      </Field>
+      <Field label="원문 출처 링크 (필수)">
+        <Input
+          type="url"
+          inputMode="url"
+          placeholder="https://"
+          value={form.source_url}
+          aria-invalid={form.source_url.length > 0 && !urlOk}
+          onChange={(e) => set('source_url', e.target.value)}
+        />
+      </Field>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm">
+          <Switch checked={!!form.is_hidden} onCheckedChange={(v) => set('is_hidden', v)} /> 화면에서 숨기기
+        </label>
+        <div className="flex gap-2">
+          <Button size="sm" variant="ghost" onClick={onDone}>취소</Button>
+          <Button size="sm" disabled={!valid || save.isPending} onClick={submit}>
+            {save.isPending ? <Loader2 size={15} className="mr-1 animate-spin" /> : <Save size={15} className="mr-1" />}
+            저장
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 

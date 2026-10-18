@@ -134,6 +134,60 @@ export type Database = {
           },
         ]
       }
+      agenda_positions: {
+        Row: {
+          agenda_id: string
+          candidate_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_hidden: boolean
+          party: string | null
+          person_name: string
+          role_kind: string
+          role_label: string
+          source_kind: string
+          source_url: string
+          spoken_on: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          agenda_id: string
+          candidate_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_hidden?: boolean
+          party?: string | null
+          person_name: string
+          role_kind: string
+          role_label: string
+          source_kind: string
+          source_url: string
+          spoken_on: string
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          agenda_id?: string
+          candidate_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_hidden?: boolean
+          party?: string | null
+          person_name?: string
+          role_kind?: string
+          role_label?: string
+          source_kind?: string
+          source_url?: string
+          spoken_on?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agenda_issues: {
         Row: {
           agenda_id: string
@@ -1694,6 +1748,7 @@ export type Database = {
           created_at: string
           id: string
           is_featured: boolean
+          elected_pledge_count: number
           my_final: string
           my_first: string
           opens_at: string
@@ -1712,6 +1767,7 @@ export type Database = {
           candidate_id: string
           candidate_name: string
           candidate_slug: string
+          election_result: string
           party: string
           pledge_description: string
           pledge_id: string
