@@ -469,6 +469,10 @@ export type Database = {
           region_sido: string | null
           split_reason: string
           status: string
+          status_next: string | null
+          status_note: string | null
+          status_source_url: string | null
+          status_updated_on: string | null
           summary: string
           title: string
           updated_at: string
@@ -486,6 +490,10 @@ export type Database = {
           region_sido?: string | null
           split_reason?: string
           status?: string
+          status_next?: string | null
+          status_note?: string | null
+          status_source_url?: string | null
+          status_updated_on?: string | null
           summary?: string
           title: string
           updated_at?: string
@@ -503,6 +511,10 @@ export type Database = {
           region_sido?: string | null
           split_reason?: string
           status?: string
+          status_next?: string | null
+          status_note?: string | null
+          status_source_url?: string | null
+          status_updated_on?: string | null
           summary?: string
           title?: string
           updated_at?: string

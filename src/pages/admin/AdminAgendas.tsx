@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, EyeOff, Eye, Loader2, Plus, Save, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -57,6 +58,7 @@ import {
 } from '@/hooks/useAgendaBills';
 import { SIDO_LIST } from '@/types/region';
 import type { Tables } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -384,6 +386,7 @@ function AgendaEditor({
             <IssuesEditor agendaId={id} issues={detail.issues} />
             <LinksEditor agendaId={id} links={detail.links} />
             <PositionsEditor agendaId={id} />
+            <StatusNoteEditor agendaId={id} agenda={detail.agenda} />
             <BillsEditor agendaId={id} />
             <StatementsModeration agendaId={id} />
             <ClaimsModeration agendaId={id} />
@@ -811,6 +814,64 @@ function PositionFormRow({ agendaId, initial, onDone }: { agendaId: string; init
         </div>
       </div>
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 지금 상황 한 줄 (출처 필수)
+// ─────────────────────────────────────────────────────────────
+function StatusNoteEditor({ agendaId, agenda }: { agendaId: string; agenda: Tables<'agendas'> }) {
+  const qc = useQueryClient();
+  const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+  const [note, setNote] = useState(agenda.status_note ?? '');
+  const [next, setNext] = useState(agenda.status_next ?? '');
+  const [url, setUrl] = useState(agenda.status_source_url ?? '');
+  const [on, setOn] = useState(agenda.status_updated_on ?? today);
+  const [saving, setSaving] = useState(false);
+  const urlOk = /^https?:\/\/\S+$/.test(url.trim());
+  const clearing = note.trim() === '';
+  const valid = clearing || (note.trim().length >= 5 && urlOk && (next.trim() === '' || next.trim().length >= 3));
+
+  const save = async () => {
+    setSaving(true);
+    const row = clearing
+      ? { status_note: null, status_next: null, status_source_url: null, status_updated_on: null }
+      : { status_note: note.trim(), status_next: next.trim() || null, status_source_url: url.trim(), status_updated_on: on || today };
+    const { error } = await supabase.from('agendas').update(row).eq('id', agendaId);
+    setSaving(false);
+    if (error) return toast.error(errorMessage(error));
+    toast.success(clearing ? '지금 상황을 지웠어요' : '저장했어요');
+    void qc.invalidateQueries();
+  };
+
+  return (
+    <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
+      <h2 className="text-lg font-semibold">지금 상황 한 줄</h2>
+      <p className="text-xs text-muted-foreground">
+        의제 화면 맨 위에 보여요. 법안이 아니라 예산·조례·정부 방침으로 진행되는 것도 여기에 적어요.
+        평가 없이 사실만, 출처 링크는 필수예요. 비우고 저장하면 화면에서 사라져요.
+      </p>
+      <Field label="지금 상황" hint={`${note.length}/140`}>
+        <Textarea rows={2} maxLength={140} value={note} onChange={(e) => setNote(e.target.value)} placeholder="예: 2027년 정부 예산안에 소득 기준 확대(중위 60%→100%)가 들어가 국회 심사 중" />
+      </Field>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Field label="다음 결정 시점 (선택)" hint={`${next.length}/80`}>
+          <Input maxLength={80} value={next} onChange={(e) => setNext(e.target.value)} placeholder="예: 12월 2일까지 국회 예산 의결" />
+        </Field>
+        <Field label="출처 링크 (필수)">
+          <Input type="url" placeholder="https://" value={url} aria-invalid={url.length > 0 && !urlOk} onChange={(e) => setUrl(e.target.value)} />
+        </Field>
+        <Field label="기준일">
+          <Input type="date" max={today} value={on} onChange={(e) => setOn(e.target.value)} />
+        </Field>
+      </div>
+      <div className="flex justify-end">
+        <Button size="sm" disabled={!valid || saving} onClick={() => void save()}>
+          {saving ? <Loader2 size={15} className="mr-1 animate-spin" /> : <Save size={15} className="mr-1" />}
+          저장
+        </Button>
+      </div>
+    </section>
   );
 }
 

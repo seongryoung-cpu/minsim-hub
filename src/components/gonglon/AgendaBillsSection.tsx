@@ -5,7 +5,6 @@ import { useRegion } from '@/hooks/useRegion';
 import {
   ENDED_STAGES,
   STAGE_LABELS,
-  STAGE_PATH,
   TERM_END,
   daysBetween,
   todayKst,
@@ -80,12 +79,54 @@ export function AgendaBillsSection({ agendaId }: { agendaId: string }) {
   );
 }
 
+const fmt = (d: string | null) => (d ? d.replace(/-/g, '.') : '');
+
+/** 기간을 사람이 읽기 쉽게: 400일 → "1년 넘게", 45일 → "45일째" */
+function waited(days: number) {
+  if (days >= 730) return `${Math.floor(days / 365)}년 넘게`;
+  if (days >= 365) return '1년 넘게';
+  return `${days}일째`;
+}
+
+/** 국회 기록을 한 문장으로 (판단하는 말 없이 사실만) */
+function statusSentence(b: AgendaBill): string {
+  const today = todayKst();
+  const since = b.stage_changed_on ? daysBetween(b.stage_changed_on, today) : null;
+  const wait = since != null && since > 0 ? ` ${waited(since)}` : '';
+  const cmt = b.committee ?? '소관 위원회';
+  const expiry = ` 국회 임기(${fmt(TERM_END)})가 끝날 때까지 처리되지 않으면 자동으로 폐기돼요.`;
+  switch (b.stage) {
+    case 'proposed':
+      return `${fmt(b.propose_dt)}에 발의됐고, 아직 위원회 심사가 시작되지 않았어요.${expiry}`;
+    case 'committee':
+      return `국회 ${cmt}에서${wait} 심사를 기다리고 있어요.${expiry}`;
+    case 'committee_done':
+      return `${cmt}를 통과했고, 법제사법위원회 심사를 기다리고 있어요.${expiry}`;
+    case 'judiciary':
+      return `법제사법위원회까지 통과했고, 본회의 표결을 기다리고 있어요.${expiry}`;
+    case 'plenary_passed':
+      return `국회 본회의를 통과했어요 (${fmt(b.stage_changed_on)}). 정부로 넘어가 공포를 기다려요.`;
+    case 'transferred':
+      return `국회 본회의를 통과해 정부로 넘어갔어요 (${fmt(b.stage_changed_on)}). 공포되면 법이 바뀌어요.`;
+    case 'promulgated':
+      return `법으로 공포됐어요 (${fmt(b.stage_changed_on)}).`;
+    case 'merged':
+      return `다른 법안과 합쳐져 하나의 법안(위원회 대안)에 반영됐어요 (${fmt(b.stage_changed_on)}).`;
+    case 'withdrawn':
+      return `발의한 의원이 철회했어요 (${fmt(b.stage_changed_on)}).`;
+    case 'rejected':
+      return `국회 본회의에서 부결됐어요 (${fmt(b.stage_changed_on)}).`;
+    case 'expired':
+      return '국회 임기가 끝나 자동으로 폐기됐어요.';
+    case 'discarded':
+      return `폐기됐어요 (${fmt(b.stage_changed_on)}).`;
+    default:
+      return STAGE_LABELS[b.stage] ?? '';
+  }
+}
+
 function BillCard({ bill, onAlert, alertPending }: { bill: AgendaBill; onAlert: () => void; alertPending: boolean }) {
   const ended = ENDED_STAGES.includes(bill.stage);
-  const today = todayKst();
-  const waitingDays = !ended && bill.stage_changed_on ? daysBetween(bill.stage_changed_on, today) : null;
-  const termLeft = !ended && bill.stage !== 'transferred' ? daysBetween(today, TERM_END) : null;
-  const pathIndex = STAGE_PATH.indexOf(bill.stage === 'transferred' ? 'plenary_passed' : bill.stage);
   const absent = bill.vote ? bill.vote.member_total - bill.vote.total : 0;
 
   return (
@@ -118,36 +159,8 @@ function BillCard({ bill, onAlert, alertPending }: { bill: AgendaBill; onAlert: 
         </dl>
       )}
 
-      {/* 진행 단계 */}
-      <div className="space-y-1.5">
-        {ended && bill.stage !== 'promulgated' ? (
-          <p className="text-sm font-semibold">
-            결말 · {STAGE_LABELS[bill.stage]}
-            {bill.stage_changed_on && <span className="ml-1 font-normal text-muted-foreground">({bill.stage_changed_on.replace(/-/g, '.')})</span>}
-          </p>
-        ) : (
-          <>
-            <ol className="flex gap-1" aria-label="진행 단계">
-              {STAGE_PATH.map((s, i) => (
-                <li
-                  key={s}
-                  aria-current={i === pathIndex ? 'step' : undefined}
-                  className={cn('h-1.5 flex-1 rounded-full', i <= pathIndex ? 'bg-primary' : 'bg-secondary')}
-                >
-                  <span className="sr-only">{STAGE_LABELS[s]}{i <= pathIndex ? ' (지남)' : ''}</span>
-                </li>
-              ))}
-            </ol>
-            <p className="text-sm">
-              <span className="font-semibold">지금: {STAGE_LABELS[bill.stage]}</span>
-              {waitingDays != null && waitingDays > 0 && <span className="text-muted-foreground"> · {waitingDays}일째</span>}
-            </p>
-          </>
-        )}
-        {termLeft != null && termLeft >= 0 && (
-          <p className="text-xs text-muted-foreground">국회 임기 종료까지 D-{termLeft} · 그때까지 처리되지 않으면 자동 폐기돼요</p>
-        )}
-      </div>
+      {/* 지금 상황: 한 문장 (단계 막대 대신) */}
+      <p className={cn('text-sm leading-relaxed', ended ? 'font-semibold' : '')}>{statusSentence(bill)}</p>
 
       <p className="text-xs text-muted-foreground">
         {bill.proposer ?? '발의자 정보 없음'}

@@ -188,6 +188,8 @@ export function AgendaDetail() {
           />
         </section>
 
+        <StatusNote agenda={agenda} />
+
         <BackgroundSection agenda={agenda} />
 
         {issues.length > 0 && <IssueCarousel issues={issues} />}
@@ -205,6 +207,29 @@ export function AgendaDetail() {
         <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
       </main>
     </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 지금 상황 (운영진 한 줄 · 출처 필수) — 법안이 아닌 예산·조례·정부 방침도 여기서
+// ─────────────────────────────────────────────────────────────
+function StatusNote({ agenda }: { agenda: Agenda }) {
+  if (!agenda.status_note || !agenda.status_source_url) return null;
+  return (
+    <section aria-label="지금 상황" className="space-y-1.5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+      <p className="text-xs font-bold text-primary">지금 상황</p>
+      <p className="text-[15px] font-semibold leading-relaxed">{agenda.status_note}</p>
+      {agenda.status_next && <p className="text-[13px] text-foreground/80">다음: {agenda.status_next}</p>}
+      <a
+        href={agenda.status_source_url}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        className="inline-flex min-h-8 items-center gap-1 text-xs text-primary underline"
+      >
+        출처 보기{agenda.status_updated_on ? ` · ${agenda.status_updated_on.replace(/-/g, '.')} 기준` : ''}
+        <ExternalLink size={12} aria-hidden />
+      </a>
+    </section>
   );
 }
 
