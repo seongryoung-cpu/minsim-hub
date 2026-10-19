@@ -43,6 +43,7 @@ import { CHOICE_SELECTED } from '@/components/gonglon/choiceStyles';
 import { ResultBars } from '@/components/gonglon/ResultBars';
 import { ReportButton } from '@/components/gonglon/ReportButton';
 import { OutcomeCard } from '@/components/gonglon/OutcomeCard';
+import { QuickParticipate } from '@/components/gonglon/QuickParticipate';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import type { AgendaFrom } from '@/components/gonglon/AgendaLinkCard';
 import { PageLoading } from '@/components/ui/loading-state';
@@ -214,6 +215,35 @@ export function AgendaDetail() {
             <ClaimsEntryCard agendaId={agenda.id} />
 
             <StatementsSection agendaId={agenda.id} isOpen={false} />
+
+            <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
+          </>
+        ) : isOpen ? (
+          <>
+            {/* 진행 중: 1분 참여 → 지금 상황 → 더 알아보기 */}
+            <QuickParticipate
+              agendaId={agenda.id}
+              question={agenda.question.trim() || agenda.title}
+              onMore={() => document.getElementById('more')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            />
+
+            <StatusNote agenda={agenda} />
+
+            <h2 id="more" className="scroll-mt-20 border-t border-border pt-6 text-[17px] font-bold">
+              더 알아보기 <span className="text-sm font-normal text-muted-foreground">· 배경, 쟁점, 주장 비교, 한 줄 의견</span>
+            </h2>
+
+            <BackgroundSection agenda={agenda} />
+
+            {issues.length > 0 && <IssueCarousel issues={issues} />}
+
+            <ClaimsEntryCard agendaId={agenda.id} />
+
+            <StatementsSection agendaId={agenda.id} isOpen={isOpen} />
+
+            <AgendaBillsSection agendaId={agenda.id} />
+
+            <PositionsSection agendaId={agenda.id} />
 
             <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
           </>
