@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-export type LoginReason = 'vote' | 'write' | 'evaluate' | 'pick' | 'interest' | 'alert' | 'generic';
+export type LoginReason = 'vote' | 'write' | 'evaluate' | 'pick' | 'interest' | 'alert' | 'report' | 'generic';
 
 const COPY: Record<LoginReason, { title: string; body: string }> = {
   vote: {
@@ -38,6 +38,10 @@ const COPY: Record<LoginReason, { title: string; body: string }> = {
   alert: {
     title: '결말 알림을 받으려면 로그인해요',
     body: '이 법안이 통과되거나 폐기되면 알려 드려요. 알림은 언제든 끌 수 있어요.',
+  },
+  report: {
+    title: '신고하려면 로그인해요',
+    body: '같은 글을 여러 번 신고하는 걸 막기 위해서예요. 누가 신고했는지는 글쓴이에게 알리지 않아요.',
   },
   generic: {
     title: '로그인이 필요해요',

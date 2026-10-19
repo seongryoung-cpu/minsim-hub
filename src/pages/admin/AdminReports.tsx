@@ -8,6 +8,7 @@ import { useAdmin } from '@/hooks/useAdmin';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ContentReportQueue } from '@/components/admin/ContentReportQueue';
 
 interface Report {
   id: string;
@@ -139,6 +140,9 @@ export function AdminReports() {
       </header>
 
       <main className="p-4 space-y-4 pb-20">
+        <ContentReportQueue />
+
+        <h2 className="pt-4 text-base font-bold">문의·피드백</h2>
         {/* Filter */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {filterOptions.map((option) => (

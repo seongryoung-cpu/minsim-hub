@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useOpenReportCount } from '@/hooks/useContentReports';
 import { supabase } from '@/integrations/supabase/client';
 import { PushNotificationSender } from '@/components/admin/PushNotificationSender';
 import {
@@ -54,6 +55,7 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const { user, signOut } = useAuthContext();
   const { isAdmin, isLoading: adminLoading } = useAdmin();
+  const { data: openContentReports = 0 } = useOpenReportCount(isAdmin);
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     verifiedUsers: 0,
@@ -188,7 +190,7 @@ export function AdminDashboard() {
   const menuItems = [
     { icon: Users, label: '사용자 관리', description: '회원 목록 및 권한 관리', path: '/admin/users' },
     { icon: FileText, label: '콘텐츠 관리', description: '후보자, 뉴스, 퀴즈 관리', path: '/admin/content' },
-    { icon: MessageSquare, label: '신고/문의 관리', description: '사용자 신고 및 문의 처리', path: '/admin/reports' },
+    { icon: MessageSquare, label: '신고/문의 관리', description: openContentReports > 0 ? `공론 글 신고 ${openContentReports}건 대기 · 문의 처리` : '공론 글 신고 · 문의 처리', path: '/admin/reports' },
     { icon: MessagesSquare, label: '공론 의제 관리', description: '의제·쟁점 작성, 공약 연결, 한 줄 의견 숨김', path: '/admin/agendas' },
     { icon: CalendarDays, label: '선거 일정 관리', description: '선거일·진행 단계·투표 일정·체크리스트', path: '/admin/elections' },
     { icon: Settings, label: '시스템 설정', description: '앱 설정 및 환경 구성', path: '/admin/settings' },

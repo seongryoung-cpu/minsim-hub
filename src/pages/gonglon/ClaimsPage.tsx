@@ -16,6 +16,7 @@ import {
   type EvidenceRating,
   type PerspectiveRating,
 } from '@/hooks/useClaims';
+import { ReportButton } from '@/components/gonglon/ReportButton';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import { ClaimWriteSheet } from '@/components/gonglon/ClaimWriteSheet';
 import { PageLoading } from '@/components/ui/loading-state';
@@ -204,12 +205,13 @@ function ClaimCard({
         {claim.body}
       </p>
 
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>{claim.is_mine ? '내 주장' : claim.author}</span>
         <span>고른 사람 {claim.pick_count.toLocaleString()}명</span>
         {claim.reason && <span>근거 있음</span>}
         {claim.sources.length > 0 && <span>출처 {claim.sources.length}</span>}
         {claim.counter && <span>예상 반론 있음</span>}
+        {!claim.is_mine && <ReportButton kind="claim" id={claim.id} className="-my-1.5 ml-auto" />}
       </div>
 
       {perspective && (

@@ -2078,6 +2078,12 @@ export type Database = {
     Functions: {
       accept_required_terms: { Args: { p_age14: boolean }; Returns: undefined }
       admin_delete_user: { Args: { p_user: string }; Returns: undefined }
+      admin_open_report_count: { Args: never; Returns: number }
+      admin_report_queue: { Args: { p_include_resolved?: boolean }; Returns: Json }
+      admin_resolve_report: {
+        Args: { p_action: string; p_id: string; p_kind: string }
+        Returns: Json
+      }
       admin_political_stats: { Args: never; Returns: Json }
       agenda_effective_status: {
         Args: { p_closes_at: string; p_status: string }
@@ -2279,6 +2285,10 @@ export type Database = {
         Returns: number
       }
       toggle_agenda_interest: { Args: { p_agenda_id: string }; Returns: Json }
+      report_content: {
+        Args: { p_id: string; p_kind: string; p_note?: string; p_reason: string }
+        Returns: Json
+      }
       toggle_bill_alert: { Args: { p_bill_id: string }; Returns: boolean }
     }
     Enums: {

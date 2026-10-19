@@ -41,6 +41,7 @@ import { AgendaBillsSection } from '@/components/gonglon/AgendaBillsSection';
 import { VoteChoiceButtons } from '@/components/gonglon/VoteChoiceButtons';
 import { CHOICE_SELECTED } from '@/components/gonglon/choiceStyles';
 import { ResultBars } from '@/components/gonglon/ResultBars';
+import { ReportButton } from '@/components/gonglon/ReportButton';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import type { AgendaFrom } from '@/components/gonglon/AgendaLinkCard';
 import { PageLoading } from '@/components/ui/loading-state';
@@ -760,6 +761,7 @@ function StatementItem({
             <Trash2 size={13} aria-hidden /> 지우기
           </button>
         )}
+        {!statement.is_mine && <ReportButton kind="statement" id={statement.id} className="ml-auto" />}
       </div>
       <div role="group" aria-label="이 의견에 반응" className="flex gap-1.5">
         {(['agree', 'disagree', 'hold'] as AgendaChoice[]).map((choice) => {
