@@ -42,6 +42,7 @@ import { VoteChoiceButtons } from '@/components/gonglon/VoteChoiceButtons';
 import { CHOICE_SELECTED } from '@/components/gonglon/choiceStyles';
 import { ResultBars } from '@/components/gonglon/ResultBars';
 import { ReportButton } from '@/components/gonglon/ReportButton';
+import { OutcomeCard } from '@/components/gonglon/OutcomeCard';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import type { AgendaFrom } from '@/components/gonglon/AgendaLinkCard';
 import { PageLoading } from '@/components/ui/loading-state';
@@ -189,23 +190,54 @@ export function AgendaDetail() {
           />
         </section>
 
-        <StatusNote agenda={agenda} />
+        {status === 'closed' ? (
+          <>
+            {/* 마감: 결과 카드 → 이후 상황(결말 추적) → 기록 */}
+            <OutcomeCard
+              agendaId={agenda.id}
+              title={agenda.title}
+              summary={summary}
+              opensAt={agenda.opens_at ?? agenda.created_at}
+              closesAt={agenda.closes_at}
+            />
 
-        <BackgroundSection agenda={agenda} />
+            <StatusNote agenda={agenda} label="공론 이후 상황" />
 
-        {issues.length > 0 && <IssueCarousel issues={issues} />}
+            <AgendaBillsSection agendaId={agenda.id} />
 
-        <ClaimsEntryCard agendaId={agenda.id} />
+            <PositionsSection agendaId={agenda.id} />
 
-        <MyOpinionSection agenda={agenda} status={status} />
+            <BackgroundSection agenda={agenda} />
 
-        <StatementsSection agendaId={agenda.id} isOpen={isOpen} />
+            {issues.length > 0 && <IssueCarousel issues={issues} />}
 
-        <AgendaBillsSection agendaId={agenda.id} />
+            <ClaimsEntryCard agendaId={agenda.id} />
 
-        <PositionsSection agendaId={agenda.id} />
+            <StatementsSection agendaId={agenda.id} isOpen={false} />
 
-        <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
+            <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
+          </>
+        ) : (
+          <>
+            <StatusNote agenda={agenda} />
+
+            <BackgroundSection agenda={agenda} />
+
+            {issues.length > 0 && <IssueCarousel issues={issues} />}
+
+            <ClaimsEntryCard agendaId={agenda.id} />
+
+            <MyOpinionSection agenda={agenda} status={status} />
+
+            <StatementsSection agendaId={agenda.id} isOpen={isOpen} />
+
+            <AgendaBillsSection agendaId={agenda.id} />
+
+            <PositionsSection agendaId={agenda.id} />
+
+            <RelatedPledgesSection agendaId={agenda.id} agendaTitle={agenda.title} />
+          </>
+        )}
       </main>
     </motion.div>
   );
@@ -214,11 +246,11 @@ export function AgendaDetail() {
 // ─────────────────────────────────────────────────────────────
 // 지금 상황 (운영진 한 줄 · 출처 필수) — 법안이 아닌 예산·조례·정부 방침도 여기서
 // ─────────────────────────────────────────────────────────────
-function StatusNote({ agenda }: { agenda: Agenda }) {
+function StatusNote({ agenda, label = '지금 상황' }: { agenda: Agenda; label?: string }) {
   if (!agenda.status_note || !agenda.status_source_url) return null;
   return (
-    <section aria-label="지금 상황" className="space-y-1.5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-      <p className="text-xs font-bold text-primary">지금 상황</p>
+    <section aria-label={label} className="space-y-1.5 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+      <p className="text-xs font-bold text-primary">{label}</p>
       <p className="text-[15px] font-semibold leading-relaxed">{agenda.status_note}</p>
       {agenda.status_next && <p className="text-[13px] text-foreground/80">다음: {agenda.status_next}</p>}
       <a

@@ -2121,6 +2121,7 @@ export type Database = {
           status: string
         }[]
       }
+      get_agenda_outcome: { Args: { p_agenda_id: string }; Returns: Json }
       get_agenda_bills: {
         Args: { p_agenda_id: string; p_districts?: string[] }
         Returns: Json

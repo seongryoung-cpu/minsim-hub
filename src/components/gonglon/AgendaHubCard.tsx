@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { agendaDDay, formatAgendaDate, type AgendaListItem } from '@/hooks/useAgendas';
 import { useAppMode } from '@/hooks/useAppMode';
+import { useAgendaOutcome } from '@/hooks/useAgendaOutcome';
 
 /** 공론 허브 목록의 의제 카드. 분포(%)는 넣지 않는다 — 목록에서 다수 쪽으로 쏠리지 않게 */
 export function AgendaHubCard({ agenda }: { agenda: AgendaListItem }) {
@@ -11,6 +12,9 @@ export function AgendaHubCard({ agenda }: { agenda: AgendaListItem }) {
   const isNormal = appMode.mode === 'normal';
   const pledgeCount = appMode.mode === null ? 0 : isNormal ? agenda.elected_pledge_count ?? 0 : agenda.pledge_count;
   const pledgeLabel = isNormal ? '당선인 공약' : '관련 공약';
+  // 마감된 공론: 결과 카드가 정리됐으면 '결과 나옴' + 공통분모 한 줄
+  const { data: outcome } = useAgendaOutcome(agenda.id, agenda.status === 'closed');
+  const common = outcome?.available ? outcome.common?.[0]?.body : undefined;
 
   return (
     <Link
@@ -41,8 +45,17 @@ export function AgendaHubCard({ agenda }: { agenda: AgendaListItem }) {
         참여 {agenda.participants.toLocaleString()}명 · 한 줄 의견 {agenda.statement_count.toLocaleString()}개
       </p>
 
-      {(pledgeCount > 0 || participated) && (
+      {common && (
+        <p className="mt-2 line-clamp-2 rounded-lg bg-primary/5 px-2.5 py-1.5 text-[13px] text-foreground/85">
+          <span className="font-semibold text-primary">양쪽 모두 동의</span> “{common}”
+        </p>
+      )}
+
+      {(pledgeCount > 0 || participated || outcome?.available) && (
         <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {outcome?.available && (
+            <span className="rounded-md bg-foreground px-2 py-0.5 text-xs font-semibold text-background">결과 나옴</span>
+          )}
           {pledgeCount > 0 && (
             <span className="rounded-md border border-accent/60 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
               {pledgeLabel} {pledgeCount}개
