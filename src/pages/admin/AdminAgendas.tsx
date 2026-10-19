@@ -57,6 +57,7 @@ import {
   type AdminAgendaBill,
 } from '@/hooks/useAgendaBills';
 import { SIDO_LIST } from '@/types/region';
+import { useAgendaConditions, useDeleteCondition, useSaveCondition, type AgendaCondition } from '@/hooks/useAgendaConditions';
 import type { Tables } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -387,6 +388,7 @@ function AgendaEditor({
             <LinksEditor agendaId={id} links={detail.links} />
             <PositionsEditor agendaId={id} />
             <StatusNoteEditor agendaId={id} agenda={detail.agenda} />
+            <ConditionsEditor agendaId={id} />
             <BillsEditor agendaId={id} />
             <StatementsModeration agendaId={id} />
             <ClaimsModeration agendaId={id} />
@@ -869,6 +871,86 @@ function StatusNoteEditor({ agendaId, agenda }: { agendaId: string; agenda: Tabl
         <Button size="sm" disabled={!valid || saving} onClick={() => void save()}>
           {saving ? <Loader2 size={15} className="mr-1 animate-spin" /> : <Save size={15} className="mr-1" />}
           저장
+        </Button>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// 조건 질문 ("어떤 조건이면 받아들일 수 있나요?" — 결과 카드 ④)
+// ─────────────────────────────────────────────────────────────
+function ConditionsEditor({ agendaId }: { agendaId: string }) {
+  const { data } = useAgendaConditions(agendaId);
+  const save = useSaveCondition(agendaId);
+  const remove = useDeleteCondition(agendaId);
+  const [label, setLabel] = useState('');
+  const [exclusive, setExclusive] = useState(false);
+  const list = data?.conditions ?? [];
+  const valid = label.trim().length >= 3 && label.trim().length <= 60;
+
+  const add = () =>
+    save.mutate(
+      { label, is_exclusive: exclusive, sort_order: list.length },
+      {
+        onSuccess: () => {
+          setLabel('');
+          setExclusive(false);
+        },
+        onError: (e) => toast.error(errorMessage(e)),
+      },
+    );
+
+  const move = (c: AgendaCondition, dir: -1 | 1) => {
+    const i = list.findIndex((x) => x.id === c.id);
+    const other = list.at(i + dir);
+    if (!other || i + dir < 0) return;
+    save.mutate({ id: c.id, label: c.label, is_exclusive: c.is_exclusive, sort_order: other.sort_order });
+    save.mutate({ id: other.id, label: other.label, is_exclusive: other.is_exclusive, sort_order: c.sort_order });
+  };
+
+  return (
+    <section className="space-y-3 rounded-xl bg-card p-4 shadow-app-md md:p-6">
+      <h2 className="text-lg font-semibold">조건 질문 {list.length > 0 && `(${list.length})`}</h2>
+      <p className="text-xs text-muted-foreground">
+        "어떤 조건이면 받아들일 수 있나요?"에 쓸 선택지 3~5개. 투표한 사람에게 1분 참여 중에 한 번 물어요(건너뛸 수 있음).
+        양쪽 모두 고를 수 있는 현실적인 조건으로 쓰고, 한쪽 주장을 그대로 옮기지 마세요. 비워 두면 묻지 않아요.
+        답한 사람 10명 이상이면 결과 카드에 비율로 나와요.
+      </p>
+      {list.length > 0 && (
+        <ul className="space-y-1.5">
+          {list.map((c, i) => (
+            <li key={c.id} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+              <span className="flex-1">
+                {c.label}
+                {c.is_exclusive && <span className="ml-1.5 text-xs text-muted-foreground">· 단독 선택</span>}
+              </span>
+              <Button size="sm" variant="ghost" disabled={i === 0 || save.isPending} onClick={() => move(c, -1)} aria-label="위로">↑</Button>
+              <Button size="sm" variant="ghost" disabled={i === list.length - 1 || save.isPending} onClick={() => move(c, 1)} aria-label="아래로">↓</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={remove.isPending}
+                onClick={() => {
+                  if (window.confirm('이 조건을 지울까요? 이미 고른 사람의 선택도 함께 지워져요.')) {
+                    remove.mutate(c.id, { onError: (e) => toast.error(errorMessage(e)) });
+                  }
+                }}
+                aria-label="지우기"
+              >
+                <Trash2 size={15} />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="grid gap-2 md:grid-cols-[1fr_auto_auto] md:items-center">
+        <Input maxLength={60} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="예: 몇 년에 걸쳐 단계적으로 올리면" />
+        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Switch checked={exclusive} onCheckedChange={setExclusive} /> 단독 선택 (예: 어떤 조건이어도 어렵다)
+        </label>
+        <Button size="sm" disabled={!valid || save.isPending} onClick={add}>
+          <Plus size={15} className="mr-1" /> 추가
         </Button>
       </div>
     </section>

@@ -191,6 +191,33 @@ export type Database = {
           },
         ]
       }
+      agenda_conditions: {
+        Row: {
+          agenda_id: string
+          created_at: string
+          id: string
+          is_exclusive: boolean
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          agenda_id: string
+          created_at?: string
+          id?: string
+          is_exclusive?: boolean
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          agenda_id?: string
+          created_at?: string
+          id?: string
+          is_exclusive?: boolean
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       agenda_issues: {
         Row: {
           agenda_id: string
@@ -1117,6 +1144,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      condition_picks: {
+        Row: {
+          agenda_id: string
+          condition_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          condition_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          condition_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       elections: {
         Row: {
@@ -2288,6 +2336,10 @@ export type Database = {
       toggle_agenda_interest: { Args: { p_agenda_id: string }; Returns: Json }
       report_content: {
         Args: { p_id: string; p_kind: string; p_note?: string; p_reason: string }
+        Returns: Json
+      }
+      set_condition_picks: {
+        Args: { p_agenda_id: string; p_condition_ids: string[] }
         Returns: Json
       }
       toggle_bill_alert: { Args: { p_bill_id: string }; Returns: boolean }

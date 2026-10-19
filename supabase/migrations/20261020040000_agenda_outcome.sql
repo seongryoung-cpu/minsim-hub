@@ -1,5 +1,6 @@
 -- 공론 결과 카드: 마감된 의제의 쟁점 지도
 --   ① 분포와 생각이 바뀐 비율  ② 양쪽 모두 동의한 문장(공통분모)  ③ 가장 크게 갈린 문장
+-- ④ 받아들일 수 있는 조건 (조건 질문을 한 의제, 답한 사람 10명 이상)
 -- 기준 (첫 데이터를 보고 조정. 화면 문구도 이 값을 받아 쓴다)
 --   최소 참여: 최종 의견 30명 / 집단별 반응 5명 이상인 문장만 / 공통분모: 두 집단 모두 60% 이상 동의 / 갈림: 동의율 차이 30%p 이상
 -- 집단 = 사람마다 최종 의견(없으면 처음 반응)이 '찬성'인 사람과 '반대'인 사람. '잘 모르겠다'는 집단 계산에서 뺀다.
@@ -12,6 +13,9 @@ DECLARE
   c_min_group constant int := 5;
   c_common constant numeric := 0.6;
   c_divide constant numeric := 0.3;
+  c_min_cond constant int := 10;
+  v_answered int;
+  v_conditions jsonb;
   v_admin boolean := coalesce(public.is_admin(auth.uid()), false);
   v_status text;
   v_final int;
@@ -21,7 +25,7 @@ DECLARE
   v_dist jsonb;
   v_common jsonb;
   v_divisive jsonb;
-  v_rules jsonb := jsonb_build_object('min_final', c_min_final, 'min_group', c_min_group, 'common', c_common, 'divide', c_divide);
+  v_rules jsonb := jsonb_build_object('min_final', c_min_final, 'min_group', c_min_group, 'common', c_common, 'divide', c_divide, 'min_conditions', c_min_cond);
 BEGIN
   SELECT public.agenda_effective_status(status, closes_at) INTO v_status FROM agendas WHERE id = p_agenda_id;
   IF v_status IS NULL OR NOT public.gonglon_visible() OR (v_status = 'draft' AND NOT v_admin) THEN
@@ -81,8 +85,21 @@ BEGIN
        FROM (SELECT * FROM e WHERE abs(rate_a - rate_d) >= c_divide ORDER BY abs(rate_a - rate_d) DESC LIMIT 2) y)
   INTO v_common, v_divisive;
 
+  -- ④ 조건 질문 (20261020050000): 답한 사람 중 조건별 선택 비율
+  SELECT count(DISTINCT user_id) INTO v_answered FROM condition_picks WHERE agenda_id = p_agenda_id;
+  IF v_answered >= c_min_cond THEN
+    SELECT coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'label', c.label, 'n', x.n,
+             'share', round(x.n::numeric / v_answered, 2)) ORDER BY x.n DESC, c.sort_order), '[]'::jsonb)
+      INTO v_conditions
+    FROM agenda_conditions c
+    CROSS JOIN LATERAL (SELECT count(*)::int AS n FROM condition_picks cp WHERE cp.condition_id = c.id) x
+    WHERE c.agenda_id = p_agenda_id;
+  END IF;
+
   RETURN jsonb_build_object(
     'available', true,
+    'conditions', coalesce(v_conditions, '[]'::jsonb),
+    'conditions_answered', v_answered,
     'status', v_status,
     'participants', v_people,
     'final_participants', v_final,
