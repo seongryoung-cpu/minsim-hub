@@ -191,6 +191,120 @@ export type Database = {
           },
         ]
       }
+      pilot_applications: {
+        Row: {
+          admin_note: string
+          consent_photo: boolean
+          consent_privacy_at: string
+          created_at: string
+          event_id: string
+          grade: string
+          heard_from: string
+          id: string
+          is_student: boolean
+          major: string
+          name: string
+          phone: string
+          school: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string
+          consent_photo?: boolean
+          consent_privacy_at: string
+          created_at?: string
+          event_id: string
+          grade?: string
+          heard_from?: string
+          id?: string
+          is_student?: boolean
+          major?: string
+          name?: string
+          phone?: string
+          school?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string
+          consent_photo?: boolean
+          consent_privacy_at?: string
+          created_at?: string
+          event_id?: string
+          grade?: string
+          heard_from?: string
+          id?: string
+          is_student?: boolean
+          major?: string
+          name?: string
+          phone?: string
+          school?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      pilot_events: {
+        Row: {
+          agenda_id: string | null
+          allow_public: boolean
+          announce_at: string | null
+          apply_closes_at: string
+          capacity: number
+          created_at: string
+          event_at: string
+          id: string
+          is_published: boolean
+          personal_purged_at: string | null
+          schools: string[]
+          slug: string
+          summary: string
+          title: string
+          updated_at: string
+          venue: string
+        }
+        Insert: {
+          agenda_id?: string | null
+          allow_public?: boolean
+          announce_at?: string | null
+          apply_closes_at: string
+          capacity?: number
+          created_at?: string
+          event_at: string
+          id?: string
+          is_published?: boolean
+          personal_purged_at?: string | null
+          schools?: string[]
+          slug: string
+          summary?: string
+          title: string
+          updated_at?: string
+          venue?: string
+        }
+        Update: {
+          agenda_id?: string | null
+          allow_public?: boolean
+          announce_at?: string | null
+          apply_closes_at?: string
+          capacity?: number
+          created_at?: string
+          event_at?: string
+          id?: string
+          is_published?: boolean
+          personal_purged_at?: string | null
+          schools?: string[]
+          slug?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+          venue?: string
+        }
+        Relationships: []
+      }
       agenda_conditions: {
         Row: {
           agenda_id: string
@@ -2338,6 +2452,29 @@ export type Database = {
         Args: { p_id: string; p_kind: string; p_note?: string; p_reason: string }
         Returns: Json
       }
+      admin_pilot_applications: { Args: { p_event_id: string }; Returns: Json }
+      admin_pilot_purge_personal: { Args: { p_event_id: string }; Returns: Json }
+      admin_set_pilot_status: {
+        Args: { p_ids: string[]; p_note?: string; p_status: string }
+        Returns: Json
+      }
+      apply_pilot: {
+        Args: {
+          p_consent_photo: boolean
+          p_consent_privacy: boolean
+          p_grade: string
+          p_heard_from: string
+          p_is_student: boolean
+          p_major: string
+          p_name: string
+          p_phone: string
+          p_school: string
+          p_slug: string
+        }
+        Returns: Json
+      }
+      cancel_pilot_application: { Args: { p_slug: string }; Returns: Json }
+      pilot_application_count: { Args: { p_slug: string }; Returns: number }
       set_condition_picks: {
         Args: { p_agenda_id: string; p_condition_ids: string[] }
         Returns: Json

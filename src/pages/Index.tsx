@@ -42,6 +42,8 @@ const AdminMbti = lazy(() => import('@/pages/admin/AdminMbti').then((m) => ({ de
 const PoliticalMbtiPage = lazy(() => import('@/pages/PoliticalMbtiPage').then((m) => ({ default: m.PoliticalMbtiPage })));
 const AdminCandidateImport = lazy(() => import('@/pages/admin/AdminCandidateImport'));
 const AdminAgendas = lazy(() => import('@/pages/admin/AdminAgendas').then((m) => ({ default: m.AdminAgendas })));
+const PilotApply = lazy(() => import('@/pages/PilotApply').then((m) => ({ default: m.PilotApply })));
+const AdminPilot = lazy(() => import('@/pages/admin/AdminPilot').then((m) => ({ default: m.AdminPilot })));
 const AdminElections = lazy(() => import('@/pages/admin/AdminElections').then((m) => ({ default: m.AdminElections })));
 
 function PageFallback() {
@@ -57,9 +59,11 @@ type AppPhase = 'splash' | 'onboarding' | 'main';
 function Index() {
   const { region, setRegion, isLoaded, hasRegion } = useRegion();
   const isMobile = useIsMobile();
-  const [phase, setPhase] = useState<AppPhase>('splash');
-  const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
   const location = useLocation();
+  // 포스터 QR 등으로 행사 신청 화면에 바로 들어온 사람은 시작 화면·지역 고르기를 건너뛴다
+  const isPilotEntry = location.pathname.startsWith('/pilot/');
+  const [phase, setPhase] = useState<AppPhase>(isPilotEntry ? 'main' : 'splash');
+  const [isRegionSheetOpen, setIsRegionSheetOpen] = useState(false);
 
   // Check if current route is admin
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -68,11 +72,11 @@ function Index() {
   useEffect(() => {
     if (isLoaded && !isMobile) {
       setPhase('main');
-      if (!hasRegion) {
+      if (!hasRegion && !isPilotEntry) {
         setIsRegionSheetOpen(true);
       }
     }
-  }, [isLoaded, isMobile, hasRegion]);
+  }, [isLoaded, isMobile, hasRegion, isPilotEntry]);
 
   const handleSplashComplete = useCallback(() => {
     if (hasRegion) {
@@ -159,6 +163,7 @@ function Index() {
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/notification-settings" element={<NotificationSettingsPage />} />
           <Route path="/faq" element={<FAQPage />} />
+          <Route path="/pilot/:slug" element={<PilotApply />} />
           <Route path="/terms" element={<LegalPage doc="terms" />} />
           <Route path="/privacy" element={<LegalPage doc="privacy" />} />
           
@@ -173,6 +178,7 @@ function Index() {
           <Route path="/admin/candidate-import" element={<AdminCandidateImport />} />
           <Route path="/admin/agendas" element={<AdminAgendas />} />
           <Route path="/admin/elections" element={<AdminElections />} />
+          <Route path="/admin/pilot" element={<AdminPilot />} />
 
           {/* 404: 알 수 없는 경로 */}
           <Route path="*" element={<NotFound />} />
