@@ -186,6 +186,7 @@ const EMPTY_FORM: AgendaForm = {
   title: '',
   summary: '',
   split_reason: '',
+  common_ground: '',
   question: '',
   background: '',
   category: null,
@@ -217,6 +218,7 @@ function AgendaEditor({
       title: a.title,
       summary: a.summary,
       split_reason: a.split_reason,
+      common_ground: a.common_ground ?? '',
       question: a.question,
       background: a.background,
       category: a.category,
@@ -365,6 +367,9 @@ function AgendaEditor({
           </Field>
           <Field label="쟁점 (의견이 갈리는 이유)" hint={`${(form.split_reason ?? '').length}/300`}>
             <Textarea rows={2} maxLength={300} value={form.split_reason ?? ''} onChange={(e) => set('split_reason', e.target.value)} placeholder="의견이 갈리는 이유 한두 줄" />
+          </Field>
+          <Field label="공통 인식 (생각이 달라도 대부분 동의하는 것 · 진행 중 의제 맨 위에 보여요)" hint={`${(form.common_ground ?? '').length}/200`}>
+            <Textarea rows={2} maxLength={200} value={form.common_ground ?? ''} onChange={(e) => set('common_ground', e.target.value)} placeholder="예: 청년 주거비 부담이 크다는 데는 대부분 동의해요" />
           </Field>
           <Field label="결정 (투표 문장: 시민이 동의·비동의·유보할 문장)" hint={`${(form.question ?? '').length}/200`}>
             <Textarea rows={2} maxLength={200} value={form.question ?? ''} onChange={(e) => set('question', e.target.value)} placeholder="예: 청년 월세 지원 대상을 소득 하위 70%까지 넓혀야 한다" />

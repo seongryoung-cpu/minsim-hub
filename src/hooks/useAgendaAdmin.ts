@@ -89,6 +89,7 @@ export type AgendaForm = Pick<
   | 'title'
   | 'summary'
   | 'split_reason'
+  | 'common_ground'
   | 'question'
   | 'background'
   | 'category'

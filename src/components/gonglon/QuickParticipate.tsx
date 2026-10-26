@@ -20,8 +20,10 @@ import { useAgendaConditions, useSetConditionPicks } from '@/hooks/useAgendaCond
 const STEP_COUNT = 3;
 
 /**
- * 1분 참여 (진행 중 의제 맨 위): 투표 → (조건 질문이 있으면) 받아들일 조건 → 다른 사람 한 줄 의견 3개에 반응 → 끝 (마감 알림)
- * - 투표는 지금까지와 같은 '최종 의견'으로 남는다 (빠른 투표 카드에서 누른 건 '첫 반응')
+ * 1분 참여 (진행 중 의제 맨 위): 처음 생각 → (조건 질문이 있으면) 받아들일 조건 → 다른 사람 한 줄 의견 3개에 반응 → 마지막 생각 → 끝
+ * - 처음 생각은 '첫 반응'(first), 의견을 읽고 고른 것은 '최종 의견'(final)으로 남긴다
+ *   → 결과 카드의 '생각이 바뀐 비율'이 이 둘을 비교한다 (빠른 투표 카드에서 이미 첫 반응을 남겼으면 처음 생각은 건너뛴다)
+ * - 최종 의견은 마감 전까지 언제든 바꿀 수 있다 (오프라인 공론장에서는 행사 끝에 다시 고른다)
  * - 의견 3개는 공감 많은 것과 의견이 갈리는 것을 번갈아 골라, 한쪽 의견만 나오지 않게 한다
  * - 더 깊게 참여하려면 아래 '더 알아보기'(주장 비교, 한 줄 의견 쓰기 등)
  */
@@ -68,10 +70,10 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
   const current = picks.find((p) => !latest.get(p.id)?.my_reaction && !skipped.includes(p.id));
   const doneCount = picks.filter((p) => latest.get(p.id)?.my_reaction || skipped.includes(p.id)).length;
 
-  const choose = (choice: AgendaChoice) =>
+  const cast = (stage: 'first' | 'final', choice: AgendaChoice) =>
     requireLogin('vote', () =>
       vote.mutate(
-        { agendaId, stage: 'final', choice, source: 'agenda' },
+        { agendaId, stage, choice, source: 'agenda' },
         { onSuccess: () => setChanging(false), onError: handleError },
       ),
     );
@@ -79,10 +81,14 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
   const onReact = (s: AgendaStatement, choice: AgendaChoice) =>
     requireLogin('vote', () => react.mutate({ agendaId, statementId: s.id, choice }, { onError: handleError }));
 
+  // 예전에 최종 의견만 남긴 사람(첫 반응 없음)은 그대로 '끝'으로 본다
   const step: Step =
-    !myFinal || changing ? 'vote'
-      : hasConditions && !condAnswered && !condSkipped ? 'conditions'
-        : current ? 'react' : 'done';
+    changing ? 'final'
+      : !myFirst && !myFinal ? 'first'
+        : myFinal ? 'done'
+          : hasConditions && !condAnswered && !condSkipped ? 'conditions'
+            : current || agreed.isLoading || divisive.isLoading ? 'react' : 'final';
+  const changed = !!myFirst && !!myFinal && myFirst !== myFinal;
 
   const toggleCond = (id: string, exclusive: boolean) =>
     setCondDraft((d) => {
@@ -101,15 +107,28 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
         <Steps step={step} doneCount={doneCount} total={picks.length} withConditions={hasConditions} />
       </div>
 
-      {step === 'vote' && (
+      {step === 'first' && (
         <div className="space-y-3">
-          {myFirst && !myFinal && (
-            <p className="rounded-[10px] bg-accent/10 px-3 py-2 text-[13px] text-foreground/80">
-              카드에서 남긴 첫 반응: <strong className="text-foreground">{CHOICE_LABELS[myFirst]}</strong>
+          <p className="text-[13px] font-semibold text-primary">처음 생각</p>
+          <p className="-mt-2 text-[15px] font-semibold leading-relaxed">“{question}”</p>
+          <VoteChoiceButtons label="처음 생각" value={null} onChoose={(c) => cast('first', c)} disabled={vote.isPending} />
+          <p className="text-[12px] text-muted-foreground">다른 사람들의 의견을 몇 개 본 뒤에 한 번 더 물어봐요. 생각이 바뀌어도 괜찮아요.</p>
+        </div>
+      )}
+
+      {step === 'final' && (
+        <div className="space-y-3">
+          <p className="text-[13px] font-semibold text-primary">마지막 생각</p>
+          {myFirst && (
+            <p className="rounded-[10px] bg-secondary/60 px-3 py-2 text-[13px] text-foreground/80">
+              처음 생각: <strong className="text-foreground">{CHOICE_LABELS[myFirst]}</strong>
             </p>
           )}
-          <p className="text-[15px] font-semibold leading-relaxed">“{question}”</p>
-          <VoteChoiceButtons label="내 의견" value={myFinal} onChoose={choose} disabled={vote.isPending} />
+          <p className="text-[15px] font-semibold leading-relaxed">
+            {picks.length > 0 && !changing ? '의견을 읽어 보니, 지금은 어떤가요?' : `“${question}”`}
+          </p>
+          {picks.length > 0 && !changing && <p className="-mt-2 text-[13px] text-muted-foreground">“{question}”</p>}
+          <VoteChoiceButtons label="마지막 생각" value={changing ? myFinal : null} onChoose={(c) => cast('final', c)} disabled={vote.isPending} />
           {changing && (
             <button type="button" onClick={() => setChanging(false)} className="h-9 text-[13px] text-muted-foreground">
               바꾸지 않기
@@ -120,7 +139,7 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
 
       {step === 'conditions' && cond && (
         <div className="space-y-3">
-          <MyChoiceLine choice={myFinal} onChange={() => setChanging(true)} />
+          <MyChoiceLine label="처음 생각" choice={myFirst} />
           <p className="text-[15px] font-semibold">어떤 조건이면 받아들일 수 있나요?</p>
           <p className="-mt-2 text-[13px] text-muted-foreground">여러 개 고를 수 있어요. 결과에는 비율로만 나와요.</p>
           <fieldset className="space-y-1.5">
@@ -159,7 +178,7 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
 
       {step === 'react' && current && (
         <div className="space-y-3">
-          <MyChoiceLine choice={myFinal} onChange={() => setChanging(true)} />
+          <MyChoiceLine label="처음 생각" choice={myFirst} />
           <p className="text-[13px] text-muted-foreground">
             다른 사람들의 한 줄 의견 ({doneCount + 1}/{picks.length}) · 동의하나요?
           </p>
@@ -189,7 +208,14 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
 
       {step === 'done' && (
         <div className="space-y-3">
-          <MyChoiceLine choice={myFinal} onChange={() => setChanging(true)} />
+          <MyChoiceLine label={myFirst ? '마지막 생각' : '내 의견'} choice={myFinal} onChange={() => setChanging(true)} />
+          {myFirst && (
+            <p className="text-[13px] text-muted-foreground">
+              {changed
+                ? `처음엔 ‘${CHOICE_LABELS[myFirst]}’였는데 생각이 바뀌었어요. 이런 변화가 모여 결과 카드의 ‘생각이 바뀐 비율’이 돼요.`
+                : `처음 생각과 같아요 (${CHOICE_LABELS[myFirst]}).`}
+            </p>
+          )}
           <p className="flex items-center gap-1.5 text-[15px] font-semibold">
             <Check size={18} className="text-primary" aria-hidden /> 참여했어요. 마감되면 결과를 알려 드릴게요
           </p>
@@ -214,12 +240,18 @@ export function QuickParticipate({ agendaId, question, onMore }: { agendaId: str
   );
 }
 
-type Step = 'vote' | 'conditions' | 'react' | 'done';
+type Step = 'first' | 'conditions' | 'react' | 'final' | 'done';
 
 function Steps({ step, doneCount, total, withConditions }: { step: Step; doneCount: number; total: number; withConditions: boolean }) {
   const c = withConditions ? 1 : 0;
-  const at = step === 'vote' ? 0 : step === 'conditions' ? 1 : step === 'react' ? 1 + c + doneCount : 1 + c + total;
-  const all = 1 + c + total;
+  // 처음 생각 · (조건) · 의견 N개 · 마지막 생각
+  const all = 2 + c + total;
+  const at =
+    step === 'first' ? 0
+      : step === 'conditions' ? 1
+        : step === 'react' ? 1 + c + doneCount
+          : step === 'final' ? 1 + c + total
+            : all;
   return (
     <span className="flex items-center gap-1" aria-label={`${all}단계 중 ${Math.min(at, all)}단계 완료`}>
       {Array.from({ length: all }, (_, i) => (
@@ -229,15 +261,17 @@ function Steps({ step, doneCount, total, withConditions }: { step: Step; doneCou
   );
 }
 
-function MyChoiceLine({ choice, onChange }: { choice: AgendaChoice | null; onChange: () => void }) {
+function MyChoiceLine({ label, choice, onChange }: { label: string; choice: AgendaChoice | null; onChange?: () => void }) {
   if (!choice) return null;
   return (
     <p className="flex items-center gap-2 text-[13px]">
-      내 의견
+      {label}
       <span className={cn('rounded-full border px-2.5 py-0.5 font-semibold', CHOICE_SELECTED[choice])}>{CHOICE_LABELS[choice]}</span>
-      <button type="button" onClick={onChange} className="h-8 px-1 text-muted-foreground underline">
-        바꾸기
-      </button>
+      {onChange && (
+        <button type="button" onClick={onChange} className="h-8 px-1 text-muted-foreground underline">
+          바꾸기
+        </button>
+      )}
     </p>
   );
 }

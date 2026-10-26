@@ -220,7 +220,9 @@ export function AgendaDetail() {
           </>
         ) : isOpen ? (
           <>
-            {/* 진행 중: 1분 참여 → 지금 상황 → 더 알아보기 */}
+            {/* 진행 중: 한눈에(운영진 정리) → 1분 참여 → 지금 상황 → 더 알아보기 */}
+            <AgendaGlance agenda={agenda} />
+
             <QuickParticipate
               agendaId={agenda.id}
               question={agenda.question.trim() || agenda.title}
@@ -233,7 +235,7 @@ export function AgendaDetail() {
               더 알아보기 <span className="text-sm font-normal text-muted-foreground">· 배경, 쟁점, 주장 비교, 한 줄 의견</span>
             </h2>
 
-            <BackgroundSection agenda={agenda} />
+            <BackgroundSection agenda={agenda} hideSplit={!!agenda.split_reason?.trim()} />
 
             {issues.length > 0 && <IssueCarousel issues={issues} />}
 
@@ -299,11 +301,41 @@ function StatusNote({ agenda, label = '지금 상황' }: { agenda: Agenda; label
 // ─────────────────────────────────────────────────────────────
 // 배경
 // ─────────────────────────────────────────────────────────────
-function BackgroundSection({ agenda }: { agenda: Agenda }) {
+/**
+ * 진행 중 의제 맨 위 '한눈에': 생각이 달라도 대부분 동의하는 것 / 의견이 갈리는 지점 (운영진이 적은 것)
+ * - 참여자 비율은 여기서 보여 주지 않는다 (자기 의견을 내기 전 다수 의견을 따라가지 않게)
+ * - 마감 뒤에는 결과 카드의 실제 공통분모·갈린 문장이 대신한다
+ */
+function AgendaGlance({ agenda }: { agenda: Agenda }) {
+  const common = agenda.common_ground?.trim();
+  const split = agenda.split_reason?.trim();
+  if (!common && !split) return null;
+  return (
+    <section aria-label="한눈에 보기" className="space-y-2">
+      <div className={cn('grid gap-2', common && split ? 'grid-cols-2' : 'grid-cols-1')}>
+        {common && (
+          <div className="rounded-2xl bg-emerald-50 p-3.5 dark:bg-emerald-950/40">
+            <p className="text-[12px] font-bold text-emerald-800 dark:text-emerald-300">대부분 동의하는 것</p>
+            <p className="mt-1 whitespace-pre-line text-[14px] font-semibold leading-snug">{common}</p>
+          </div>
+        )}
+        {split && (
+          <div className="rounded-2xl bg-orange-50 p-3.5 dark:bg-orange-950/40">
+            <p className="text-[12px] font-bold text-orange-800 dark:text-orange-300">의견이 갈리는 지점</p>
+            <p className="mt-1 whitespace-pre-line text-[14px] font-semibold leading-snug">{split}</p>
+          </div>
+        )}
+      </div>
+      <p className="px-1 text-[11.5px] text-muted-foreground">운영진이 쟁점 자료를 보고 정리했어요. 참여자들의 선택 비율은 내 의견을 남긴 뒤에 보여요.</p>
+    </section>
+  );
+}
+
+function BackgroundSection({ agenda, hideSplit = false }: { agenda: Agenda; hideSplit?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const rows = [
     { label: '현황', text: agenda.summary },
-    { label: '쟁점', text: agenda.split_reason },
+    { label: '쟁점', text: hideSplit ? '' : agenda.split_reason },
     { label: '결정', text: agenda.question },
   ].filter((r) => r.text?.trim());
 
