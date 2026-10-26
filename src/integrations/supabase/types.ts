@@ -165,146 +165,6 @@ export type Database = {
           },
         ]
       }
-      agenda_interests: {
-        Row: {
-          agenda_id: string
-          created_at: string
-          user_id: string
-        }
-        Insert: {
-          agenda_id: string
-          created_at?: string
-          user_id: string
-        }
-        Update: {
-          agenda_id?: string
-          created_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agenda_interests_agenda_id_fkey"
-            columns: ["agenda_id"]
-            isOneToOne: false
-            referencedRelation: "agendas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      pilot_applications: {
-        Row: {
-          admin_note: string
-          consent_photo: boolean
-          consent_privacy_at: string
-          created_at: string
-          event_id: string
-          grade: string
-          heard_from: string
-          id: string
-          is_student: boolean
-          major: string
-          name: string
-          phone: string
-          school: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          admin_note?: string
-          consent_photo?: boolean
-          consent_privacy_at: string
-          created_at?: string
-          event_id: string
-          grade?: string
-          heard_from?: string
-          id?: string
-          is_student?: boolean
-          major?: string
-          name?: string
-          phone?: string
-          school?: string
-          status?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          admin_note?: string
-          consent_photo?: boolean
-          consent_privacy_at?: string
-          created_at?: string
-          event_id?: string
-          grade?: string
-          heard_from?: string
-          id?: string
-          is_student?: boolean
-          major?: string
-          name?: string
-          phone?: string
-          school?: string
-          status?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      pilot_events: {
-        Row: {
-          agenda_id: string | null
-          allow_public: boolean
-          announce_at: string | null
-          apply_closes_at: string
-          capacity: number
-          created_at: string
-          event_at: string
-          id: string
-          is_published: boolean
-          personal_purged_at: string | null
-          schools: string[]
-          slug: string
-          summary: string
-          title: string
-          updated_at: string
-          venue: string
-        }
-        Insert: {
-          agenda_id?: string | null
-          allow_public?: boolean
-          announce_at?: string | null
-          apply_closes_at: string
-          capacity?: number
-          created_at?: string
-          event_at: string
-          id?: string
-          is_published?: boolean
-          personal_purged_at?: string | null
-          schools?: string[]
-          slug: string
-          summary?: string
-          title: string
-          updated_at?: string
-          venue?: string
-        }
-        Update: {
-          agenda_id?: string | null
-          allow_public?: boolean
-          announce_at?: string | null
-          apply_closes_at?: string
-          capacity?: number
-          created_at?: string
-          event_at?: string
-          id?: string
-          is_published?: boolean
-          personal_purged_at?: string | null
-          schools?: string[]
-          slug?: string
-          summary?: string
-          title?: string
-          updated_at?: string
-          venue?: string
-        }
-        Relationships: []
-      }
       agenda_conditions: {
         Row: {
           agenda_id: string
@@ -330,7 +190,41 @@ export type Database = {
           label?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agenda_conditions_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_interests: {
+        Row: {
+          agenda_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_interests_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agenda_issues: {
         Row: {
@@ -1212,6 +1106,92 @@ export type Database = {
           },
         ]
       }
+      condition_picks: {
+        Row: {
+          agenda_id: string
+          condition_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          agenda_id: string
+          condition_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          agenda_id?: string
+          condition_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "condition_picks_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "condition_picks_condition_id_fkey"
+            columns: ["condition_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_conditions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_reports: {
+        Row: {
+          agenda_id: string
+          created_at: string
+          id: string
+          note: string
+          reason: string
+          reporter_id: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          target_id: string
+          target_kind: string
+        }
+        Insert: {
+          agenda_id: string
+          created_at?: string
+          id?: string
+          note?: string
+          reason: string
+          reporter_id: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          target_id: string
+          target_kind: string
+        }
+        Update: {
+          agenda_id?: string
+          created_at?: string
+          id?: string
+          note?: string
+          reason?: string
+          reporter_id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          target_id?: string
+          target_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_reports_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       election_schedule_items: {
         Row: {
           created_at: string
@@ -1261,27 +1241,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      condition_picks: {
-        Row: {
-          agenda_id: string
-          condition_id: string
-          created_at: string
-          user_id: string
-        }
-        Insert: {
-          agenda_id: string
-          condition_id: string
-          created_at?: string
-          user_id: string
-        }
-        Update: {
-          agenda_id?: string
-          condition_id?: string
-          created_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       elections: {
         Row: {
@@ -1462,6 +1421,136 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      pilot_applications: {
+        Row: {
+          admin_note: string
+          consent_photo: boolean
+          consent_privacy_at: string
+          created_at: string
+          event_id: string
+          grade: string
+          heard_from: string
+          id: string
+          is_student: boolean
+          major: string
+          name: string
+          phone: string
+          school: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_note?: string
+          consent_photo?: boolean
+          consent_privacy_at: string
+          created_at?: string
+          event_id: string
+          grade?: string
+          heard_from?: string
+          id?: string
+          is_student?: boolean
+          major?: string
+          name?: string
+          phone?: string
+          school?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_note?: string
+          consent_photo?: boolean
+          consent_privacy_at?: string
+          created_at?: string
+          event_id?: string
+          grade?: string
+          heard_from?: string
+          id?: string
+          is_student?: boolean
+          major?: string
+          name?: string
+          phone?: string
+          school?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_applications_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "pilot_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pilot_events: {
+        Row: {
+          agenda_id: string | null
+          allow_public: boolean
+          announce_at: string | null
+          apply_closes_at: string
+          capacity: number
+          created_at: string
+          event_at: string
+          id: string
+          is_published: boolean
+          personal_purged_at: string | null
+          schools: string[]
+          slug: string
+          summary: string
+          title: string
+          updated_at: string
+          venue: string
+        }
+        Insert: {
+          agenda_id?: string | null
+          allow_public?: boolean
+          announce_at?: string | null
+          apply_closes_at: string
+          capacity?: number
+          created_at?: string
+          event_at: string
+          id?: string
+          is_published?: boolean
+          personal_purged_at?: string | null
+          schools?: string[]
+          slug: string
+          summary?: string
+          title: string
+          updated_at?: string
+          venue?: string
+        }
+        Update: {
+          agenda_id?: string | null
+          allow_public?: boolean
+          announce_at?: string | null
+          apply_closes_at?: string
+          capacity?: number
+          created_at?: string
+          event_at?: string
+          id?: string
+          is_published?: boolean
+          personal_purged_at?: string | null
+          schools?: string[]
+          slug?: string
+          summary?: string
+          title?: string
+          updated_at?: string
+          venue?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pilot_events_agenda_id_fkey"
+            columns: ["agenda_id"]
+            isOneToOne: false
+            referencedRelation: "agendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       policy_candidate_alignments: {
         Row: {
@@ -2244,23 +2333,51 @@ export type Database = {
       accept_required_terms: { Args: { p_age14: boolean }; Returns: undefined }
       admin_delete_user: { Args: { p_user: string }; Returns: undefined }
       admin_open_report_count: { Args: never; Returns: number }
-      admin_report_queue: { Args: { p_include_resolved?: boolean }; Returns: Json }
+      admin_pilot_applications: { Args: { p_event_id: string }; Returns: Json }
+      admin_pilot_purge_personal: {
+        Args: { p_event_id: string }
+        Returns: Json
+      }
+      admin_political_stats: { Args: never; Returns: Json }
+      admin_report_queue: {
+        Args: { p_include_resolved?: boolean }
+        Returns: Json
+      }
       admin_resolve_report: {
         Args: { p_action: string; p_id: string; p_kind: string }
         Returns: Json
       }
-      admin_political_stats: { Args: never; Returns: Json }
+      admin_set_pilot_status: {
+        Args: { p_ids: string[]; p_note?: string; p_status: string }
+        Returns: Json
+      }
       agenda_effective_status: {
         Args: { p_closes_at: string; p_status: string }
         Returns: string
       }
       agenda_is_open: { Args: { p_agenda_id: string }; Returns: boolean }
       app_setting_on: { Args: { p_key: string }; Returns: boolean }
+      apply_pilot: {
+        Args: {
+          p_consent_photo: boolean
+          p_consent_privacy: boolean
+          p_grade: string
+          p_heard_from: string
+          p_is_student: boolean
+          p_major: string
+          p_name: string
+          p_phone: string
+          p_school: string
+          p_slug: string
+        }
+        Returns: Json
+      }
       assembly_districts_for: {
         Args: { p_prefixes: string[]; p_sigungu: string }
         Returns: string[]
       }
       backfill_position_mona: { Args: never; Returns: number }
+      cancel_pilot_application: { Args: { p_slug: string }; Returns: Json }
       cast_agenda_vote: {
         Args: {
           p_agenda_id: string
@@ -2286,7 +2403,6 @@ export type Database = {
           status: string
         }[]
       }
-      get_agenda_outcome: { Args: { p_agenda_id: string }; Returns: Json }
       get_agenda_bills: {
         Args: { p_agenda_id: string; p_districts?: string[] }
         Returns: Json
@@ -2317,6 +2433,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_agenda_outcome: { Args: { p_agenda_id: string }; Returns: Json }
       get_agenda_related_pledges: {
         Args: { p_agenda_id: string }
         Returns: {
@@ -2424,6 +2541,7 @@ export type Database = {
         Args: { p_claim_id: string; p_reason?: string }
         Returns: Json
       }
+      pilot_application_count: { Args: { p_slug: string }; Returns: number }
       post_claim: {
         Args: {
           p_agenda_id: string
@@ -2439,6 +2557,19 @@ export type Database = {
         Args: { p_agenda_id: string; p_client_id?: string }
         Returns: undefined
       }
+      report_content: {
+        Args: {
+          p_id: string
+          p_kind: string
+          p_note?: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      set_condition_picks: {
+        Args: { p_agenda_id: string; p_condition_ids: string[] }
+        Returns: Json
+      }
       set_my_nickname: { Args: { p_nickname: string }; Returns: string }
       set_political_consent: { Args: { p_on: boolean }; Returns: Json }
       submit_daily_quiz: { Args: { p_answers: Json }; Returns: Json }
@@ -2451,37 +2582,6 @@ export type Database = {
         Returns: number
       }
       toggle_agenda_interest: { Args: { p_agenda_id: string }; Returns: Json }
-      report_content: {
-        Args: { p_id: string; p_kind: string; p_note?: string; p_reason: string }
-        Returns: Json
-      }
-      admin_pilot_applications: { Args: { p_event_id: string }; Returns: Json }
-      admin_pilot_purge_personal: { Args: { p_event_id: string }; Returns: Json }
-      admin_set_pilot_status: {
-        Args: { p_ids: string[]; p_note?: string; p_status: string }
-        Returns: Json
-      }
-      apply_pilot: {
-        Args: {
-          p_consent_photo: boolean
-          p_consent_privacy: boolean
-          p_grade: string
-          p_heard_from: string
-          p_is_student: boolean
-          p_major: string
-          p_name: string
-          p_phone: string
-          p_school: string
-          p_slug: string
-        }
-        Returns: Json
-      }
-      cancel_pilot_application: { Args: { p_slug: string }; Returns: Json }
-      pilot_application_count: { Args: { p_slug: string }; Returns: number }
-      set_condition_picks: {
-        Args: { p_agenda_id: string; p_condition_ids: string[] }
-        Returns: Json
-      }
       toggle_bill_alert: { Args: { p_bill_id: string }; Returns: boolean }
     }
     Enums: {

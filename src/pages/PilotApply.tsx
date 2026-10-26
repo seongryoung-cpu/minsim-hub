@@ -91,7 +91,7 @@ export function PilotApply() {
     <Shell onBack={() => navigate(-1)}>
       <EventCard ev={ev} count={count ?? 0} closed={closed} />
 
-      {mineLoading ? null : active && !editing ? (
+      {active && !editing ? (
         <AppliedCard ev={ev} app={active} closed={closed} onEdit={() => setEditing(true)} />
       ) : closed ? (
         <div className="rounded-2xl bg-secondary/60 p-5 text-center">
@@ -99,12 +99,16 @@ export function PilotApply() {
           <p className="mt-1 text-sm text-muted-foreground">다음 행사 소식은 공론 탭에서 알려 드릴게요.</p>
         </div>
       ) : (
-        <ApplyForm
-          ev={ev}
-          initial={mine ?? null}
-          onDone={() => setEditing(false)}
-          onCancelEdit={active ? () => setEditing(false) : undefined}
-        />
+        // 로그인 직후 내 신청을 조회해도 입력값과 로그인 후 이어 할 신청을 유지한다.
+        // 기존 신청을 확인하기 전에는 신청서를 보여 주지 않되, 마운트는 유지한다.
+        <div hidden={mineLoading}>
+          <ApplyForm
+            ev={ev}
+            initial={mine ?? null}
+            onDone={() => setEditing(false)}
+            onCancelEdit={active ? () => setEditing(false) : undefined}
+          />
+        </div>
       )}
     </Shell>
   );
