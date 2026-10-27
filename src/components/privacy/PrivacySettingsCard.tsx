@@ -46,8 +46,8 @@ export function PrivacySettingsCard({ onRequestDeleteAccount }: { onRequestDelet
   };
 
   return (
-    <section aria-labelledby="privacy-card-title" className="space-y-4 rounded-2xl bg-card p-5 shadow-app-md">
-      <h2 id="privacy-card-title" className="flex items-center gap-2 font-semibold">
+    <section aria-labelledby="privacy-card-title" className="space-y-4 rounded-2xl border border-border bg-card p-[18px]">
+      <h2 id="privacy-card-title" className="flex items-center gap-2 text-[17px] font-bold">
         <ShieldCheck size={18} className="text-primary" aria-hidden /> 개인정보
       </h2>
 

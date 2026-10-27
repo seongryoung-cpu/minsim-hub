@@ -18,7 +18,7 @@ export function MyAgendasCard({ sido }: { sido?: string }) {
 
   return (
     <section aria-labelledby="my-agendas-title" className="space-y-3">
-      <SectionHeader id="my-agendas-title" title="내가 참여한 공론" to="/gonglon" action="전체" />
+      <SectionHeader id="my-agendas-title" title="내가 참여한 공론" to="/gonglon?tab=mine" action="전체" />
       <ListPanel>
         {mine.map((a) => {
           const first = a.my_first as AgendaChoice | null;

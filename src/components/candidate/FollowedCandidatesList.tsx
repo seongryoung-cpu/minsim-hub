@@ -1,9 +1,11 @@
-import { motion } from 'framer-motion';
-import { Heart, User, ChevronRight, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
+import { Link } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useFollowedCandidates } from '@/hooks/useFollowedCandidates';
 import { supabase } from '@/integrations/supabase/client';
+import { headPhotoUrl } from '@/hooks/usePoliticians';
+import { PersonPhoto } from '@/components/politicians/PersonPhoto';
+import { ListPanel, Panel, SectionHeader, Tag } from '@/components/ds';
 
 interface FollowedCandidate {
   id: string;
@@ -15,128 +17,65 @@ interface FollowedCandidate {
   image_url: string | null;
 }
 
-export function FollowedCandidatesList() {
-  const navigate = useNavigate();
-  const { followedIds, isLoaded, followCount } = useFollowedCandidates();
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  // Fetch candidate details for followed IDs (always UUIDs now)
+/** 마이 '관심 정치인' — 인물 페이지에서 '관심'을 누른 사람들 */
+export function FollowedCandidatesList() {
+  const { followedIds, isLoaded } = useFollowedCandidates();
+
   const { data: candidates, isLoading } = useQuery({
     queryKey: ['followed-candidates-details', followedIds],
     queryFn: async () => {
-      if (followedIds.length === 0) return [];
-      
-      // Filter only valid UUIDs
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      const validUuids = followedIds.filter(id => uuidRegex.test(id));
-      
-      if (validUuids.length === 0) return [];
-
+      const ids = followedIds.filter((id) => UUID.test(id));
+      if (ids.length === 0) return [];
       const { data, error } = await supabase
         .from('candidates')
         .select('id, slug, name, party, party_color, position, image_url')
-        .in('id', validUuids)
+        .in('id', ids)
         .eq('is_active', true);
-
       if (error) throw error;
       return (data || []) as FollowedCandidate[];
     },
     enabled: isLoaded && followedIds.length > 0,
   });
 
-  if (!isLoaded || isLoading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-2xl p-5 shadow-app-md"
-      >
-        <div className="flex items-center gap-2 mb-4">
-          <Heart size={20} className="text-red-500" />
-          <h3 className="font-semibold text-foreground">관심 후보</h3>
-        </div>
-        <div className="flex justify-center py-4">
-          <Loader2 className="animate-spin text-muted-foreground" size={24} />
-        </div>
-      </motion.div>
-    );
-  }
+  const loading = !isLoaded || (followedIds.length > 0 && isLoading);
+  const list = candidates ?? [];
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-2xl p-5 shadow-app-md"
-    >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Heart size={20} className="text-red-500 fill-red-500" />
-          <h3 className="font-semibold text-foreground">관심 후보</h3>
-          {candidates && candidates.length > 0 && (
-            <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full">
-              {candidates.length}명
-            </span>
-          )}
-        </div>
-      </div>
-
-      {candidates && candidates.length > 0 ? (
-        <div className="space-y-3">
-          {candidates.map((candidate, index) => (
-            <motion.button
-              key={candidate.id}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => navigate(`/politicians/c/${candidate.slug}`)}
-              className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary active:scale-[0.98] transition-all"
+    <section aria-labelledby="followed-title" className="space-y-2.5">
+      <SectionHeader id="followed-title" title="관심 정치인" />
+      {loading ? (
+        <div className="h-20 animate-pulse rounded-2xl bg-secondary motion-reduce:animate-none" />
+      ) : list.length > 0 ? (
+        <ListPanel>
+          {list.map((c) => (
+            <Link
+              key={c.id}
+              to={`/politicians/c/${c.slug}`}
+              className="flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/50"
             >
-              {/* Avatar */}
-              <div
-                className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
-                style={{
-                  background: `linear-gradient(135deg, ${candidate.party_color}30, ${candidate.party_color}10)`,
-                  border: `2px solid ${candidate.party_color}`,
-                }}
-              >
-                {candidate.image_url ? (
-                  <img
-                    src={candidate.image_url}
-                    alt={candidate.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User size={20} style={{ color: candidate.party_color }} />
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 text-left">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-foreground">{candidate.name}</span>
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: `${candidate.party_color}20`,
-                      color: candidate.party_color,
-                    }}
-                  >
-                    {candidate.party}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{candidate.position}</p>
-              </div>
-
-              <ChevronRight size={18} className="text-muted-foreground" />
-            </motion.button>
+              <PersonPhoto src={headPhotoUrl(c.image_url, 120)} initial={c.name.slice(0, 1)} width={40} />
+              <span className="min-w-0 flex-1 space-y-1">
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[15px] font-bold">{c.name}</span>
+                  {c.party && <Tag>{c.party}</Tag>}
+                </span>
+                {c.position && <span className="block truncate text-[13px] text-muted-foreground">{c.position}</span>}
+              </span>
+              <ChevronRight size={18} className="shrink-0 text-muted-foreground" aria-hidden />
+            </Link>
           ))}
-        </div>
+        </ListPanel>
       ) : (
-        <div className="text-center py-6 text-muted-foreground">
-          <Heart size={32} className="mx-auto mb-2 opacity-30" />
-          <p className="text-sm">관심 후보가 없습니다</p>
-          <p className="text-xs mt-1">후보자 정보에서 ♡를 눌러 추가해보세요</p>
-        </div>
+        <Panel className="flex flex-col items-center gap-1.5 px-4 py-5 text-center">
+          <p className="text-[14px] font-semibold">아직 관심 정치인이 없어요</p>
+          <p className="text-[13px] text-muted-foreground">인물 페이지에서 ‘관심’을 누르면 여기 모여요</p>
+          <Link to="/politicians" className="mt-1.5 text-[13px] font-semibold text-primary hover:text-primary-strong">
+            정치인 찾아보기
+          </Link>
+        </Panel>
       )}
-    </motion.div>
+    </section>
   );
 }

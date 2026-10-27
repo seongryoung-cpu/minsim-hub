@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ChevronRight, CircleHelp, Landmark, MapPin, Search } from 'lucide-react';
+import { ChevronRight, CircleHelp, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SIDO_LIST, SIDO_SHORT, type Region } from '@/types/region';
 import { useAppMode } from '@/hooks/useAppMode';
-import { useAgendaList, useGonglonAccess } from '@/hooks/useAgendas';
+import { agendaDDay, useAgendaList, useGonglonAccess } from '@/hooks/useAgendas';
+import { SectionHeader, Tag } from '@/components/ds';
 import {
   KIND_LABELS,
   KIND_ORDER,
@@ -51,10 +52,17 @@ export function Politicians({ region, onRegionClick }: Props) {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-20 border-b border-border/50 bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-4">
-          <Landmark size={22} className="text-primary" aria-hidden />
-          <h1 className="text-lg font-semibold text-foreground">정치인</h1>
+      <header className="sticky top-0 z-20 border-b border-border bg-card">
+        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-2 px-4">
+          <h1 className="text-[17px] font-bold">정치인</h1>
+          <button
+            type="button"
+            onClick={onRegionClick}
+            aria-label={`지역 바꾸기, 지금 ${regionLabel(region)}`}
+            className="h-9 rounded-full border border-border bg-card px-3 text-[13px] font-semibold hover:bg-secondary"
+          >
+            {regionLabel(region)}
+          </button>
         </div>
       </header>
 
@@ -73,8 +81,8 @@ export function Politicians({ region, onRegionClick }: Props) {
               aria-selected={view === v.id}
               onClick={() => setView(v.id)}
               className={cn(
-                'h-10 rounded-lg text-sm font-semibold transition-colors',
-                view === v.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                'h-10 rounded-[10px] text-sm transition-colors',
+                view === v.id ? 'border border-border bg-card font-bold text-foreground' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {v.label}
@@ -132,7 +140,6 @@ function LocalView({ region, onRegionClick, onShowPr }: { region: Region; onRegi
   const agendas = useAgendaList(region.sido, gonglon.allowed);
 
   const wholeSido = !region.sigungu || region.sigungu === '전체';
-  const place = wholeSido ? region.sido : `${region.sido} ${region.sigungu}`;
 
   const localHeads = useMemo(
     () => (heads.data ?? []).map(headToRow).filter((r) => r.sidos.includes(region.sido)),
@@ -148,19 +155,6 @@ function LocalView({ region, onRegionClick, onShowPr }: { region: Region; onRegi
 
   return (
     <main className="mx-auto max-w-2xl space-y-6 px-4 pt-4">
-      <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3.5 py-2.5">
-        <p className="flex items-center gap-1.5 text-sm font-semibold">
-          <MapPin size={15} className="text-primary" aria-hidden /> {place}
-        </p>
-        <button
-          type="button"
-          onClick={onRegionClick}
-          className="h-9 rounded-full px-3 text-[13px] font-semibold text-primary hover:bg-primary/5"
-        >
-          지역 바꾸기
-        </button>
-      </div>
-
       <Group title="단체장" loading={heads.isLoading} rows={localHeads} empty="이 지역 단체장 정보가 아직 없어요" />
 
       <Group
@@ -168,6 +162,7 @@ function LocalView({ region, onRegionClick, onShowPr }: { region: Region; onRegi
         loading={members.isLoading}
         error={members.isError}
         rows={localMembers}
+        note="정당과 관계없이 같은 형식, 선거구 순서로 보여 줘요."
         empty="국회 명단에 이 지역 국회의원이 없어요. 재·보궐선거 전이라 자리가 비어 있을 수 있어요"
       />
 
@@ -186,17 +181,24 @@ function LocalView({ region, onRegionClick, onShowPr }: { region: Region; onRegi
       )}
 
       {localAgendas.length > 0 && (
-        <section aria-labelledby="local-agendas" className="space-y-2">
-          <h3 id="local-agendas" className="text-[15px] font-bold">우리 지역 공론</h3>
+        <section aria-labelledby="local-agendas" className="space-y-2.5">
+          <SectionHeader id="local-agendas" title="우리 지역 공론" to="/gonglon" action="전체" />
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-            {localAgendas.map((a) => (
-              <li key={a.id}>
-                <Link to={`/gonglon/${a.id}`} className="flex items-center justify-between gap-2 px-4 py-3 hover:bg-secondary/50">
-                  <span className="text-sm font-medium leading-snug">{a.title}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">참여 {a.participants}명</span>
-                </Link>
-              </li>
-            ))}
+            {localAgendas.map((a) => {
+              const open = a.status === 'open';
+              const dday = open ? agendaDDay(a.closes_at) : null;
+              return (
+                <li key={a.id}>
+                  <Link to={`/gonglon/${a.id}`} className="flex flex-col gap-1.5 px-4 py-3.5 hover:bg-secondary/50">
+                    <span className="flex items-center gap-1.5">
+                      <Tag tone={open ? 'info' : 'neutral'}>{open ? `진행 중${dday ? ` · ${dday}` : ''}` : '마감'}</Tag>
+                      <span className="text-[12px] text-muted-foreground">참여 {a.participants}명</span>
+                    </span>
+                    <span className="text-[15px] font-semibold leading-snug">{a.title}</span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -333,14 +335,14 @@ function ResultGroups({ rows, empty }: { rows: PoliticianRow[]; empty: string })
 // 공통
 // ─────────────────────────────────────────────────────────────
 function Group({
-  title, rows, loading, error, empty, pageSize,
-}: { title: string; rows: PoliticianRow[]; loading?: boolean; error?: boolean; empty?: string; pageSize?: number }) {
+  title, rows, loading, error, empty, pageSize, note,
+}: { title: string; rows: PoliticianRow[]; loading?: boolean; error?: boolean; empty?: string; pageSize?: number; note?: string }) {
   const [shown, setShown] = useState(pageSize ?? Infinity);
   const visible = rows.slice(0, shown);
   const rest = rows.length - visible.length;
   return (
-    <section className="space-y-2">
-      <h3 className="text-[15px] font-bold">{title}</h3>
+    <section className="space-y-2.5">
+      <h3 className="text-[17px] font-bold tracking-[-0.01em]">{title}</h3>
       {loading ? (
         <ListSkeleton />
       ) : rows.length === 0 ? (
@@ -356,6 +358,7 @@ function Group({
           ))}
         </ul>
       )}
+      {note && rows.length > 1 && <p className="text-[12px] leading-relaxed text-muted-foreground">{note}</p>}
       {rest > 0 && (
         <button
           type="button"
@@ -371,15 +374,17 @@ function Group({
 
 function PersonRow({ row }: { row: PoliticianRow }) {
   return (
-    <Link to={row.path} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/50">
+    <Link to={row.path} className="flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/50">
       <PersonPhoto src={row.photo} initial={row.initial} width={48} />
-      <span className="min-w-0 flex-1">
-        <span className="flex items-baseline gap-1.5">
-          <span className="text-[15px] font-semibold">{row.name}</span>
-          {row.party && <span className="truncate text-xs text-muted-foreground">{row.party}</span>}
-        </span>
-        <span className="block truncate text-[13px] text-foreground/80">{row.title}</span>
-        {row.sub && <span className="block truncate text-xs text-muted-foreground">{row.sub}</span>}
+      <span className="min-w-0 flex-1 space-y-1">
+        <span className="block truncate text-[12px] text-muted-foreground">{row.title}</span>
+        <span className="block text-[16px] font-bold leading-tight">{row.name}</span>
+        {(row.party || row.sub) && (
+          <span className="flex flex-wrap items-center gap-1.5">
+            {row.party && <Tag>{row.party}</Tag>}
+            {row.sub && <span className="truncate text-[12px] text-muted-foreground">{row.sub}</span>}
+          </span>
+        )}
       </span>
       <ChevronRight size={18} className="shrink-0 text-muted-foreground" aria-hidden />
     </Link>
@@ -402,4 +407,9 @@ function SourceNote({ lastSync }: { lastSync?: string }) {
       출처: 국회의원 열린국회정보{lastSync ? ` (${lastSync.slice(0, 10).replace(/-/g, '.')} 확인)` : ''} · 광역단체장 2026 지방선거 당선인
     </p>
   );
+}
+
+function regionLabel(region: Region) {
+  const short = SIDO_SHORT[region.sido as keyof typeof SIDO_SHORT] ?? region.sido;
+  return !region.sigungu || region.sigungu === '전체' ? short : `${short} · ${region.sigungu}`;
 }

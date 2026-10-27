@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MessagesSquare, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -27,7 +27,8 @@ const EMPTY: Record<HubTab, string> = {
 export function GonglonHub({ region }: { region: Region }) {
   const access = useGonglonAccess();
   const { data: agendas, isLoading, isError, refetch } = useAgendaList(region.sido);
-  const [tab, setTab] = useState<HubTab>('open');
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<HubTab>(() => (params.get('tab') === 'mine' ? 'mine' : params.get('tab') === 'closed' ? 'closed' : 'open'));
   const [category, setCategory] = useState<string | null>(null);
 
   const inTab = useMemo(() => {

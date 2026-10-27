@@ -17,6 +17,7 @@ import { NewsCard } from '@/components/news/NewsCard';
 import { AgendaLinkCard } from '@/components/gonglon/AgendaLinkCard';
 import { SOURCE_KIND_LABELS, type PositionSourceKind } from '@/hooks/useAgendaPositions';
 import { STAGE_LABELS, type BillStage } from '@/hooks/useAgendaBills';
+import { ListPanel, SectionHeader, Tag, type Tone } from '@/components/ds';
 import { ELECTION_RESULT_LABELS, type Candidate } from '@/types/election';
 
 const fmt = (d: string | null | undefined) => (d ? d.slice(0, 10).replace(/-/g, '.') : '');
@@ -52,7 +53,7 @@ function Shell({ title, actions, children }: { title: string; actions?: ReactNod
   const back = () => (window.history.length > 1 ? navigate(-1) : navigate('/politicians'));
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-20 border-b border-border/50 bg-background/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-border bg-card">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-1 px-2">
           <div className="flex items-center gap-1">
             <button type="button" onClick={back} aria-label="뒤로" className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-secondary">
@@ -90,14 +91,20 @@ function ShareButton({ title, text }: { title: string; text: string }) {
   );
 }
 
-function Hero({ photo, name, lines }: { photo: string | null; name: string; lines: ReactNode[] }) {
+function Hero({ photo, name, tags, lines }: { photo: string | null; name: string; tags: (string | null | undefined)[]; lines: ReactNode[] }) {
+  const shownTags = tags.filter((t): t is string => !!t);
   return (
-    <section className="flex items-center gap-4">
+    <section className="flex items-end gap-4">
       <PersonPhotoZoom src={photo} name={name} initial={name.slice(0, 1)} width={120} />
-      <div className="min-w-0 space-y-1.5">
-        <h1 className="text-2xl font-bold leading-tight">{name}</h1>
+      <div className="min-w-0 flex-1 space-y-2 pb-1">
+        {shownTags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {shownTags.map((t) => <Tag key={t}>{t}</Tag>)}
+          </div>
+        )}
+        <h1 className="text-[24px] font-bold leading-tight tracking-[-0.02em]">{name}</h1>
         {lines.filter(Boolean).map((l, i) => (
-          <p key={i} className={cn('text-[15px] leading-snug', i === 0 ? 'text-foreground/85' : 'text-sm text-muted-foreground')}>{l}</p>
+          <p key={i} className={cn('leading-snug', i === 0 ? 'text-[13px] text-sub' : 'text-[12px] text-muted-foreground')}>{l}</p>
         ))}
       </div>
     </section>
@@ -119,7 +126,7 @@ function useTab(tabs: TabId[]) {
 function TabBar({ tabs, tab, onChange }: { tabs: TabId[]; tab: TabId; onChange: (t: TabId) => void }) {
   if (tabs.length < 2) return null;
   return (
-    <div role="tablist" aria-label="인물 정보" className="flex gap-1 border-b border-border">
+    <div role="tablist" aria-label="인물 정보" className="flex border-b border-border">
       {tabs.map((t) => (
         <button
           key={t}
@@ -128,8 +135,8 @@ function TabBar({ tabs, tab, onChange }: { tabs: TabId[]; tab: TabId; onChange: 
           aria-selected={tab === t}
           onClick={() => onChange(t)}
           className={cn(
-            '-mb-px h-11 border-b-2 px-3.5 text-[15px] font-semibold transition-colors',
-            tab === t ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+            '-mb-px h-11 flex-1 border-b-2 px-2 text-[15px] transition-colors',
+            tab === t ? 'border-primary font-bold text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
           )}
         >
           {TAB_LABELS[t]}
@@ -175,7 +182,8 @@ function MemberPage({ code }: { code: string }) {
       <Hero
         photo={memberPhotoUrl(member, 'large')}
         name={member.name}
-        lines={[['국회의원', where].filter(Boolean).join(' · '), [member.party, member.reelection].filter(Boolean).join(' · ')]}
+        tags={[member.party, member.reelection]}
+        lines={[['국회의원', where].filter(Boolean).join(' · ')]}
       />
       <TabBar tabs={tabs} tab={tab} onChange={setTab} />
 
@@ -256,8 +264,8 @@ function CandidatePage({ slug }: { slug: string }) {
   const electionName = schedule.current?.name ?? '선거';
   const result = c.electionResult ? ` · ${ELECTION_RESULT_LABELS[c.electionResult]}` : '';
   const lines = elected
-    ? [[c.position, c.party].filter(Boolean).join(' · '), `${electionName} 당선`]
-    : [c.party, `${electionName} ${c.position} 후보${result}`];
+    ? [c.position, `${electionName} 당선`]
+    : [`${electionName} ${c.position} 후보${result}`];
 
   return (
     <Shell
@@ -269,7 +277,7 @@ function CandidatePage({ slug }: { slug: string }) {
         </>
       }
     >
-      <Hero photo={headPhotoUrl(c.image ?? null, 480)} name={c.name} lines={lines} />
+      <Hero photo={headPhotoUrl(c.image ?? null, 480)} name={c.name} tags={[c.party]} lines={lines} />
       <TabBar tabs={tabs} tab={tab} onChange={setTab} />
 
       {tab === 'profile' && <CandidateProfile c={c} />}
@@ -379,7 +387,7 @@ function ActivitySection({ data, loading }: { data?: PoliticianActivity; loading
   const empty = positions.length + sponsored.length + votes.length === 0;
 
   return (
-    <section aria-labelledby="activity-title" className="space-y-3">
+    <section aria-labelledby="activity-title" className="space-y-6">
       <h2 id="activity-title" className="sr-only">공론에서</h2>
       {loading ? (
         <div className="h-20 animate-pulse rounded-2xl bg-secondary motion-reduce:animate-none" />
@@ -388,48 +396,68 @@ function ActivitySection({ data, loading }: { data?: PoliticianActivity; loading
           아직 공론 의제와 연결된 발언이나 법안이 없어요. 생기면 여기에 모여요.
         </p>
       ) : (
-        <ul className="space-y-2.5">
-          {positions.map((p, i) => (
-            <li key={`p-${i}`} className="space-y-1.5 rounded-2xl border border-border bg-card p-4">
-              <AgendaLink id={p.agenda_id} title={p.agenda_title} />
-              <p className="text-sm leading-relaxed">{p.summary}</p>
-              <p className="text-xs text-muted-foreground">
-                {fmt(p.spoken_on)} · {SOURCE_KIND_LABELS[p.source_kind as PositionSourceKind] ?? p.source_kind}{' '}
-                <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                  원문
-                </a>
-              </p>
-            </li>
-          ))}
-          {sponsored.map((b) => (
-            <li key={`s-${b.bill_id}-${b.agenda_id}`} className="space-y-1.5 rounded-2xl border border-border bg-card p-4">
-              <AgendaLink id={b.agenda_id} title={b.agenda_title} />
-              <p className="text-sm">
-                <span className="font-semibold">대표발의</span> · {b.bill_name}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {fmt(b.propose_dt)} 발의 · 지금 {STAGE_LABELS[b.stage as BillStage] ?? b.stage}
-              </p>
-            </li>
-          ))}
-          {votes.map((v) => (
-            <li key={`v-${v.bill_id}-${v.agenda_id}`} className="space-y-1.5 rounded-2xl border border-border bg-card p-4">
-              <AgendaLink id={v.agenda_id} title={v.agenda_title} />
-              <p className="text-sm">
-                본회의 표결 · {v.bill_name}: <strong>{v.vote}</strong>
-              </p>
-              {v.vote_date && <p className="text-xs text-muted-foreground">{fmt(v.vote_date)}</p>}
-            </li>
-          ))}
-        </ul>
+        <>
+          {positions.length > 0 && (
+            <div className="space-y-2.5">
+              <SectionHeader title="공론 의제에 대한 입장" sub="운영진이 공개 발언·보도자료에서 찾아 출처와 함께 적었어요. 찬반으로 나누지 않아요." />
+              <ul className="space-y-2.5">
+                {positions.map((p, i) => (
+                  <li key={`p-${i}`} className="space-y-2 rounded-2xl border border-border bg-card p-4">
+                    <AgendaLink id={p.agenda_id} title={p.agenda_title} />
+                    <p className="text-[15px] leading-relaxed">“{p.summary}”</p>
+                    <p className="text-[12px] text-muted-foreground">
+                      {fmt(p.spoken_on)} · {SOURCE_KIND_LABELS[p.source_kind as PositionSourceKind] ?? p.source_kind}{' '}
+                      <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:text-primary-strong">
+                        원문 ›
+                      </a>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {sponsored.length + votes.length > 0 && (
+            <div className="space-y-2.5">
+              <SectionHeader title="관련 법안" />
+              <ListPanel>
+                {sponsored.map((b) => (
+                  <div key={`s-${b.bill_id}-${b.agenda_id}`} className="space-y-1.5 px-4 py-3.5">
+                    <AgendaLink id={b.agenda_id} title={b.agenda_title} />
+                    <p className="text-[15px] font-semibold leading-snug">{b.bill_name}</p>
+                    <p className="flex flex-wrap items-center gap-1.5">
+                      <Tag tone="info">대표 발의</Tag>
+                      <Tag tone={stageTone(b.stage)}>{STAGE_LABELS[b.stage as BillStage] ?? b.stage}</Tag>
+                      <span className="text-[12px] text-muted-foreground">{fmt(b.propose_dt)} 발의</span>
+                    </p>
+                  </div>
+                ))}
+                {votes.map((v) => (
+                  <div key={`v-${v.bill_id}-${v.agenda_id}`} className="space-y-1.5 px-4 py-3.5">
+                    <AgendaLink id={v.agenda_id} title={v.agenda_title} />
+                    <p className="text-[15px] font-semibold leading-snug">{v.bill_name}</p>
+                    <p className="flex flex-wrap items-center gap-1.5">
+                      <Tag>본회의 표결 · {v.vote}</Tag>
+                      {v.vote_date && <span className="text-[12px] text-muted-foreground">{fmt(v.vote_date)}</span>}
+                    </p>
+                  </div>
+                ))}
+              </ListPanel>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
 }
 
+/** 법안 단계 색: 본회의 통과 이후는 초록, 나머지(심사 중·폐기 등)는 회색 */
+function stageTone(stage: string): Tone {
+  return ['plenary_passed', 'transferred', 'promulgated'].includes(stage) ? 'agree' : 'neutral';
+}
+
 function AgendaLink({ id, title }: { id: string; title: string }) {
   return (
-    <Link to={`/gonglon/${id}`} className="block text-xs font-semibold text-primary">
+    <Link to={`/gonglon/${id}`} className="block text-[12px] text-muted-foreground hover:text-primary">
       공론 · {title}
     </Link>
   );

@@ -2499,6 +2499,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_my_gonglon_stats: { Args: never; Returns: Json }
       get_my_political_data_count: { Args: never; Returns: number }
       get_politician_activity: {
         Args: { p_candidate_id?: string; p_mona_cd?: string }

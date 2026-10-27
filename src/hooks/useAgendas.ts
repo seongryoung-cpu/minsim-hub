@@ -310,6 +310,7 @@ export function useCastAgendaVote() {
       qc.invalidateQueries({ queryKey: keys.summary(input.agendaId) });
       qc.invalidateQueries({ queryKey: ['agendas', 'linked'] });
       qc.invalidateQueries({ queryKey: ['agendas', 'hub-list'] });
+      qc.invalidateQueries({ queryKey: ['my-gonglon-stats'] });
     },
   });
 }
@@ -365,6 +366,7 @@ export function usePostStatement() {
     onSuccess: (_r, { agendaId }) => {
       qc.invalidateQueries({ queryKey: ['agendas', 'statements', agendaId] });
       qc.invalidateQueries({ queryKey: ['agendas', 'hub-list'] });
+      qc.invalidateQueries({ queryKey: ['my-gonglon-stats'] });
     },
   });
 }

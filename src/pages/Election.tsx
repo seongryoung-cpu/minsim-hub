@@ -1,10 +1,14 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Vote, Calendar, Users, MapPin, Navigation, ExternalLink } from 'lucide-react';
+import { Vote, Users, MapPin, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ListPanel, Panel, SectionHeader, Tag } from '@/components/ds';
+import { PersonPhoto } from '@/components/politicians/PersonPhoto';
+import { headPhotoUrl } from '@/hooks/usePoliticians';
+import type { Candidate } from '@/types/election';
 import { ElectionTimeline } from '@/components/dashboard/ElectionTimeline';
 import { CandidateCard, CandidateCardSkeleton } from '@/components/dashboard/CandidateCard';
-import { DashboardSection } from '@/components/dashboard/DashboardSection';
 import { useRegion } from '@/hooks/useRegion';
 import { useCandidates, candidatePath } from '@/hooks/useCandidates';
 import { formatDDay, formatYmd, getMetropolitanTitle, sortByElectionResult } from '@/types/election';
@@ -92,113 +96,45 @@ export function Election({ embedded = false }: { embedded?: boolean } = {}) {
       )}
 
       <main className={embedded ? 'mx-auto max-w-2xl p-4 space-y-5' : 'p-4 space-y-5'}>
-        {/* Election Info Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl p-6 shadow-[var(--shadow-md)] text-center"
-        >
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <Calendar size={32} className="text-primary" />
-          </div>
-          <h2 className="text-xl font-bold text-foreground mb-1">
-            {schedule.current?.name ?? '선거 정보 준비 중'}{electionStatus.isOver && ' 종료'}
-          </h2>
-          {electionStatus.isOver ? (
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground mb-2">
-                {formatYmd(schedule.current?.election_date)} 선거가 마무리되었습니다
-              </p>
-              {schedule.next && electionStatus.nextDDay != null && (
-                <>
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary/10">
-                    <span className="text-sm text-foreground">다음 선거 · {schedule.next.name}</span>
-                    <span className="text-lg font-bold text-primary">{formatDDay(electionStatus.nextDDay)}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {schedule.next.full_name} · {formatYmd(schedule.next.election_date)}
-                  </p>
-                </>
-              )}
-            </div>
-          ) : (
-            <p className="text-2xl font-bold text-primary mb-4">
-              {electionStatus.dDay != null ? formatDDay(electionStatus.dDay) : '-'}
-            </p>
-          )}
-          <div className="bg-secondary rounded-xl p-4 text-center">
-            <Users size={24} className="text-primary mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">{isNormal ? '지난 선거 후보' : '등록 후보'}</p>
-            <p className="font-semibold text-foreground text-lg">
-              {isCandidatesLoading ? '-' : `${electionStatus.candidates.length}명`}
-            </p>
-          </div>
-        </motion.div>
-
-        {/* 정책 매칭 (후보 공약 기반이라 평상시에는 홈이 아니라 여기서만) */}
-        <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
+        {/* 선거 카드: 끝났으면 다음 선거, 아니면 이번 선거 + 진행 단계 */}
+        <ElectionCard schedule={schedule} />
 
         {showResults ? (
-          <DashboardSection
-            title={`${electionStatus.title} 선거 결과`}
-            icon="🏛️"
-            action={{ label: '공약 비교', onPress: () => navigate('/compare') }}
-            delay={0.1}
-          >
-            <div className="space-y-3">
-              {finalists.map((candidate, index) => (
-                <CandidateCard
-                  key={candidate.id}
-                  candidate={candidate}
-                  index={index}
-                  onPress={() => navigate(candidatePath(candidate))}
-                />
-              ))}
-              {others.length > 0 && (
-                showOthers ? (
-                  <>
-                    <p className="pt-2 px-1 text-xs font-medium text-muted-foreground">경선·예비후보</p>
-                    {others.map((candidate, index) => (
-                      <CandidateCard
-                        key={candidate.id}
-                        candidate={candidate}
-                        index={index}
-                        variant="compact"
-                        onPress={() => navigate(candidatePath(candidate))}
-                      />
-                    ))}
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowOthers(true)}
-                    className="w-full py-2.5 text-sm text-primary font-medium hover:bg-primary/5 rounded-xl transition-colors border border-dashed border-primary/30"
-                  >
-                    경선·예비후보 {others.length}명 더 보기
-                  </button>
-                )
-              )}
+          <section aria-labelledby="results-title" className="space-y-2.5">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="results-title" className="text-[17px] font-bold tracking-[-0.01em]">지난 선거 결과</h2>
+              <span className="text-[12px] text-muted-foreground">
+                {[schedule.current?.name, electionStatus.title].filter(Boolean).join(' · ')}
+              </span>
             </div>
-          </DashboardSection>
+            <ListPanel>
+              {finalists.map((c) => <ResultRow key={c.id} c={c} />)}
+              {showOthers && others.map((c) => <ResultRow key={c.id} c={c} />)}
+              {others.length > 0 && !showOthers && (
+                <button
+                  type="button"
+                  onClick={() => setShowOthers(true)}
+                  className="flex min-h-12 w-full items-center justify-center text-[14px] font-semibold text-muted-foreground hover:bg-secondary/50"
+                >
+                  경선·예비후보 {others.length}명 더 보기
+                </button>
+              )}
+              <Link to="/compare" className="flex min-h-12 items-center justify-center text-[14px] font-semibold text-primary hover:bg-secondary/50">
+                후보 공약 비교하기
+              </Link>
+            </ListPanel>
+          </section>
         ) : (
           <>
           {/* Election Timeline */}
-          <DashboardSection title="선거 진행 단계" icon="📊" delay={0.1}>
-            <ElectionTimeline
-              milestones={electionStatus.milestones}
-            />
-          </DashboardSection>
+          <section className="space-y-2.5">
+            <SectionHeader title="선거 진행 단계" />
+            <ElectionTimeline milestones={electionStatus.milestones} />
+          </section>
 
           {/* Candidates */}
-          <DashboardSection
-            title="후보자 현황"
-            icon="👥"
-            action={{
-              label: '비교하기',
-              onPress: () => navigate('/compare'),
-            }}
-            delay={0.2}
-          >
+          <section className="space-y-2.5">
+            <SectionHeader title="후보자 현황" to="/compare" action="비교하기" />
             <div className="space-y-3">
               {isCandidatesLoading ? (
                 <>
@@ -221,9 +157,12 @@ export function Election({ embedded = false }: { embedded?: boolean } = {}) {
                 </div>
               )}
             </div>
-          </DashboardSection>
+          </section>
           </>
         )}
+
+        {/* 정책 매칭 (후보 공약 기반이라 평상시에는 홈이 아니라 여기서만) */}
+        <PolicyMatchBanner onPress={() => navigate('/policy-match')} />
 
         {/* 투표소·체크리스트는 선거 기간에만 */}
         {!isNormal && (
@@ -233,16 +172,11 @@ export function Election({ embedded = false }: { embedded?: boolean } = {}) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
+              className="rounded-2xl border border-border bg-card p-[18px]"
             >
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Navigation size={20} className="text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">🗳️ 투표소 찾기</h3>
-                  <p className="text-xs text-muted-foreground">내 투표소 위치를 확인하세요</p>
-                </div>
+              <div className="mb-4">
+                <h3 className="text-[17px] font-bold">투표소 찾기</h3>
+                <p className="text-[13px] text-muted-foreground">내 투표소 위치를 확인하세요</p>
               </div>
           
               <div className="space-y-3">
@@ -259,8 +193,8 @@ export function Election({ embedded = false }: { embedded?: boolean } = {}) {
                     className="flex items-center justify-between p-4 bg-secondary rounded-xl hover:bg-secondary/70 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${i === 0 ? 'bg-primary/10' : 'bg-accent/10'}`}>
-                        {i === 0 ? <MapPin size={16} className="text-primary" /> : <Vote size={16} className="text-accent" />}
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary">
+                        {i === 0 ? <MapPin size={16} /> : <Vote size={16} />}
                       </div>
                       <div>
                         <p className="font-medium text-foreground text-sm">{v.title}</p>
@@ -284,9 +218,9 @@ export function Election({ embedded = false }: { embedded?: boolean } = {}) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-card rounded-2xl p-5 shadow-[var(--shadow-md)]"
+              className="rounded-2xl border border-border bg-card p-[18px]"
             >
-              <h3 className="font-semibold text-foreground mb-3">📋 선거 준비 체크리스트</h3>
+              <h3 className="mb-3 text-[17px] font-bold">선거 준비 체크리스트</h3>
               <ul className="space-y-3">
                 {schedule.checklist.map((row, i) => (
                   <motion.li
@@ -309,5 +243,68 @@ export function Election({ embedded = false }: { embedded?: boolean } = {}) {
         )}
       </main>
     </motion.div>
+  );
+}
+
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+function longDate(ymd: string | null | undefined) {
+  if (!ymd) return '';
+  const [y, m, d] = ymd.split('-').map(Number);
+  const w = WEEKDAYS[new Date(y, m - 1, d).getDay()];
+  return `${y}년 ${m}월 ${d}일 (${w})`;
+}
+
+/** 선거 카드: 지난 선거가 끝났으면 '다음 선거 · D-n', 아니면 이번 선거 D-day와 진행 단계 날짜 */
+function ElectionCard({ schedule }: { schedule: ReturnType<typeof useElectionSchedule> }) {
+  if (schedule.isLoading) return <div className="h-40 animate-pulse rounded-2xl bg-secondary motion-reduce:animate-none" />;
+  const showNext = schedule.isOver && !!schedule.next;
+  const e = showNext ? schedule.next : schedule.current;
+  const d = showNext ? schedule.nextDDay : schedule.dDay;
+  if (!e) {
+    return (
+      <Panel className="p-[18px] text-[14px] text-muted-foreground">선거 일정이 아직 등록되지 않았어요.</Panel>
+    );
+  }
+  const rows = showNext ? [] : schedule.milestones.filter((m) => m.date);
+  return (
+    <Panel className="space-y-2.5 p-[18px]">
+      <Tag tone="info">
+        {showNext ? '다음 선거' : schedule.isOver ? '지난 선거' : '이번 선거'}
+        {d != null && d >= 0 ? ` · ${formatDDay(d)}` : schedule.isOver && !showNext ? ' · 종료' : ''}
+      </Tag>
+      <h2 className="text-[20px] font-bold tracking-[-0.02em]">{e.name}</h2>
+      <p className="text-[14px] text-sub">{longDate(e.election_date)}</p>
+      {rows.length > 0 && (
+        <div className="space-y-2 border-t border-border pt-3">
+          {rows.map((m) => (
+            <div key={m.id} className="flex justify-between gap-3 text-[14px]">
+              <span className={m.isCurrent ? 'font-semibold' : 'text-sub'}>{m.label}</span>
+              <span className="text-muted-foreground">{formatYmd(m.date)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="text-[12px] text-muted-foreground">
+        {showNext ? '세부 일정은 선관위 발표가 나면 여기에 올려요.' : '일정은 선관위 발표에 따라 바뀔 수 있어요.'}
+      </p>
+    </Panel>
+  );
+}
+
+/** 지난 선거 결과 한 줄: 사진 · 이름 · 정당 · 득표율 · 당선/낙선 */
+function ResultRow({ c }: { c: Candidate }) {
+  const tag = c.electionResult === 'elected' ? <Tag tone="info">당선</Tag> : c.electionResult === 'defeated' ? <Tag>낙선</Tag> : <Tag>경선·예비</Tag>;
+  return (
+    <Link to={candidatePath(c)} className="flex items-center gap-3 px-4 py-3.5 hover:bg-secondary/50">
+      <PersonPhoto src={headPhotoUrl(c.image ?? null, 120)} initial={c.name.slice(0, 1)} width={40} />
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-baseline gap-1.5">
+          <span className="text-[15px] font-bold">{c.name}</span>
+          {c.party && <span className="text-[12px] font-semibold text-muted-foreground">{c.party}</span>}
+        </span>
+        {c.voteShare != null && <span className="block text-[13px] text-muted-foreground">득표율 {c.voteShare.toFixed(1)}%</span>}
+      </span>
+      {tag}
+    </Link>
   );
 }

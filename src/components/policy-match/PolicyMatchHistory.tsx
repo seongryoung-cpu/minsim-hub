@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { Brain, ChevronRight, Trash2, Clock, X } from 'lucide-react';
+import { ChevronRight, Trash2, X } from 'lucide-react';
+import { ListPanel, SectionHeader } from '@/components/ds';
 import { usePolicyMatchResults, useDeletePolicyMatchResult, type PolicyMatchResult } from '@/hooks/usePolicyMatchResults';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
@@ -11,166 +11,57 @@ interface PolicyMatchHistoryProps {
   onViewResult?: (result: PolicyMatchResult) => void;
 }
 
+/** 마이 '정책 매칭 기록' — 저장된 결과가 있을 때만 보인다 (시작은 '테스트와 퀴즈'에서) */
 export function PolicyMatchHistory({ onViewResult }: PolicyMatchHistoryProps) {
-  const navigate = useNavigate();
   const { isAuthenticated } = useAuthContext();
-  const { data: results, isLoading } = usePolicyMatchResults();
+  const { data: results } = usePolicyMatchResults();
   const deleteResult = useDeletePolicyMatchResult();
 
-  if (!isAuthenticated) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-2xl p-4 shadow-app-md"
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Brain size={20} className="text-primary" />
-          </div>
-          <div>
-            <p className="font-medium text-foreground">정책 매칭 결과</p>
-            <p className="text-xs text-muted-foreground">로그인하면 이전 결과를 저장할 수 있어요</p>
-          </div>
-        </div>
-        <button
-          onClick={() => navigate('/policy-match')}
-          className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium text-sm"
-        >
-          정책 매칭 시작하기
-        </button>
-      </motion.div>
-    );
-  }
+  if (!isAuthenticated || !results || results.length === 0) return null;
 
-  if (isLoading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-2xl p-4 shadow-app-md"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Brain size={20} className="text-primary" />
-          </div>
-          <div>
-            <p className="font-medium text-foreground">정책 매칭 결과</p>
-            <p className="text-xs text-muted-foreground">로딩 중...</p>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm('이 결과를 삭제하시겠습니까?')) return;
-    
+  const handleDelete = async (id: string) => {
+    if (!confirm('이 결과를 지울까요?')) return;
     try {
       await deleteResult.mutateAsync(id);
-      toast.success('결과가 삭제되었습니다');
+      toast.success('결과를 지웠어요');
     } catch {
-      toast.error('삭제에 실패했습니다');
+      toast.error('지우지 못했어요. 잠시 뒤 다시 해 주세요.');
     }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-2xl shadow-app-md overflow-hidden"
-    >
-      {/* Header */}
-      <div className="p-4 flex items-center justify-between border-b border-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Brain size={20} className="text-primary" />
-          </div>
-          <div>
-            <p className="font-medium text-foreground">정책 매칭 결과</p>
-            <p className="text-xs text-muted-foreground">
-              {results && results.length > 0 
-                ? `총 ${results.length}개의 결과` 
-                : '아직 결과가 없어요'}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => navigate('/policy-match')}
-          className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium"
-        >
-          새로 시작
-        </button>
-      </div>
-
-      {/* Results List */}
-      {results && results.length > 0 ? (
-        <div className="divide-y divide-border">
-          {results.slice(0, 5).map((result) => (
-            <motion.button
-              key={result.id}
+    <section aria-labelledby="match-history-title" className="space-y-2.5">
+      <SectionHeader id="match-history-title" title="정책 매칭 기록" sub={`최근 ${Math.min(results.length, 5)}개`} />
+      <ListPanel>
+        {results.slice(0, 5).map((result) => (
+          <div key={result.id} className="flex items-center gap-1 pr-2">
+            <button
+              type="button"
               onClick={() => onViewResult?.(result)}
-              className="w-full p-4 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
-              whileHover={{ x: 4 }}
+              className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3.5 text-left hover:bg-secondary/50"
             >
-              {/* Match Score Circle */}
-              <div 
-                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                style={{ 
-                  background: `conic-gradient(hsl(var(--primary)) ${result.top_match_score}%, hsl(var(--muted)) ${result.top_match_score}%)`
-                }}
-              >
-                <div className="w-9 h-9 rounded-full bg-card flex items-center justify-center">
-                  <span className="text-primary font-bold text-xs">{result.top_match_score}%</span>
-                </div>
-              </div>
-
-              {/* Result Info */}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-foreground truncate">
-                  {result.top_match_candidate_name}
-                </p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock size={12} />
-                  <span>{format(new Date(result.created_at), 'M월 d일 HH:mm', { locale: ko })}</span>
-                  <span>·</span>
-                  <span>{result.region_name}</span>
-                </div>
-                {result.preferred_candidate_name && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    선호 후보: {result.preferred_candidate_name}
-                  </p>
-                )}
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={(e) => handleDelete(result.id, e)}
-                  className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <ChevronRight size={20} className="text-muted-foreground" />
-              </div>
-            </motion.button>
-          ))}
-        </div>
-      ) : (
-        <div className="p-8 text-center">
-          <p className="text-muted-foreground text-sm mb-3">
-            정책 매칭 게임을 해보세요!
-          </p>
-          <button
-            onClick={() => navigate('/policy-match')}
-            className="px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium"
-          >
-            시작하기
-          </button>
-        </div>
-      )}
-    </motion.div>
+              <span className="w-12 shrink-0 text-[17px] font-extrabold text-primary">{result.top_match_score}%</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[15px] font-semibold">{result.top_match_candidate_name}</span>
+                <span className="block truncate text-[13px] text-muted-foreground">
+                  {format(new Date(result.created_at), 'M월 d일', { locale: ko })} · {result.region_name}
+                  {result.preferred_candidate_name ? ` · 선호 ${result.preferred_candidate_name}` : ''}
+                </span>
+              </span>
+              <ChevronRight size={18} className="shrink-0 text-muted-foreground" aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDelete(result.id)}
+              aria-label={`${result.top_match_candidate_name} 결과 지우기`}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+      </ListPanel>
+    </section>
   );
 }
 
