@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CalendarDays, Check, ChevronDown, MapPin, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Tag } from '@/components/ds';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import { QuickParticipate } from '@/components/gonglon/QuickParticipate';
@@ -73,7 +74,7 @@ export function PilotApply() {
   if (!ev) {
     return (
       <Shell onBack={() => navigate(-1)}>
-        <div className="rounded-2xl bg-secondary/60 p-6 text-center">
+        <div className="rounded-2xl border border-border bg-card p-6 text-center">
           <p className="font-bold">행사를 찾을 수 없어요</p>
           <p className="mt-1 text-sm text-muted-foreground">주소를 다시 확인하거나, 받은 안내 링크로 들어와 주세요.</p>
           <Link to="/" className="mt-4 inline-block text-sm font-semibold text-primary">
@@ -94,7 +95,7 @@ export function PilotApply() {
       {active && !editing ? (
         <AppliedCard ev={ev} app={active} closed={closed} onEdit={() => setEditing(true)} />
       ) : closed ? (
-        <div className="rounded-2xl bg-secondary/60 p-5 text-center">
+        <div className="rounded-2xl border border-border bg-card p-5 text-center">
           <p className="font-bold">신청이 마감됐어요</p>
           <p className="mt-1 text-sm text-muted-foreground">다음 행사 소식은 공론 탭에서 알려 드릴게요.</p>
         </div>
@@ -131,9 +132,11 @@ function Shell({ children, onBack }: { children: React.ReactNode; onBack: () => 
 function EventCard({ ev, count, closed }: { ev: PilotEvent; count: number; closed: boolean }) {
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
-      <p className="text-xs font-bold text-primary">{closed ? '신청 마감' : `신청 마감 ${formatWhen(ev.apply_closes_at, false)}`}</p>
-      <h2 className="mt-1 text-xl font-bold leading-snug">{ev.title}</h2>
-      {ev.summary && <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-foreground/80">{ev.summary}</p>}
+      <div className="flex flex-wrap gap-1.5">
+        <Tag tone={closed ? 'neutral' : 'info'}>{closed ? '신청 마감' : `신청 마감 ${formatWhen(ev.apply_closes_at, false)}`}</Tag>
+      </div>
+      <h2 className="mt-2.5 text-[22px] font-bold leading-snug tracking-[-0.02em]">{ev.title}</h2>
+      {ev.summary && <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-sub">{ev.summary}</p>}
       <dl className="mt-4 space-y-2 text-sm">
         <div className="flex items-start gap-2">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -153,7 +156,7 @@ function EventCard({ ev, count, closed }: { ev: PilotEvent; count: number; close
           </dd>
         </div>
       </dl>
-      <p className="mt-4 rounded-xl bg-secondary/60 p-3 text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-4 rounded-xl bg-secondary p-3 text-[12px] leading-relaxed text-sub">
         학교별 인원과 사전 의견이 한쪽으로 몰리지 않게 뽑아요. 먼저 신청한 순서로 뽑지 않아요.
       </p>
     </section>
@@ -177,7 +180,7 @@ function AppliedCard({ ev, app, closed, onEdit }: { ev: PilotEvent; app: MyPilot
 
   return (
     <>
-      <section className="rounded-2xl border border-primary/30 bg-primary/5 p-5">
+      <section className="rounded-2xl border-[1.5px] border-primary bg-card p-5">
         <div className="flex items-center gap-2">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
             <Check className="h-4 w-4" />
@@ -411,7 +414,7 @@ function ApplyForm({
           <Chips options={HEARD_FROM_OPTIONS} value={v.heardFrom} onChange={(h) => set('heardFrom', h)} />
         </Field>
 
-        <div className="space-y-3 rounded-xl bg-secondary/60 p-4">
+        <div className="space-y-3 rounded-xl bg-secondary p-4">
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="checkbox"

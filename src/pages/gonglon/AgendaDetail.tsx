@@ -43,6 +43,7 @@ import { CHOICE_SELECTED } from '@/components/gonglon/choiceStyles';
 import { ResultBars } from '@/components/gonglon/ResultBars';
 import { ReportButton } from '@/components/gonglon/ReportButton';
 import { OutcomeCard } from '@/components/gonglon/OutcomeCard';
+import { Tag, ToneBox, SectionHeader, type Tone } from '@/components/ds';
 import { QuickParticipate } from '@/components/gonglon/QuickParticipate';
 import { useLoginPrompt } from '@/components/gonglon/useLoginPrompt';
 import type { AgendaFrom } from '@/components/gonglon/AgendaLinkCard';
@@ -163,26 +164,18 @@ export function AgendaDetail() {
       <main className="mx-auto max-w-2xl space-y-7 px-4 pt-5">
         {/* 제목 */}
         <section className="space-y-2.5">
-          <div className="flex flex-wrap gap-1.5 text-xs font-semibold">
-            {agenda.category && (
-              <span className="rounded-md bg-secondary px-2 py-0.5 text-secondary-foreground">{agenda.category}</span>
-            )}
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-secondary-foreground">
-              {agenda.region_sido ?? '전국'}
-            </span>
+          <div className="flex flex-wrap gap-1.5">
+            {agenda.category && <Tag>{agenda.category}</Tag>}
+            <Tag>{agenda.region_sido ?? '전국'}</Tag>
             {status === 'draft' ? (
-              <span className="rounded-md border border-dashed border-border px-2 py-0.5 text-muted-foreground">
-                초안 · 관리자만 보여요
-              </span>
+              <Tag className="border border-dashed border-border bg-transparent text-muted-foreground">초안 · 관리자만 보여요</Tag>
             ) : isOpen ? (
-              <span className="rounded-md border border-primary/40 bg-primary/10 px-2 py-0.5 text-primary">
-                진행 중{dday ? ` · ${dday}` : ''}
-              </span>
+              <Tag tone="info">진행 중{dday ? ` · ${dday}` : ''}</Tag>
             ) : (
-              <span className="rounded-md bg-foreground px-2 py-0.5 text-background">마감</span>
+              <Tag className="bg-foreground text-background">마감</Tag>
             )}
           </div>
-          <h1 className="text-2xl font-bold leading-snug tracking-tight">{agenda.title}</h1>
+          <h1 className="text-[24px] font-bold leading-[1.35] tracking-[-0.02em]">{agenda.title}</h1>
           <AgendaMetaLine
             agendaId={agenda.id}
             participants={summary?.participants ?? 0}
@@ -314,16 +307,14 @@ function AgendaGlance({ agenda }: { agenda: Agenda }) {
     <section aria-label="한눈에 보기" className="space-y-2">
       <div className={cn('grid gap-2', common && split ? 'grid-cols-2' : 'grid-cols-1')}>
         {common && (
-          <div className="rounded-2xl bg-emerald-50 p-3.5 dark:bg-emerald-950/40">
-            <p className="text-[12px] font-bold text-emerald-800 dark:text-emerald-300">대부분 동의하는 것</p>
-            <p className="mt-1 whitespace-pre-line text-[14px] font-semibold leading-snug">{common}</p>
-          </div>
+          <ToneBox tone="agree" label="대부분 동의하는 것">
+            <span className="whitespace-pre-line">{common}</span>
+          </ToneBox>
         )}
         {split && (
-          <div className="rounded-2xl bg-orange-50 p-3.5 dark:bg-orange-950/40">
-            <p className="text-[12px] font-bold text-orange-800 dark:text-orange-300">의견이 갈리는 지점</p>
-            <p className="mt-1 whitespace-pre-line text-[14px] font-semibold leading-snug">{split}</p>
-          </div>
+          <ToneBox tone="split" label="의견이 갈리는 지점">
+            <span className="whitespace-pre-line">{split}</span>
+          </ToneBox>
         )}
       </div>
       <p className="px-1 text-[11.5px] text-muted-foreground">운영진이 쟁점 자료를 보고 정리했어요. 참여자들의 선택 비율은 내 의견을 남긴 뒤에 보여요.</p>
@@ -375,11 +366,12 @@ function BackgroundSection({ agenda, hideSplit = false }: { agenda: Agenda; hide
 // ─────────────────────────────────────────────────────────────
 // 쟁점 카드 (사실 · 찬성 · 반대 탭, 좌우 스와이프)
 // ─────────────────────────────────────────────────────────────
-const KIND_STYLE: Record<IssueKind, { card: string; chip: string }> = {
-  pro: { card: 'border-primary', chip: 'bg-primary/10 text-primary' },
-  con: { card: 'border-accent', chip: 'bg-accent/10 text-accent' },
-  fact: { card: 'border-border', chip: 'bg-secondary text-secondary-foreground' },
-  point: { card: 'border-border', chip: 'bg-secondary text-secondary-foreground' },
+/** 쟁점 카드 표시 색: 찬성 파랑, 반대 주황, 사실·쟁점 회색 (카드 테두리는 모두 같게) */
+const KIND_STYLE: Record<IssueKind, { tone: Tone }> = {
+  pro: { tone: 'info' },
+  con: { tone: 'split' },
+  fact: { tone: 'neutral' },
+  point: { tone: 'neutral' },
 };
 
 /** 탭 순서: 사실을 먼저 읽고 찬반으로 넘어가도록 */
@@ -467,7 +459,7 @@ function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-[17px] font-bold">쟁점 카드</h2>
+      <SectionHeader title="쟁점 카드" />
 
       {groups.length > 1 && (
         <div role="tablist" aria-label="쟁점 종류" className="flex gap-0.5 rounded-xl bg-secondary p-[3px]">
@@ -484,7 +476,7 @@ function IssueCarousel({ issues }: { issues: AgendaIssue[] }) {
                 onClick={() => goTo(i)}
                 className={cn(
                   'flex h-10 flex-1 items-center justify-center gap-1 rounded-[9px] text-[13px] font-semibold transition-colors',
-                  active ? cn('bg-card shadow-sm', TAB_ACTIVE[g.kind]) : 'text-muted-foreground',
+                  active ? cn('bg-card', TAB_ACTIVE[g.kind]) : 'text-muted-foreground',
                 )}
               >
                 {TAB_LABEL[g.kind]}
@@ -562,14 +554,12 @@ function IssueCard({ issue }: { issue: AgendaIssue }) {
   const style = KIND_STYLE[kind];
 
   return (
-    <article
-      className={cn('flex flex-col gap-2.5 rounded-2xl border-[1.5px] bg-card p-4', style.card)}
-    >
-      <span className={cn('self-start rounded-md px-2 py-0.5 text-xs font-bold', style.chip)}>
+    <article className="flex flex-col gap-2.5 rounded-2xl border border-border bg-card p-4">
+      <Tag tone={style.tone} className="self-start">
         {ISSUE_KIND_LABELS[kind]}
-      </span>
-      <h3 className="text-[15px] font-semibold leading-snug">{issue.title}</h3>
-      {issue.body && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{issue.body}</p>}
+      </Tag>
+      <h3 className="text-[16px] font-bold leading-snug">{issue.title}</h3>
+      {issue.body && <p className="whitespace-pre-line text-sm leading-relaxed text-sub">{issue.body}</p>}
       {issue.sources.length > 0 && (
         <div className="mt-auto pt-1">
           <button
@@ -834,8 +824,21 @@ function StatementItem({
       { onError },
     );
 
+  // 반응이 10명 이상 모인 의견에만: 대부분 동의(동의 70% 이상) / 의견 갈림(동의·비동의 모두 30% 이상)
+  const total = counts.agree + counts.disagree + counts.hold;
+  const lean =
+    total < 10 ? null
+      : counts.agree / total >= 0.7 ? 'agree'
+        : counts.agree / total >= 0.3 && counts.disagree / total >= 0.3 ? 'split'
+          : null;
+
   return (
     <article className="space-y-2 border-b border-border/70 py-3.5">
+      {lean && (
+        <Tag tone={lean} className="mb-0.5">
+          {lean === 'agree' ? '대부분 동의' : '의견 갈림'}
+        </Tag>
+      )}
       <p className="text-[15px] leading-relaxed">{statement.body}</p>
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         {statement.is_mine && <span className="font-semibold text-primary">내 의견</span>}

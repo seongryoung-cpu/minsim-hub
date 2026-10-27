@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom';
 import { agendaDDay, formatAgendaDate, type AgendaListItem } from '@/hooks/useAgendas';
 import { useAppMode } from '@/hooks/useAppMode';
 import { useAgendaOutcome } from '@/hooks/useAgendaOutcome';
+import { Tag, ToneBox } from '@/components/ds';
 
 /** 공론 허브 목록의 의제 카드. 분포(%)는 넣지 않는다 — 목록에서 다수 쪽으로 쏠리지 않게 */
 export function AgendaHubCard({ agenda }: { agenda: AgendaListItem }) {
   const dday = agenda.status === 'open' ? agendaDDay(agenda.closes_at) : null;
-  const participated = agenda.my_final ? '최종 의견 남김' : agenda.my_first ? '첫 반응 남김' : null;
+  const participated = agenda.my_final ? '마지막 생각 남김' : agenda.my_first ? '처음 생각 남김' : null;
   // 평상시(선거 후)에는 당선인 공약만 센다 — 지난 선거 공약은 선거 탭에서
   const appMode = useAppMode();
   const isNormal = appMode.mode === 'normal';
@@ -16,55 +17,45 @@ export function AgendaHubCard({ agenda }: { agenda: AgendaListItem }) {
   const { data: outcome } = useAgendaOutcome(agenda.id, agenda.status === 'closed');
   const common = outcome?.available ? outcome.common?.[0]?.body : undefined;
 
+  // 첫 반응만 남기고 마지막 생각을 안 남긴 사람에게 이어서 하라고 알린다
+  const needsFinal = agenda.status === 'open' && !!agenda.my_first && !agenda.my_final;
+
   return (
     <Link
       to={`/gonglon/${agenda.id}`}
       className="block rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        {agenda.category && (
-          <span className="rounded-md bg-secondary px-2 py-0.5 font-semibold text-secondary-foreground">
-            {agenda.category}
-          </span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {agenda.category && <Tag>{agenda.category}</Tag>}
+        <Tag>{agenda.region_sido ?? '전국'}</Tag>
+        {agenda.status === 'closed' ? (
+          <Tag>마감 · {formatAgendaDate(agenda.closes_at)}</Tag>
+        ) : (
+          <Tag tone="info">진행 중{dday ? ` · ${dday}` : ''}</Tag>
         )}
-        <span>{agenda.region_sido ?? '전국'}</span>
-        <span className="ml-auto font-semibold">
-          {agenda.status === 'closed' ? (
-            <span className="text-muted-foreground">마감 · {formatAgendaDate(agenda.closes_at)}</span>
-          ) : (
-            dday && <span className="text-primary">{dday}</span>
-          )}
-        </span>
       </div>
 
-      <h3 className="mt-2 text-[17px] font-bold leading-snug text-foreground">{agenda.title}</h3>
-      {agenda.summary && (
-        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{agenda.summary}</p>
-      )}
+      <h3 className="mt-2.5 text-[17px] font-bold leading-snug tracking-[-0.01em] text-foreground">{agenda.title}</h3>
+      {agenda.summary && <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-sub">{agenda.summary}</p>}
       <p className="mt-2 text-[13px] text-muted-foreground">
         참여 {agenda.participants.toLocaleString()}명 · 한 줄 의견 {agenda.statement_count.toLocaleString()}개
       </p>
 
       {common && (
-        <p className="mt-2 line-clamp-2 rounded-lg bg-primary/5 px-2.5 py-1.5 text-[13px] text-foreground/85">
-          <span className="font-semibold text-primary">양쪽 모두 동의</span> “{common}”
-        </p>
+        <ToneBox tone="agree" label="양쪽 모두 동의한 것" className="mt-3 p-3">
+          <span className="line-clamp-2 text-[13px]">“{common}”</span>
+        </ToneBox>
       )}
 
-      {(pledgeCount > 0 || participated || outcome?.available) && (
-        <div className="mt-2.5 flex flex-wrap gap-1.5">
-          {outcome?.available && (
-            <span className="rounded-md bg-foreground px-2 py-0.5 text-xs font-semibold text-background">결과 나옴</span>
-          )}
+      {(pledgeCount > 0 || participated || outcome?.available || needsFinal) && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {outcome?.available && <Tag tone="agree">결과 나옴</Tag>}
+          {needsFinal && <Tag tone="new">마지막 생각을 아직 안 남겼어요</Tag>}
+          {participated && !needsFinal && <Tag tone="info">{participated}</Tag>}
           {pledgeCount > 0 && (
-            <span className="rounded-md border border-accent/60 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
+            <Tag>
               {pledgeLabel} {pledgeCount}개
-            </span>
-          )}
-          {participated && (
-            <span className="rounded-md border border-primary/50 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-              {participated}
-            </span>
+            </Tag>
           )}
         </div>
       )}

@@ -47,6 +47,17 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        sub: "hsl(var(--sub))",
+        "primary-soft": "hsl(var(--primary-soft))",
+        "primary-strong": "hsl(var(--primary-strong))",
+        tone: {
+          agree: "hsl(var(--tone-agree))",
+          "agree-fg": "hsl(var(--tone-agree-fg))",
+          split: "hsl(var(--tone-split))",
+          "split-fg": "hsl(var(--tone-split-fg))",
+          new: "hsl(var(--tone-new))",
+          "new-fg": "hsl(var(--tone-new-fg))",
+        },
         status: {
           preparing: "hsl(var(--status-preparing))",
           active: "hsl(var(--status-active))",

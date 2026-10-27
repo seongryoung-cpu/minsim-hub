@@ -10,7 +10,7 @@ export function PQStatsCard() {
 
   if (!isLoaded) {
     return (
-      <div className="bg-card rounded-2xl p-5 shadow-app-md animate-pulse">
+      <div className="bg-card rounded-2xl p-5 border border-border animate-pulse">
         <div className="h-24 bg-secondary rounded-xl" />
       </div>
     );
@@ -39,10 +39,10 @@ export function PQStatsCard() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-2xl shadow-app-md overflow-hidden"
+      className="bg-card rounded-2xl border border-border overflow-hidden"
     >
       {/* Header */}
-      <div className="bg-gradient-to-r from-violet-500 to-purple-600 p-4 text-white">
+      <div className="bg-primary p-4 text-primary-foreground">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Brain size={20} />
@@ -82,7 +82,7 @@ export function PQStatsCard() {
             <p className="text-white/80 text-sm">아직 퀴즈를 풀지 않았어요</p>
             <button
               onClick={() => navigate('/quiz')}
-              className="mt-2 bg-white text-purple-600 px-4 py-2 rounded-lg font-medium text-sm hover:bg-white/90 transition-colors"
+              className="mt-2 bg-white text-primary px-4 py-2 rounded-lg font-medium text-sm hover:bg-white/90 transition-colors"
             >
               첫 퀴즈 시작하기 →
             </button>

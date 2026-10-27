@@ -12,6 +12,7 @@ import { MbtiBanner } from '@/components/dashboard/MbtiBanner';
 import { QuizBanner } from '@/components/dashboard/QuizBanner';
 import { FeaturedAgendaBanner } from '@/components/gonglon/FeaturedAgendaBanner';
 import { QuickVoteEntry } from '@/components/gonglon/QuickVoteEntry';
+import { MyAgendasCard } from '@/components/gonglon/MyAgendasCard';
 import { NotificationSheet } from '@/components/notification/NotificationSheet';
 import { ElectedOfficialCard } from '@/components/dashboard/ElectedOfficialCard';
 import { getMetropolitanTitle, formatDDay, sortByElectionResult } from '@/types/election';
@@ -91,7 +92,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
       icon: Scale,
       title: '후보자 비교',
       description: '공약과 정책을 나란히 비교해보세요',
-      color: 'from-primary to-primary/70',
+      color: 'bg-primary-soft text-primary',
       path: '/compare',
     },
     {
@@ -99,7 +100,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
       icon: Newspaper,
       title: '뉴스 피드',
       description: '후보자 관련 최신 소식',
-      color: 'from-accent to-accent/70',
+      color: 'bg-primary-soft text-primary',
       path: '/news',
     },
   ];
@@ -161,6 +162,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
           {/* 이번 주 공론 (공론 공개 + 홈 배너 지정 의제가 있을 때만) */}
           <FeaturedAgendaBanner sido={region.sido} />
           <QuickVoteEntry sido={region.sido} />
+          <MyAgendasCard sido={region.sido} />
 
           {isNormal ? (
             <ElectedOfficialCard
@@ -197,7 +199,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-card rounded-2xl p-4 shadow-sm border border-border/50"
+            className="bg-card rounded-2xl p-4 border border-border"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -252,7 +254,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
                 transition={{ delay: 0.6 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate('/compare')}
-                className="w-full py-3.5 mt-1 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-xl shadow-md shadow-primary/20 flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-primary/30 transition-all"
+                className="w-full h-12 mt-1 bg-primary text-primary-foreground font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-primary-strong transition-colors"
               >
                 <Scale size={18} />
                 <span>{isNormal ? '지난 후보 공약 비교하기' : '후보자 공약 비교하기'}</span>
@@ -287,6 +289,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
           <div className="lg:col-span-8 space-y-6">
             <FeaturedAgendaBanner sido={region.sido} />
             <QuickVoteEntry sido={region.sido} />
+            <MyAgendasCard sido={region.sido} />
 
             {isNormal ? (
               <ElectedOfficialCard
@@ -327,7 +330,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-card rounded-2xl p-5 shadow-sm border border-border/50"
+              className="bg-card rounded-2xl p-5 border border-border"
             >
               <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span>⚡</span>
@@ -342,8 +345,8 @@ export function Home({ region, onRegionChange }: HomeProps) {
                     onClick={() => navigate(action.path)}
                     className="flex flex-col items-center gap-2 p-4 rounded-xl hover:bg-secondary/50 transition-colors text-center group"
                   >
-                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${action.color} flex items-center justify-center shadow-sm`}>
-                      <action.icon size={20} className="text-white" />
+                    <div className={`w-12 h-12 rounded-xl ${action.color} flex items-center justify-center`}>
+                      <action.icon size={20} />
                     </div>
                     <div>
                       <p className="font-medium text-foreground text-sm">{action.title}</p>
@@ -361,7 +364,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
-              className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
+              className="bg-card rounded-2xl p-6 border border-border"
             >
               <div className="flex items-center justify-between mb-5">
                 <h3 className="font-bold text-foreground text-lg flex items-center gap-2">
@@ -420,7 +423,7 @@ export function Home({ region, onRegionChange }: HomeProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-card rounded-2xl p-5 shadow-sm border border-border/50"
+              className="bg-card rounded-2xl p-5 border border-border"
             >
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-foreground flex items-center gap-2">
@@ -468,10 +471,9 @@ export function Home({ region, onRegionChange }: HomeProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-gradient-to-br from-secondary/50 to-secondary/30 rounded-2xl p-5 border border-border/50"
+              className="bg-card rounded-2xl p-5 border border-border"
             >
               <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
-                <span>💡</span>
                 {isNormal ? '평소에 참여하는 법' : '선거 참여 팁'}
               </h4>
               <ul className="space-y-2 text-sm text-muted-foreground">

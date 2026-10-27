@@ -2,30 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 민심잇다 Design System - Premium Civic Tech App */
+/* 민심잇다 디자인 시스템 (2026-10, 공론 UI 시안 기준)
+ * - 카드: 흰 바탕 + 테두리 1px + 모서리 16px, 그림자 없음
+ * - 색: 파란색 하나(primary) + 뜻이 있는 색 3개 (tone-agree 초록=동의·공통, tone-split 주황=갈림, tone-new 노랑=새 소식·주의)
+ * - 글자: 제목 22 / 구역 제목 17 / 본문 14~15 / 보조 12~13, 회색 3단계 (foreground · sub · muted-foreground)
+ * - 그라데이션은 쓰지 않는다 */
 
 @layer base {
   :root {
     /* Core civic palette - trustworthy blue with warm accents */
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 210 33% 98%;
+    --foreground: 220 24% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 220 24% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 220 24% 10%;
 
     /* Primary - Civic Blue */
     --primary: 220 70% 50%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Soft gray-blue */
-    --secondary: 210 15% 93%;
-    --secondary-foreground: 220 25% 25%;
+    --secondary: 216 23% 94%;
+    --secondary-foreground: 218 17% 27%;
 
-    --muted: 210 15% 96%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 216 23% 96%;
+    --muted-foreground: 219 12% 41%;
+
+    /* 본문 보조 글자 (회색 2단계) */
+    --sub: 218 17% 27%;
+    /* 파란색 옅은 바탕 (배지·선택됨) */
+    --primary-soft: 220 78% 95%;
+    --primary-strong: 220 72% 41%;
+
+    /* 뜻이 있는 색: 바탕 / 글자 */
+    --tone-agree: 140 48% 94%;
+    --tone-agree-fg: 142 64% 24%;
+    --tone-split: 16 85% 95%;
+    --tone-split-fg: 17 80% 36%;
+    --tone-new: 37 92% 94%;
+    --tone-new-fg: 30 92% 28%;
 
     /* Accent - Warm coral for engagement */
     --accent: 15 85% 57%;
@@ -34,8 +52,8 @@
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
+    --border: 213 21% 90%;
+    --input: 213 21% 90%;
     --ring: 220 70% 50%;
 
     --radius: 1rem;
@@ -80,7 +98,18 @@
     --secondary-foreground: 210 20% 90%;
 
     --muted: 220 20% 15%;
-    --muted-foreground: 210 15% 55%;
+    --muted-foreground: 213 14% 66%;
+
+    --sub: 213 18% 80%;
+    --primary-soft: 218 45% 20%;
+    --primary-strong: 215 85% 72%;
+
+    --tone-agree: 145 35% 15%;
+    --tone-agree-fg: 142 55% 72%;
+    --tone-split: 17 40% 17%;
+    --tone-split-fg: 20 85% 74%;
+    --tone-new: 35 40% 16%;
+    --tone-new-fg: 38 90% 70%;
 
     --accent: 15 85% 60%;
     --accent-foreground: 0 0% 100%;

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAgendaList, useGonglonAccess } from '@/hooks/useAgendas';
 import { AgendaHubCard, AgendaHubCardSkeleton } from '@/components/gonglon/AgendaHubCard';
 import { QuickVoteDeck } from '@/components/gonglon/QuickVoteDeck';
+import { SectionHeader } from '@/components/ds';
 import type { Region } from '@/types/region';
 
 type HubTab = 'open' | 'closed' | 'mine';
@@ -77,10 +78,9 @@ export function GonglonHub({ region }: { region: Region }) {
 
         <QuickVoteDeck sido={region.sido} />
 
-        <h2 className="pt-2 text-[17px] font-bold">공론 중인 의제</h2>
-        <p className="-mt-2 text-sm text-muted-foreground">
-          쟁점을 읽고 함께 정하는 의제예요. {region.sido}와 전국 의제를 보여 드려요.
-        </p>
+        <div className="pt-2">
+          <SectionHeader title="공론 중인 의제" sub={`쟁점을 읽고 함께 정하는 의제예요. ${region.sido}와 전국 의제를 보여 드려요.`} />
+        </div>
 
         <div role="tablist" aria-label="의제 상태" className="grid grid-cols-3 gap-1 rounded-xl bg-secondary p-1">
           {TABS.map((t) => (
@@ -93,7 +93,7 @@ export function GonglonHub({ region }: { region: Region }) {
               className={cn(
                 'h-10 rounded-[10px] text-sm transition-colors',
                 tab === t.id
-                  ? 'border border-border bg-card font-semibold text-foreground shadow-sm'
+                  ? 'border border-border bg-card font-semibold text-foreground'
                   : 'font-medium text-muted-foreground hover:text-foreground',
               )}
             >

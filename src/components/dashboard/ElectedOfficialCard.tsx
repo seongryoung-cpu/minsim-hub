@@ -28,14 +28,14 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.05, duration: 0.4 }}
-      className="bg-card rounded-2xl p-4 shadow-sm border border-border/50"
+      className="bg-card rounded-2xl p-4 border border-border"
     >
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-foreground">우리 지역 단체장</h2>
+        <h2 className="text-[17px] font-bold text-foreground">우리 지역 단체장</h2>
         <button
           type="button"
           onClick={() => navigate('/politicians?view=election')}
-          className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+          className="text-[13px] font-semibold text-muted-foreground hover:text-foreground"
         >
           지난 선거 결과 보기
         </button>
@@ -52,7 +52,7 @@ export function ElectedOfficialCard({ candidates, officeTitle, isLoading }: Elec
           >
             <div
               className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center"
-              style={{ background: `linear-gradient(145deg, ${winner.partyColor}25, ${winner.partyColor}10)` }}
+              style={{ background: `${winner.partyColor}18` }}
             >
               <CandidateImage
                 src={winner.image}

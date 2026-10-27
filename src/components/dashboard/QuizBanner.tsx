@@ -1,92 +1,44 @@
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Brain, Flame, ChevronRight, Sparkles } from 'lucide-react';
+import { Brain, ChevronRight, Flame } from 'lucide-react';
 import { useQuizStats } from '@/hooks/useQuizStats';
+import { Tag } from '@/components/ds';
 
+/** 홈 '오늘의 정치 퀴즈' (디자인 시스템: 흰 카드 + 파란색 하나) */
 export function QuizBanner() {
   const navigate = useNavigate();
   const { stats, canPlayToday } = useQuizStats();
   const canPlay = canPlayToday();
 
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileTap={{ scale: 0.98 }}
+    <button
+      type="button"
       onClick={() => navigate('/quiz')}
-      className="w-full bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-2xl p-5 shadow-lg text-left relative overflow-hidden"
+      className="w-full rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/40"
     >
-      {/* Background decorations */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          animate={{ 
-            rotate: 360,
-            scale: [1, 1.2, 1],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full"
-        />
-        <motion.div
-          animate={{ 
-            y: [0, -10, 0],
-          }}
-          transition={{ duration: 3, repeat: Infinity }}
-          className="absolute bottom-2 left-4"
-        >
-          <Sparkles size={24} className="text-white/30" />
-        </motion.div>
-      </div>
-
-      <div className="relative z-10">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <Brain size={22} className="text-white" />
-            </div>
+      <div className="flex items-start gap-3">
+        <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
+          <Brain size={22} />
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[16px] font-bold">오늘의 정치 퀴즈</span>
+            {canPlay ? <Tag tone="info">새 퀴즈</Tag> : <Tag>오늘 완료</Tag>}
             {stats.currentStreak > 0 && (
-              <div className="flex items-center gap-1 bg-white/20 rounded-full px-2 py-1">
-                <Flame size={14} className="text-orange-300" />
-                <span className="text-xs text-white font-medium">{stats.currentStreak}일</span>
-              </div>
+              <Tag tone="new">
+                <Flame size={12} className="mr-0.5" aria-hidden />
+                {stats.currentStreak}일 연속
+              </Tag>
             )}
-          </div>
-          {canPlay ? (
-            <span className="bg-white text-purple-600 text-xs font-bold px-3 py-1 rounded-full animate-pulse">
-              NEW
-            </span>
-          ) : (
-            <span className="bg-white/20 text-white text-xs font-medium px-3 py-1 rounded-full">
-              완료
-            </span>
-          )}
-        </div>
-
-        <h3 className="text-lg font-bold text-white mb-1">
-          오늘의 정치 퀴즈
-        </h3>
-        <p className="text-sm text-white/80 mb-3">
-          {canPlay 
-            ? '5문제 풀고 PQ 점수를 올려보세요!'
-            : '내일 새로운 퀴즈가 준비됩니다'}
-        </p>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="text-xs text-white/70">내 PQ</div>
-              <div className="text-lg font-bold text-white">{stats.totalPoints}점</div>
-            </div>
-            <div className="w-px h-8 bg-white/20" />
-            <div>
-              <div className="text-xs text-white/70">상위</div>
-              <div className="text-lg font-bold text-white">{100 - stats.percentile}%</div>
-            </div>
-          </div>
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <ChevronRight size={20} className="text-white" />
-          </div>
-        </div>
+          </span>
+          <span className="text-[13px] text-sub">
+            {canPlay ? '5문제 풀고 정치 문해력(PQ)을 올려 보세요' : '내일 새 퀴즈가 준비돼요'}
+          </span>
+          <span className="mt-1 text-[13px] text-muted-foreground">
+            내 PQ <strong className="text-foreground">{stats.totalPoints}점</strong> · 상위 <strong className="text-foreground">{100 - stats.percentile}%</strong>
+          </span>
+        </span>
+        <ChevronRight size={20} className="mt-3 shrink-0 text-muted-foreground" aria-hidden />
       </div>
-    </motion.button>
+    </button>
   );
 }
